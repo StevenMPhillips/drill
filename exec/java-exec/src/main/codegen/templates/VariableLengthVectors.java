@@ -318,6 +318,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
       offsetVector.getMutator().set(index + 1, currentOffset + length);
       data.setBytes(currentOffset, bytes, start, length);
       return true;
+
     }
 
    

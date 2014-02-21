@@ -25,30 +25,23 @@ import org.apache.drill.exec.physical.impl.BatchCreator;
 import org.apache.drill.exec.physical.impl.ScanBatch;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.store.RecordReader;
-import org.apache.drill.exec.store.hbase.HBaseRowGroupScan.HBaseRowGroupReadEntry;
-import org.apache.hadoop.hbase.HRegionInfo;
+import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
-public class HBaseScanBatchCreator implements BatchCreator<HBaseRowGroupScan>{
+public class HBaseScanBatchCreator implements BatchCreator<HBaseSubScan>{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HBaseScanBatchCreator.class);
 
   @Override
-  public RecordBatch getBatch(FragmentContext context, HBaseRowGroupScan rowGroupScan, List<RecordBatch> children) throws ExecutionSetupException {
+  public RecordBatch getBatch(FragmentContext context, HBaseSubScan subScan, List<RecordBatch> children) throws ExecutionSetupException {
     Preconditions.checkArgument(children.isEmpty());
     List<RecordReader> readers = Lists.newArrayList();
-    for(HBaseRowGroupReadEntry e : rowGroupScan.getRowGroupReadEntries()){
-      /*
-      Here we could store a map from file names to footers, to prevent re-reading the footer for each row group in a file
-      TODO - to prevent reading the footer again in the parquet record reader (it is read earlier in the ParquetStorageEngine)
-      we should add more information to the RowGroupInfo that will be populated upon the first read to
-      provide the reader with all of th file meta-data it needs
-      These fields will be added to the constructor below
-      */
+    Configuration config = ((HBaseStoragePluginConfig) subScan.getStorageConfig()).conf;
+    for(HBaseSubScan.HBaseSubScanReadEntry e : subScan.getRowGroupReadEntries()){
       try {
         readers.add(
-            new HBaseRecordReader((HBaseStorageEngineConfig)rowGroupScan.getEngineConfig(), e)
+            new HBaseRecordReader(config, e, null, true, context)
         );
       } catch (Exception e1) {
         throw new ExecutionSetupException(e1);

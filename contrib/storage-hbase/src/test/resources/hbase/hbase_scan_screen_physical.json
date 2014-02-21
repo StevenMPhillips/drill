@@ -13,7 +13,7 @@
     {
       tableName : "testTable"
     }],
-    storageengine:
+    storage:
     {
       "type":"hbase",
       "zookeeperQuorum" : "localhost",

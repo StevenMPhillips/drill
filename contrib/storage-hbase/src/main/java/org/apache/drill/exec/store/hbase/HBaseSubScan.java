@@ -23,16 +23,13 @@ import java.util.List;
 
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.FieldReference;
-import org.apache.drill.common.logical.StorageEngineConfig;
+import org.apache.drill.common.logical.StoragePluginConfig;
 import org.apache.drill.exec.physical.OperatorCost;
-import org.apache.drill.exec.physical.ReadEntry;
 import org.apache.drill.exec.physical.base.AbstractBase;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.physical.base.PhysicalVisitor;
 import org.apache.drill.exec.physical.base.Size;
 import org.apache.drill.exec.physical.base.SubScan;
-import org.apache.drill.exec.store.StorageEngineRegistry;
-import org.apache.hadoop.hbase.util.Bytes;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -41,41 +38,44 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
+import org.apache.drill.exec.store.StoragePluginRegistry;
 
 // Class containing information for reading a single HBase row group form HDFS
 @JsonTypeName("hbase-row-group-scan")
-public class HBaseRowGroupScan extends AbstractBase implements SubScan {
-  static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HBaseRowGroupScan.class);
+public class HBaseSubScan extends AbstractBase implements SubScan {
+  static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HBaseSubScan.class);
 
-  public final StorageEngineConfig engineConfig;
-  private final HBaseStorageEngine hbaseStorageEngine;
-  private final List<HBaseRowGroupReadEntry> rowGroupReadEntries;
+  @JsonProperty
+  public final StoragePluginConfig storage;
+  @JsonIgnore
+  private final HBaseStoragePlugin hbaseStoragePlugin;
+  private final List<HBaseSubScanReadEntry> rowGroupReadEntries;
   private final FieldReference ref;
 
   @JsonCreator
-  public HBaseRowGroupScan(@JacksonInject StorageEngineRegistry registry, @JsonProperty("engineConfig") StorageEngineConfig engineConfig,
-      @JsonProperty("rowGroupReadEntries") LinkedList<HBaseRowGroupReadEntry> rowGroupReadEntries,
-      @JsonProperty("ref") FieldReference ref) throws ExecutionSetupException {
-    hbaseStorageEngine = (HBaseStorageEngine) registry.getEngine(engineConfig);
+  public HBaseSubScan(@JacksonInject StoragePluginRegistry registry, @JsonProperty("storage") StoragePluginConfig storage,
+                      @JsonProperty("rowGroupReadEntries") LinkedList<HBaseSubScanReadEntry> rowGroupReadEntries,
+                      @JsonProperty("ref") FieldReference ref) throws ExecutionSetupException {
+    hbaseStoragePlugin = (HBaseStoragePlugin) registry.getEngine(storage);
     this.rowGroupReadEntries = rowGroupReadEntries;
-    this.engineConfig = engineConfig;
+    this.storage = storage;
     this.ref = ref;
   }
 
-  public HBaseRowGroupScan(HBaseStorageEngine engine, HBaseStorageEngineConfig config,
-                              List<HBaseRowGroupReadEntry> regionInfoList, FieldReference ref) {
-    hbaseStorageEngine = engine;
-    engineConfig = config;
+  public HBaseSubScan(HBaseStoragePlugin plugin, HBaseStoragePluginConfig config,
+                      List<HBaseSubScanReadEntry> regionInfoList, FieldReference ref) {
+    hbaseStoragePlugin = plugin;
+    storage = config;
     this.rowGroupReadEntries = regionInfoList;
     this.ref = ref;
   }
 
-  public List<HBaseRowGroupReadEntry> getRowGroupReadEntries() {
+  public List<HBaseSubScanReadEntry> getRowGroupReadEntries() {
     return rowGroupReadEntries;
   }
 
-  public StorageEngineConfig getEngineConfig() {
-    return engineConfig;
+  public StoragePluginConfig getStorageConfig() {
+    return storage;
   }
 
   @Override
@@ -99,8 +99,8 @@ public class HBaseRowGroupScan extends AbstractBase implements SubScan {
   }
 
   @JsonIgnore
-  public HBaseStorageEngine getStorageEngine(){
-    return hbaseStorageEngine;
+  public HBaseStoragePlugin getStorageEngine(){
+    return hbaseStoragePlugin;
   }
 
   @Override
@@ -111,7 +111,7 @@ public class HBaseRowGroupScan extends AbstractBase implements SubScan {
   @Override
   public PhysicalOperator getNewWithChildren(List<PhysicalOperator> children) {
     Preconditions.checkArgument(children.isEmpty());
-    return new HBaseRowGroupScan(hbaseStorageEngine, (HBaseStorageEngineConfig) engineConfig, rowGroupReadEntries, ref);
+    return new HBaseSubScan(hbaseStoragePlugin, (HBaseStoragePluginConfig) storage, rowGroupReadEntries, ref);
   }
 
   @Override
@@ -119,41 +119,30 @@ public class HBaseRowGroupScan extends AbstractBase implements SubScan {
     return Iterators.emptyIterator();
   }
 
-  public static class HBaseRowGroupReadEntry implements ReadEntry {
+  public static class HBaseSubScanReadEntry {
 
     private String tableName;
-    private byte[] startRow;
-    private byte[] endRow;
+    private String startRow;
+    private String endRow;
 
     @parquet.org.codehaus.jackson.annotate.JsonCreator
-    public HBaseRowGroupReadEntry(@JsonProperty("tableName") String tableName,
-        @JsonProperty("startRow") String startRow, @JsonProperty("endRow") String endRow) {
+    public HBaseSubScanReadEntry(@JsonProperty("tableName") String tableName,
+                                 @JsonProperty("startRow") String startRow, @JsonProperty("endRow") String endRow) {
       this.tableName = tableName;
-      this.startRow = Bytes.toBytesBinary(startRow);
-      this.endRow = Bytes.toBytesBinary(endRow);
+      this.startRow = startRow;
+      this.endRow = endRow;
     }
 
     public String getTableName() {
       return tableName;
     }
 
-    public byte[] getStartRow() {
+    public String getStartRow() {
       return startRow;
     }
 
-    public byte[] getEndRow() {
+    public String getEndRow() {
       return endRow;
-    }
-
-    @Override
-    public OperatorCost getCost() {
-      return new OperatorCost(1, 2, 1, 1);
-    }
-
-    @Override
-    public Size getSize() {
-      // TODO - these values are wrong, I cannot know these until after I read a file
-      return new Size(10, 10);
     }
   }
 

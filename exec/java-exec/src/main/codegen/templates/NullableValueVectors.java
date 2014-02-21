@@ -293,7 +293,28 @@ public final class ${className} extends BaseValueVector implements <#if type.maj
       bits.getMutator().set(index, 1);
       values.getMutator().set(index, value);
     }
-    
+
+    public boolean setSafe(int index, byte[] value, int start, int length) {
+      <#if type.major != "VarLen">
+      throw new UnsupportedOperationException();
+      <#else>
+      boolean b1 = bits.getMutator().setSafe(index, 1);
+      boolean b2 = values.getMutator().setSafe(index, value, start, length);
+      if(b1 && b2){
+        setCount++;
+        return true;
+      }else{
+        return false;
+      }
+      </#if>
+    }
+
+    public void setNull(int index) {
+      <#if type.major == "VarLen">
+      values.getMutator().set(index, new byte[]{});
+      </#if>
+    }
+
     public void setSkipNull(int index, ${minor.class}Holder holder){
       values.getMutator().set(index, holder);
     }

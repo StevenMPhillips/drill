@@ -38,6 +38,7 @@
         <include>org.apache.drill:drill-common:jar:rebuffed</include>
         <include>org.apache.drill.exec:drill-java-exec:jar:rebuffed</include>
         <include>org.apache.drill:storage-hive:jar</include>
+        <include>org.apache.drill.contrib:drill-storage-hbase</include>
       </includes>
       
       
@@ -52,6 +53,7 @@
       <excludes>
         <exclude>org.apache.drill</exclude>
         <exclude>org.apache.drill.exec</exclude>
+        <exclude>org.apache.drill.contrib</exclude>
         <exclude>org.hsqldb:hsqldb</exclude> <!-- exclude or sqlline has problems -->
         <exclude>hsqldb:hsqldb</exclude> <!-- exclude or sqlline has problems -->
       </excludes>

@@ -34,8 +34,7 @@ import org.apache.drill.exec.physical.base.AbstractGroupScan;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.physical.base.Size;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
-import org.apache.drill.exec.store.StorageEngineRegistry;
-import org.apache.drill.exec.store.hbase.HBaseRowGroupScan.HBaseRowGroupReadEntry;
+import org.apache.drill.exec.store.StoragePluginRegistry;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.ServerName;
@@ -57,22 +56,22 @@ import com.google.common.collect.ArrayListMultimap;
 public class HBaseGroupScan extends AbstractGroupScan {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HBaseGroupScan.class);
 
-  private ArrayListMultimap<Integer, HBaseRowGroupScan.HBaseRowGroupReadEntry> mappings;
+  private ArrayListMultimap<Integer, HBaseSubScan.HBaseSubScanReadEntry> mappings;
   private Stopwatch watch = new Stopwatch();
 
   public String getTableName() {
     return tableName;
   }
 
-  @JsonProperty("storageengine")
-  public HBaseStorageEngineConfig getEngineConfig() {
-    return this.engineConfig;
+  @JsonProperty("storage")
+  public HBaseStoragePluginConfig getStorageConfig() {
+    return this.storagePluginConfig;
   }
 
   private String tableName;
   private Collection<DrillbitEndpoint> availableEndpoints;
-  private HBaseStorageEngine storageEngine;
-  private HBaseStorageEngineConfig engineConfig;
+  private HBaseStoragePlugin storageEngine;
+  private HBaseStoragePluginConfig storagePluginConfig;
   private FileSystem fs;
   private final FieldReference ref;
   private List<EndpointAffinity> endpointAffinities;
@@ -81,23 +80,23 @@ public class HBaseGroupScan extends AbstractGroupScan {
 
   @JsonCreator
   public HBaseGroupScan(@JsonProperty("entries") List<HTableReadEntry> entries,
-                          @JsonProperty("storageengine") HBaseStorageEngineConfig storageEngineConfig,
-                          @JacksonInject StorageEngineRegistry engineRegistry,
+                          @JsonProperty("storage") HBaseStoragePluginConfig storageEngineConfig,
+                          @JacksonInject StoragePluginRegistry engineRegistry,
                           @JsonProperty("ref") FieldReference ref
                            )throws IOException, ExecutionSetupException {
     Preconditions.checkArgument(entries.size() == 1);
     engineRegistry.init(DrillConfig.create());
-    this.storageEngine = (HBaseStorageEngine) engineRegistry.getEngine(storageEngineConfig);
+    this.storageEngine = (HBaseStoragePlugin) engineRegistry.getEngine(storageEngineConfig);
     this.availableEndpoints = storageEngine.getContext().getBits();
-    this.engineConfig = storageEngineConfig;
+    this.storagePluginConfig = storageEngineConfig;
     this.tableName = entries.get(0).getTableName();
     this.ref = ref;
     getRegionInfos();
   }
 
-  public HBaseGroupScan(String tableName, HBaseStorageEngine storageEngine, FieldReference ref) throws IOException {
+  public HBaseGroupScan(String tableName, HBaseStoragePlugin storageEngine, FieldReference ref) throws IOException {
     this.storageEngine = storageEngine;
-    this.engineConfig = storageEngine.getEngineConfig();
+    this.storagePluginConfig = storageEngine.getEngineConfig();
     this.availableEndpoints = storageEngine.getContext().getBits();
     this.tableName = tableName;
     this.ref = ref;
@@ -105,7 +104,8 @@ public class HBaseGroupScan extends AbstractGroupScan {
   }
 
   protected void getRegionInfos() throws IOException {
-    HTable table = new HTable(engineConfig.getConfiguration(), tableName);
+    logger.debug("Getting region locations");
+    HTable table = new HTable(storagePluginConfig.conf, tableName);
     regionsMap = table.getRegionLocations();
     table.close();
   }
@@ -161,15 +161,16 @@ public class HBaseGroupScan extends AbstractGroupScan {
     mappings = ArrayListMultimap.create();
     int i = -1;
     for (HRegionInfo reiongInfo : regionsMap.keySet()) {
-      HBaseRowGroupReadEntry p = new HBaseRowGroupReadEntry(
+      logger.debug("creating read entry. start key: {} end key: {}", Bytes.toStringBinary(reiongInfo.getStartKey()), Bytes.toStringBinary(reiongInfo.getEndKey()));
+      HBaseSubScan.HBaseSubScanReadEntry p = new HBaseSubScan.HBaseSubScanReadEntry(
           tableName, Bytes.toStringBinary(reiongInfo.getStartKey()), Bytes.toStringBinary(reiongInfo.getEndKey()));
       mappings.put((++i % incomingEndpoints.size()), p);
     }
   }
 
   @Override
-  public HBaseRowGroupScan getSpecificScan(int minorFragmentId) {
-    return new HBaseRowGroupScan(storageEngine, engineConfig, mappings.get(minorFragmentId), ref);
+  public HBaseSubScan getSpecificScan(int minorFragmentId) {
+    return new HBaseSubScan(storageEngine, storagePluginConfig, mappings.get(minorFragmentId), ref);
   }
 
   public FieldReference getRef() {

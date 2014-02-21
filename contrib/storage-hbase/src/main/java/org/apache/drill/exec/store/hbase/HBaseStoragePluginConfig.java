@@ -17,22 +17,31 @@
  */
 package org.apache.drill.exec.store.hbase;
 
-import org.apache.drill.common.logical.StorageEngineConfigBase;
+import org.apache.drill.common.logical.StoragePluginConfigBase;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @JsonTypeName("hbase")
-public class HBaseStorageEngineConfig extends StorageEngineConfigBase {
+public class HBaseStoragePluginConfig extends StoragePluginConfigBase {
 
-  private Configuration conf;
+  @JsonIgnore
+  public Configuration conf;
+
+  @JsonProperty
+  public String zookeeperQuorum;
+  @JsonProperty
+  public int zookeeperPort;
 
   @JsonCreator
-  public HBaseStorageEngineConfig(@JsonProperty("zookeeperQuorum") String zookeeperQuorum,
-      @JsonProperty("zookeeperPort") int zookeeperPort) {
+  public HBaseStoragePluginConfig(@JsonProperty("zookeeperQuorum") String zookeeperQuorum,
+                                  @JsonProperty("zookeeperPort") int zookeeperPort) {
+    this.zookeeperQuorum = zookeeperQuorum;
+    this.zookeeperPort = zookeeperPort;
     conf = HBaseConfiguration.create();
     if (zookeeperQuorum != null && zookeeperQuorum.length() != 0) {
       conf.set("hbase.zookeeper.quorum", zookeeperQuorum);
@@ -40,16 +49,19 @@ public class HBaseStorageEngineConfig extends StorageEngineConfigBase {
     }
   }
 
-  public Configuration getConfiguration() {
+  /*
+  @JsonIgnore
+  public Configuration getConf() {
     return conf;
   }
+  */
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
 
-    HBaseStorageEngineConfig that = (HBaseStorageEngineConfig) o;
+    HBaseStoragePluginConfig that = (HBaseStoragePluginConfig) o;
 
     if (conf != null ? !conf.equals(that.conf) : that.conf != null) return false;
 

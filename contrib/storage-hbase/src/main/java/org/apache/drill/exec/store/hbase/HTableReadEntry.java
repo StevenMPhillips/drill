@@ -18,13 +18,12 @@
 package org.apache.drill.exec.store.hbase;
 
 import org.apache.drill.exec.physical.OperatorCost;
-import org.apache.drill.exec.physical.ReadEntry;
 import org.apache.drill.exec.physical.base.Size;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class HTableReadEntry implements ReadEntry {
+public class HTableReadEntry {
 
   protected String tableName;
 
@@ -36,16 +35,4 @@ public class HTableReadEntry implements ReadEntry {
   public HTableReadEntry(@JsonProperty("tableName") String tableName) {
     this.tableName = tableName;
   }
-
-  @Override
-  public OperatorCost getCost() {
-    return new OperatorCost(1, 2, 1, 1);
-  }
-
-  @Override
-  public Size getSize() {
-    // TODO - these values are wrong, I cannot know these until after I read a file
-    return new Size(10, 10);
-  }
-
 }

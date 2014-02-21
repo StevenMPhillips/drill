@@ -40,5 +40,6 @@ CP=$DRILL_HOME/jars/*:$CP
 CP=$DRILL_HOME/lib/*:$CP
 CP=$CP:$DRILL_CONF_DIR
 CP=$HADOOP_CLASSPATH:$CP
+CP=$HBASE_CLASSPATH:$CP
 
 exec $JAVA $DRILL_JAVA_OPTS -cp $CP org.apache.drill.exec.server.Drillbit

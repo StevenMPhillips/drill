@@ -45,13 +45,20 @@ import com.google.common.io.Files;
 public class HBaseTestsSuite {
   private static final Log LOG = LogFactory.getLog(TestTableInputFormat.class);
 
-  private static final Configuration conf = HBaseConfiguration.create();
+  private static Configuration conf;
 
-  private static final HBaseTestingUtility UTIL = new HBaseTestingUtility(conf);
+  private static HBaseTestingUtility UTIL;
 
   @BeforeClass
   public static void setUp() throws Exception {
+    if (conf == null) {
+      conf = HBaseConfiguration.create();
+    }
+    conf.set("hbase.zookeeper.property.clientPort", "2181");
     LOG.info("Starting HBase mini cluster.");
+    if (UTIL == null) {
+      UTIL = new HBaseTestingUtility(conf);
+    }
     UTIL.startMiniCluster();
     LOG.info("HBase mini cluster started.");
   }
