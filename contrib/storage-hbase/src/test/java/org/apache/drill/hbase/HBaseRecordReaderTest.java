@@ -125,10 +125,8 @@ public class HBaseRecordReaderTest extends PopUnitTestBase {
 
     HBaseSubScan.HBaseSubScanReadEntry e = new HBaseSubScan.HBaseSubScanReadEntry(tableName, "a", "z");
     List<String> columns = Lists.newArrayList();
-//    columns.add("f:c1");
-//    columns.add("f:c2");
-    Configuration conf = HBaseConfiguration.create();
-    HBaseRecordReader reader = new HBaseRecordReader(conf, e, columns, false, context);
+
+    HBaseRecordReader reader = new HBaseRecordReader(HBaseTestsSuite.getConf(), e, columns, false, context);
 
     VectorContainer container = new VectorContainer();
     MockMutator mutator = new MockMutator(container);

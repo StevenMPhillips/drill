@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.drill.common.config.DrillConfig;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.FieldReference;
+import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.physical.EndpointAffinity;
 import org.apache.drill.exec.physical.OperatorCost;
 import org.apache.drill.exec.physical.base.AbstractGroupScan;
@@ -59,13 +60,14 @@ public class HBaseGroupScan extends AbstractGroupScan {
   private ArrayListMultimap<Integer, HBaseSubScan.HBaseSubScanReadEntry> mappings;
   private Stopwatch watch = new Stopwatch();
 
-  public String getTableName() {
-    return tableName;
-  }
-
   @JsonProperty("storage")
   public HBaseStoragePluginConfig getStorageConfig() {
     return this.storagePluginConfig;
+  }
+
+  @JsonProperty
+  public List<SchemaPath> getColumns() {
+    return columns;
   }
 
   private String tableName;
@@ -75,12 +77,14 @@ public class HBaseGroupScan extends AbstractGroupScan {
   private FileSystem fs;
   private final FieldReference ref;
   private List<EndpointAffinity> endpointAffinities;
+  private List<SchemaPath> columns;
 
   private NavigableMap<HRegionInfo,ServerName> regionsMap;
 
   @JsonCreator
   public HBaseGroupScan(@JsonProperty("entries") List<HTableReadEntry> entries,
                           @JsonProperty("storage") HBaseStoragePluginConfig storageEngineConfig,
+                          @JsonProperty("columns") List<SchemaPath> columns,
                           @JacksonInject StoragePluginRegistry engineRegistry,
                           @JsonProperty("ref") FieldReference ref
                            )throws IOException, ExecutionSetupException {
@@ -94,12 +98,13 @@ public class HBaseGroupScan extends AbstractGroupScan {
     getRegionInfos();
   }
 
-  public HBaseGroupScan(String tableName, HBaseStoragePlugin storageEngine, FieldReference ref) throws IOException {
+  public HBaseGroupScan(String tableName, HBaseStoragePlugin storageEngine, FieldReference ref, List<SchemaPath> columns) throws IOException {
     this.storageEngine = storageEngine;
     this.storagePluginConfig = storageEngine.getEngineConfig();
     this.availableEndpoints = storageEngine.getContext().getBits();
     this.tableName = tableName;
     this.ref = ref;
+    this.columns = columns;
     getRegionInfos();
   }
 
@@ -121,18 +126,6 @@ public class HBaseGroupScan extends AbstractGroupScan {
     watch.start();
     if (this.endpointAffinities == null) {
       HashMap<DrillbitEndpoint, Float> affinities = new HashMap<>();
-//      for (RowGroupInfo entry : rowGroupInfos) {
-//        for (DrillbitEndpoint d : entry.getEndpointBytes().keySet()) {
-//          long bytes = entry.getEndpointBytes().get(d);
-//          float affinity = (float)bytes / (float)totalBytes;
-//          logger.debug("RowGroup: {} Endpoint: {} Bytes: {}", entry.getRowGroupIndex(), d.getAddress(), bytes);
-//          if (affinities.keySet().contains(d)) {
-//            affinities.put(d, affinities.get(d) + affinity);
-//          } else {
-//            affinities.put(d, affinity);
-//          }
-//        }
-//      }
       List<EndpointAffinity> affinityList = new LinkedList<>();
       for (DrillbitEndpoint d : affinities.keySet()) {
         logger.debug("Endpoint {} has affinity {}", d.getAddress(), affinities.get(d).floatValue());
@@ -164,6 +157,7 @@ public class HBaseGroupScan extends AbstractGroupScan {
       logger.debug("creating read entry. start key: {} end key: {}", Bytes.toStringBinary(reiongInfo.getStartKey()), Bytes.toStringBinary(reiongInfo.getEndKey()));
       HBaseSubScan.HBaseSubScanReadEntry p = new HBaseSubScan.HBaseSubScanReadEntry(
           tableName, Bytes.toStringBinary(reiongInfo.getStartKey()), Bytes.toStringBinary(reiongInfo.getEndKey()));
+      //TODO apply assignment based on affinity
       mappings.put((++i % incomingEndpoints.size()), p);
     }
   }

@@ -41,7 +41,7 @@ public class HBaseScanBatchCreator implements BatchCreator<HBaseSubScan>{
     for(HBaseSubScan.HBaseSubScanReadEntry e : subScan.getRowGroupReadEntries()){
       try {
         readers.add(
-            new HBaseRecordReader(config, e, null, true, context)
+            new HBaseRecordReader(config, e, null, context)
         );
       } catch (Exception e1) {
         throw new ExecutionSetupException(e1);

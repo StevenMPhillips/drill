@@ -52,12 +52,10 @@ public class HBaseRecordReader implements RecordReader {
   private static final String ROW_KEY = "row_key";
   private static final int TARGET_RECORD_COUNT = 4000;
 
-  private HBaseSubScan.HBaseSubScanReadEntry rowGroupReadEntry = null;
   private List<String> columns;
   private OutputMutator outputMutator;
   private Scan scan;
   private ResultScanner resultScanner;
-  private boolean includeRowKey;
   private FragmentContext context;
   private List<byte[]> sortedFamilies = Lists.newArrayList();
   private List<byte[]> sortedQualifiers = Lists.newArrayList();
@@ -66,11 +64,9 @@ public class HBaseRecordReader implements RecordReader {
   private boolean done;
   private VarBinaryVector rowKeyVector;
 
-  public HBaseRecordReader(Configuration conf, HBaseSubScan.HBaseSubScanReadEntry e, List<String> columns, boolean includeRowKey, FragmentContext context) {
-    this.rowGroupReadEntry = e;
+  public HBaseRecordReader(Configuration conf, HBaseSubScan.HBaseSubScanReadEntry e, List<String> columns, FragmentContext context) {
     this.columns = columns;
     this.scan = new Scan(Bytes.toBytesBinary(e.getStartRow()), Bytes.toBytesBinary(e.getEndRow()));
-    this.includeRowKey = includeRowKey;
     this.context = context;
     byte[] empty = {};
     if (columns != null && columns.size() != 0) {
@@ -121,12 +117,10 @@ public class HBaseRecordReader implements RecordReader {
       try {
         if (column.equals(ROW_KEY)) {
           MaterializedField field = MaterializedField.create(new SchemaPath(column, ExpressionPosition.UNKNOWN), Types.required(TypeProtos.MinorType.VARBINARY));
-          logger.debug("Adding row key column");
           rowKeyVector = new VarBinaryVector(field, context.getAllocator());
           output.addField(rowKeyVector);
         } else {
           MaterializedField field = MaterializedField.create(new SchemaPath(column, ExpressionPosition.UNKNOWN), Types.optional(TypeProtos.MinorType.VARBINARY));
-          logger.debug("Adding column {}", column);
           NullableVarBinaryVector v = new NullableVarBinaryVector(field, context.getAllocator());
           output.addField(v);
           vvMap.put(column, v);
@@ -193,10 +187,6 @@ public class HBaseRecordReader implements RecordReader {
           return count;
         }
       }
-      int offset = result.getBytes().getOffset();
-//      Iterator<byte[]> families = sortedFamilies.iterator();
-//      Iterator<byte[]> qualifiers = sortedQualifiers.iterator();
-//      Iterator<NullableVarBinaryVector> vectors = sortedColumns.iterator();
       int sortedListCount = 0;
       for (KeyValue kv : kvs) {
         int familyOffset = kv.getFamilyOffset();
@@ -206,7 +196,6 @@ public class HBaseRecordReader implements RecordReader {
         NullableVarBinaryVector v;
 
         if (sortedListCount == sortedColumns.size()) {
-          logger.debug("Adding new vector, sortedListCount {}", sortedListCount);
           addNewVector(Arrays.copyOfRange(bytes, familyOffset, familyOffset + familyLength),
                   Arrays.copyOfRange(bytes, qualifierOffset, qualifierOffset + qualifierLength), sortedListCount, count);
           v = sortedColumns.get(sortedListCount);
@@ -225,7 +214,6 @@ public class HBaseRecordReader implements RecordReader {
               sortedListCount++;
               v.getMutator().setNull(count);
               if (sortedListCount >= sortedColumns.size()) {
-                logger.debug("Adding new vector, sortedListCount {}", sortedListCount);
                 addNewVector(Arrays.copyOfRange(bytes, familyOffset, familyOffset + familyLength),
                         Arrays.copyOfRange(bytes, qualifierOffset, qualifierOffset + qualifierLength), sortedListCount, count);
                 v = sortedColumns.get(sortedListCount);
@@ -287,7 +275,6 @@ public class HBaseRecordReader implements RecordReader {
   }
 
   private void setOutputValueCount(int count) {
-    logger.debug("Setting valueCount to {}", count);
     for (ValueVector vv : sortedColumns) {
       vv.getMutator().setValueCount(count);
     }

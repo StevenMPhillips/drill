@@ -26,7 +26,7 @@
 
   <artifactId>drill-storage-hbase</artifactId>
 
-  <name>contrib/hbase-storage-engine</name>
+  <name>contrib/hbase-storage-plugin</name>
 
   <dependencies>
     <dependency>
