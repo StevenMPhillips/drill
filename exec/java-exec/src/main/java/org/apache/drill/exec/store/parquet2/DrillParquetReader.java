@@ -233,11 +233,11 @@ public class DrillParquetReader implements RecordReader {
         }
         count++;
       } else {
-        for (ColumnReader reader : filterColumnReaders) {
-          reader.consume();
-        }
         for (ColumnReader reader : nonFilterColumnReaders) {
           reader.skip();
+        }
+        for (ColumnReader reader : columnReaders) {
+          reader.consume();
         }
       }
       for (DrillPrimitiveConverter converter : converters) {

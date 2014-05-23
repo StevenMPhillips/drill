@@ -25,6 +25,6 @@ import javax.inject.Named;
 
 public abstract class FilterTemplate implements  ParquetFilter {
 
-  public abstract void doSetup(@Named("context") FragmentContext context, @Named("incoming") VectorAccessible incoming, @Named("outgoing") VectorAccessible outgoing);
+  public abstract void doSetup(@Named("context") FragmentContext context, @Named("incoming") VectorAccessible incoming);
   public abstract boolean doEval(@Named("inIndex") int inIndex, @Named("outIndex") int outIndex);
 }

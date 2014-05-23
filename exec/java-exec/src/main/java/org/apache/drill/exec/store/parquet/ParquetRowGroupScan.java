@@ -75,6 +75,7 @@ public class ParquetRowGroupScan extends AbstractBase implements SubScan {
     this.formatConfig = formatPlugin.getConfig();
     this.columns = columns;
     this.selectionRoot = selectionRoot;
+    this.filter = filter;
   }
 
   public ParquetRowGroupScan( //

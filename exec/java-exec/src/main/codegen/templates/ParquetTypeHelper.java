@@ -204,37 +204,31 @@ public class ParquetTypeHelper {
         @Override
         public void addInt(int value) {
           success = vector.getMutator().setSafe(index, value);
-          if (success) index++;
         }
         <#elseif minor.class == "BigInt">
         @Override
         public void addLong(long value) {
       success = vector.getMutator().setSafe(index, value);
-      if (success) index++;
         }
         <#elseif minor.class == "Float4">
         @Override
         public void addFloat(float value) {
       success = vector.getMutator().setSafe(index, value);
-      if (success) index++;
         }
         <#elseif minor.class == "Float8">
         @Override
         public void addDouble(double value) {
       success = vector.getMutator().setSafe(index, value);
-      if (success) index++;
         }
         <#elseif minor.class == "VarChar">
         @Override
         public void addBinary(Binary value) {
       success = vector.getMutator().setSafe(index, value.getBytes());
-      if (success) index++;
         }
         <#elseif minor.class == "VarBinary">
         @Override
         public void addBinary(Binary value) {
       success = vector.getMutator().setSafe(index, value.getBytes());
-      if (success) index++;
         }
         </#if>
 
@@ -268,37 +262,31 @@ public class ParquetTypeHelper {
         @Override
         public void addInt(int value) {
       success = vector.getMutator().setSafe(index, value);
-      if (success) index++;
         }
         <#elseif minor.class == "BigInt">
         @Override
         public void addLong(long value) {
       success = vector.getMutator().setSafe(index, value);
-      if (success) index++;
         }
         <#elseif minor.class == "Float4">
         @Override
         public void addFloat(float value) {
       success = vector.getMutator().setSafe(index, value);
-      if (success) index++;
         }
         <#elseif minor.class == "Float8">
         @Override
         public void addDouble(double value) {
       success = vector.getMutator().setSafe(index, value);
-      if (success) index++;
         }
         <#elseif minor.class == "VarChar">
         @Override
         public void addBinary(Binary value) {
       success = vector.getMutator().setSafe(index, value.getBytes(), 0, value.length());
-      if (success) index++;
         }
         <#elseif minor.class == "VarBinary">
         @Override
         public void addBinary(Binary value) {
       success = vector.getMutator().setSafe(index, value.getBytes(), 0, value.length());
-      if (success) index++;
         }
         </#if>
 
