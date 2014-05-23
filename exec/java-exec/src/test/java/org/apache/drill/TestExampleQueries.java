@@ -42,6 +42,16 @@ public class TestExampleQueries extends BaseTestQuery{
 //    test("select l_orderkey, cast(l_returnflag as VARCHAR(100)), cast(l_linestatus as varchar(100)), cast(l_shipdate as varchar(100)) from lineitem_null_dict where l_orderkey > 0 limit 100");
   }
 
+  @Test
+  public void testP() throws Exception {
+//    testPhysicalFromFile("plan.json");
+//    test("alter system set `store.parquet.use_new_reader` = false");
+//    test("select * from dfs.`/Users/sphillips/nation.parquet` where n_regionkey = 0");
+    test("use dfs.tmp");
+    test("alter system set `store.parquet.use_new_reader` = false");
+    test("select sum(l_extendedprice * l_discount) as revenue from lineitem where l_shipdate between '1997-01-01' and '1998-01-01' and l_quantity < 24");
+  }
+
   @Test // see DRILL-553
   public void testQueryWithNullValues() throws Exception {
     test("select count(*) from cp.`customer.json` limit 1");

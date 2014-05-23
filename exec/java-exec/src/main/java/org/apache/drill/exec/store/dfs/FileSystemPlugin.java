@@ -18,10 +18,9 @@
 package org.apache.drill.exec.store.dfs;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import com.google.common.collect.ImmutableSet;
 import net.hydromatic.optiq.SchemaPlus;
 
 import org.apache.drill.common.JSONOptions;
@@ -35,6 +34,7 @@ import org.apache.drill.exec.server.DrillbitContext;
 import org.apache.drill.exec.store.AbstractStoragePlugin;
 import org.apache.drill.exec.store.ClassPathFileSystem;
 import org.apache.drill.exec.store.LocalSyncableFileSystem;
+import org.apache.drill.exec.store.StoragePluginOptimizerRule;
 import org.apache.drill.exec.store.dfs.shim.DrillFileSystem;
 import org.apache.drill.exec.store.dfs.shim.FileSystemCreator;
 import org.apache.hadoop.conf.Configuration;
@@ -130,6 +130,18 @@ public class FileSystemPlugin extends AbstractStoragePlugin{
   @Override
   public void registerSchemas(UserSession session, SchemaPlus parent) {
     schemaFactory.registerSchemas(session, parent);
+  }
+
+  @Override
+  public Set<StoragePluginOptimizerRule> getOptimizerRules() {
+    Set<StoragePluginOptimizerRule> rules = new HashSet();
+    for (FormatPlugin plugin : formatPluginsByConfig.values()) {
+      rules.addAll(plugin.getOptimizerRules());
+    }
+    for (FormatPlugin plugin : formatsByName.values()) {
+      rules.addAll(plugin.getOptimizerRules());
+    }
+    return rules;
   }
 
   public FormatPlugin getFormatPlugin(String name){

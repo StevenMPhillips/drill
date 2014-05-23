@@ -92,6 +92,8 @@ public class ParquetGroupScan extends AbstractGroupScan {
   private String selectionRoot;
   private LogicalExpression filter;
 
+  private boolean supportFilterPushdown;
+
   private List<SchemaPath> columns;
 
   /*
@@ -106,6 +108,18 @@ public class ParquetGroupScan extends AbstractGroupScan {
 
   public LogicalExpression getFilter() {
     return filter;
+  }
+
+  public void setSupportFilterPushdown(boolean supportFilterPushdown) {
+    this.supportFilterPushdown = supportFilterPushdown;
+  }
+
+  public boolean isSupportFilterPushdown() {
+    return supportFilterPushdown;
+  }
+
+  public void setFilter(LogicalExpression filter) {
+    this.filter = filter;
   }
 
   public List<ReadEntryWithPath> getEntries() {
@@ -187,6 +201,8 @@ public class ParquetGroupScan extends AbstractGroupScan {
     this.rowGroupInfos = that.rowGroupInfos;
     this.selectionRoot = that.selectionRoot;
     this.columnValueCounts = that.columnValueCounts;
+    this.filter = that.filter;
+    this.supportFilterPushdown = that.supportFilterPushdown;
   }
 
   private void readFooterFromEntries()  throws IOException {
@@ -394,8 +410,7 @@ public class ParquetGroupScan extends AbstractGroupScan {
   @JsonIgnore
   public PhysicalOperator getNewWithChildren(List<PhysicalOperator> children) {
     Preconditions.checkArgument(children.isEmpty());
-    // TODO return copy of self
-    return this;
+    return new ParquetGroupScan(this);
   }
 
   @Override
@@ -414,6 +429,12 @@ public class ParquetGroupScan extends AbstractGroupScan {
   public GroupScan clone(List<SchemaPath> columns) {
     ParquetGroupScan newScan = new ParquetGroupScan(this);
     newScan.columns = columns;
+    return newScan;
+  }
+
+  public ParquetGroupScan clone(LogicalExpression filter) {
+    ParquetGroupScan newScan = new ParquetGroupScan(this);
+    newScan.filter = filter;
     return newScan;
   }
 

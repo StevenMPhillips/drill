@@ -1,0 +1,74 @@
+{
+  "head" : {
+    "version" : 1,
+    "generator" : {
+      "type" : "ExplainHandler",
+      "info" : ""
+    },
+    "type" : "APACHE_DRILL_PHYSICAL",
+    "options" : [ ],
+    "resultMode" : "EXEC"
+  },
+  "graph" : [ {
+    "pop" : "parquet-scan",
+    "@id" : 1,
+    "entries" : [ {
+      "path" : "file:/Users/sphillips/nation.parquet"
+    } ],
+    "storage" : {
+      "type" : "file",
+      "connection" : "file:///",
+      "workspaces" : {
+        "root" : {
+          "location" : "/",
+          "writable" : false,
+          "storageformat" : null
+        },
+        "tmp" : {
+          "location" : "/tmp/drilltest",
+          "writable" : true,
+          "storageformat" : "csv"
+        },
+        "tpc-h" : {
+          "location" : "/Users/sphillips/tpc-h-0.01-parquet/",
+          "writable" : false,
+          "storageformat" : null
+        }
+      },
+      "formats" : {
+        "psv" : {
+          "type" : "text",
+          "extensions" : [ "tbl" ],
+          "delimiter" : "|"
+        },
+        "csv" : {
+          "type" : "text",
+          "extensions" : [ "csv" ],
+          "delimiter" : ","
+        },
+        "tsv" : {
+          "type" : "text",
+          "extensions" : [ "tsv" ],
+          "delimiter" : "\t"
+        },
+        "parquet" : {
+          "type" : "parquet"
+        },
+        "json" : {
+          "type" : "json"
+        }
+      }
+    },
+    "format" : {
+      "type" : "parquet"
+    },
+    "selectionRoot" : "/Users/sphillips/nation.parquet",
+    "filter" : "equal(`n_regionkey`, 0)"
+  }, {
+    "pop" : "screen",
+    "@id" : 2,
+    "child" : 1,
+    "initialAllocation" : 1000000,
+    "maxAllocation" : 10000000000
+  } ]
+}

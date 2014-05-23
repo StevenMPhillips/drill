@@ -40,6 +40,7 @@ import org.apache.drill.exec.store.StoragePluginOptimizerRule;
 import org.apache.drill.exec.store.dfs.*;
 import org.apache.drill.exec.store.dfs.shim.DrillFileSystem;
 import org.apache.drill.exec.store.mock.MockStorageEngine;
+import org.apache.drill.exec.store.parquet2.ParquetPushFilterIntoScan;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -103,7 +104,7 @@ public class ParquetFormatPlugin implements FormatPlugin{
   
   @Override
   public Set<StoragePluginOptimizerRule> getOptimizerRules() {
-    return ImmutableSet.of();
+    return ImmutableSet.of(ParquetPushFilterIntoScan.INSTANCE);
   }
 
   @Override
@@ -141,12 +142,18 @@ public class ParquetFormatPlugin implements FormatPlugin{
 
   @Override
   public ParquetGroupScan getGroupScan(FileSelection selection) throws IOException {
-    return new ParquetGroupScan(selection.getFileStatusList(fs), this, selection.selectionRoot, null);
+    ParquetGroupScan scan = new ParquetGroupScan(selection.getFileStatusList(fs), this, selection.selectionRoot, null, null);
+    boolean supportFilterPushdown = context.getOptionManager().getOption(ExecConstants.PARQUET_NEW_RECORD_READER).bool_val;
+    scan.setSupportFilterPushdown(supportFilterPushdown);
+    return scan;
   }
 
   @Override
   public ParquetGroupScan getGroupScan(FileSelection selection, List<SchemaPath> columns) throws IOException {
-    return new ParquetGroupScan(selection.getFileStatusList(fs), this, selection.selectionRoot, columns);
+    ParquetGroupScan scan = new ParquetGroupScan(selection.getFileStatusList(fs), this, selection.selectionRoot, columns, null);
+    boolean supportFilterPushdown = context.getOptionManager().getOption(ExecConstants.PARQUET_NEW_RECORD_READER).bool_val;
+    scan.setSupportFilterPushdown(supportFilterPushdown);
+    return scan;
   }
 
   @Override
