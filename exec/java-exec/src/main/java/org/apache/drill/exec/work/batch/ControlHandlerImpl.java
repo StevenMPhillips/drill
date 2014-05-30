@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 
 import org.apache.drill.common.exceptions.ExecutionSetupException;
+import org.apache.drill.exec.cache.ProtobufDrillSerializable.CQueryProfile;
 import org.apache.drill.exec.exception.FragmentSetupException;
 import org.apache.drill.exec.expr.fn.FunctionImplementationRegistry;
 import org.apache.drill.exec.memory.OutOfMemoryException;
@@ -35,6 +36,9 @@ import org.apache.drill.exec.proto.BitControl.PlanFragment;
 import org.apache.drill.exec.proto.BitControl.RpcType;
 import org.apache.drill.exec.proto.ExecProtos.FragmentHandle;
 import org.apache.drill.exec.proto.GeneralRPCProtos.Ack;
+import org.apache.drill.exec.proto.UserBitShared.QueryId;
+import org.apache.drill.exec.proto.UserBitShared.QueryProfile;
+import org.apache.drill.exec.proto.helper.QueryIdHelper;
 import org.apache.drill.exec.rpc.Acks;
 import org.apache.drill.exec.rpc.Response;
 import org.apache.drill.exec.rpc.RpcConstants;
@@ -43,6 +47,8 @@ import org.apache.drill.exec.rpc.control.ControlConnection;
 import org.apache.drill.exec.rpc.control.ControlTunnel;
 import org.apache.drill.exec.rpc.data.DataRpcConfig;
 import org.apache.drill.exec.work.WorkManager.WorkerBee;
+import org.apache.drill.exec.work.foreman.Foreman;
+import org.apache.drill.exec.work.foreman.QueryStatus;
 import org.apache.drill.exec.work.fragment.FragmentExecutor;
 import org.apache.drill.exec.work.fragment.FragmentManager;
 import org.apache.drill.exec.work.fragment.NonRootStatusReporter;
@@ -84,6 +90,17 @@ public class ControlHandlerImpl implements ControlMessageHandler {
         logger.error("Failure while attempting to start remote fragment.", fragment);
         return new Response(RpcType.ACK, Acks.FAIL);
       }
+
+    case RpcType.REQ_QUERY_STATUS_VALUE:
+      QueryId queryId = get(pBody, QueryId.PARSER);
+      Foreman foreman = bee.getForemanForQueryId(queryId);
+      QueryProfile profile;
+      if (foreman == null) {
+        profile = bee.getContext().getCache().getNamedMap("sys.queries", CQueryProfile.class).get(QueryIdHelper.getQueryId(queryId)).getObj();
+      } else {
+        profile = bee.getForemanForQueryId(queryId).getQueryStatus().getAsProfile(true);
+      }
+      return new Response(RpcType.RESP_QUERY_STATUS, profile);
 
     default:
       throw new RpcException("Not yet supported.");

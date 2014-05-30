@@ -24,30 +24,38 @@ import org.apache.drill.exec.proto.BitControl.FragmentStatus;
 import org.apache.drill.exec.proto.UserBitShared.MajorFragmentProfile;
 import org.apache.drill.exec.proto.UserBitShared.QueryId;
 import org.apache.drill.exec.proto.UserBitShared.QueryProfile;
+import org.apache.drill.exec.proto.UserBitShared.QueryResult.QueryState;
 import org.apache.drill.exec.proto.UserProtos.RunQuery;
 import org.apache.drill.exec.proto.helper.QueryIdHelper;
 
 import com.carrotsearch.hppc.IntObjectOpenHashMap;
+import org.apache.drill.exec.work.foreman.Foreman.ForemanManagerListener;
 
 public class QueryStatus {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(QueryStatus.class);
 
 
-  // doesn't need to be thread safe as map is generated in a single thread and then accessed by multiple threads for reads only.
-  private IntObjectOpenHashMap<IntObjectOpenHashMap<FragmentData>> map = new IntObjectOpenHashMap<IntObjectOpenHashMap<FragmentData>>();
+  // doesn't need to be thread safe as fragmentDataMap is generated in a single thread and then accessed by multiple threads for reads only.
+  private IntObjectOpenHashMap<IntObjectOpenHashMap<FragmentData>> fragmentDataMap = new IntObjectOpenHashMap<IntObjectOpenHashMap<FragmentData>>();
 
   private final String queryId;
   private final QueryId id;
   private RunQuery query;
   private String planText;
+  private Foreman foreman;
+  private long startTime;
+  private long endTime;
+  private int totalFragments;
+  private int finishedFragments = 0;
 
   private final DistributedMap<CQueryProfile> profileCache;
 
-  public QueryStatus(RunQuery query, QueryId id, DistributedCache cache){
+  public QueryStatus(RunQuery query, QueryId id, DistributedCache cache, Foreman foreman){
     this.id = id;
     this.query = query;
     this.queryId = QueryIdHelper.getQueryId(id);
     this.profileCache = cache.getNamedMap("sys.queries", CQueryProfile.class);
+    this.foreman = foreman;
   }
 
   public void setPlanText(String planText){
@@ -55,31 +63,53 @@ public class QueryStatus {
     updateCache();
 
   }
+
+  public void setStartTime(long startTime) {
+    this.startTime = startTime;
+  }
+
+  public void setEndTime(long endTime) {
+    this.endTime = endTime;
+  }
+
+  public void setTotalFragments(int totalFragments) {
+    this.totalFragments = totalFragments;
+  }
+
+  public void incrementFinishedFragments() {
+    finishedFragments++;
+    assert finishedFragments <= totalFragments;
+  }
+
   void add(FragmentData data){
     int majorFragmentId = data.getHandle().getMajorFragmentId();
     int minorFragmentId = data.getHandle().getMinorFragmentId();
-    IntObjectOpenHashMap<FragmentData> minorMap = map.get(majorFragmentId);
+    IntObjectOpenHashMap<FragmentData> minorMap = fragmentDataMap.get(majorFragmentId);
     if(minorMap == null){
       minorMap = new IntObjectOpenHashMap<FragmentData>();
-      map.put(majorFragmentId, minorMap);
+      fragmentDataMap.put(majorFragmentId, minorMap);
     }
 
     minorMap.put(minorFragmentId, data);
   }
 
-  void update(FragmentStatus status){
+  void update(FragmentStatus status, boolean updateCache){
     int majorFragmentId = status.getHandle().getMajorFragmentId();
     int minorFragmentId = status.getHandle().getMinorFragmentId();
-    map.get(majorFragmentId).get(minorFragmentId).setStatus(status);
-    updateCache();
+    fragmentDataMap.get(majorFragmentId).get(minorFragmentId).setStatus(status);
+    if (updateCache) {
+      updateCache();
+    }
   }
 
-  private void updateCache(){
-    profileCache.put(queryId, new CQueryProfile(getAsProfile()));
+  public void updateCache(){
+    QueryState queryState = foreman.getQueryState();
+    boolean fullStatus = queryState == QueryState.COMPLETED || queryState == QueryState.FAILED;
+    profileCache.put(queryId, new CQueryProfile(getAsProfile(fullStatus)));
   }
 
   public String toString(){
-    return map.toString();
+    return fragmentDataMap.toString();
   }
 
   public static class FragmentId{
@@ -132,29 +162,37 @@ public class QueryStatus {
     }
   }
 
-  public QueryProfile getAsProfile(){
+  public QueryProfile getAsProfile(boolean fullStatus){
     QueryProfile.Builder b = QueryProfile.newBuilder();
     b.setQuery(query.getPlan());
     b.setType(query.getType());
     if(planText != null) b.setPlan(planText);
     b.setId(id);
-    for(int i = 0; i < map.allocated.length; i++){
-      if(map.allocated[i]){
-        int majorFragmentId = map.keys[i];
-        IntObjectOpenHashMap<FragmentData> minorMap = (IntObjectOpenHashMap<FragmentData>) ((Object[]) map.values)[i];
+    if (fullStatus) {
+      for(int i = 0; i < fragmentDataMap.allocated.length; i++){
+        if(fragmentDataMap.allocated[i]){
+          int majorFragmentId = fragmentDataMap.keys[i];
+          IntObjectOpenHashMap<FragmentData> minorMap = (IntObjectOpenHashMap<FragmentData>) ((Object[]) fragmentDataMap.values)[i];
 
-        MajorFragmentProfile.Builder fb = MajorFragmentProfile.newBuilder();
-        fb.setMajorFragmentId(majorFragmentId);
-        for(int v = 0; v < minorMap.allocated.length; v++){
-          if(minorMap.allocated[v]){
-            FragmentData data = (FragmentData) ((Object[]) minorMap.values)[v];
-            fb.addMinorFragmentProfile(data.getStatus().getProfile());
+          MajorFragmentProfile.Builder fb = MajorFragmentProfile.newBuilder();
+          fb.setMajorFragmentId(majorFragmentId);
+          for(int v = 0; v < minorMap.allocated.length; v++){
+            if(minorMap.allocated[v]){
+              FragmentData data = (FragmentData) ((Object[]) minorMap.values)[v];
+              fb.addMinorFragmentProfile(data.getStatus().getProfile());
+            }
           }
+          b.addFragmentProfile(fb);
         }
-        b.addFragmentProfile(fb);
       }
     }
 
+    b.setState(foreman.getQueryState());
+    b.setForeman(foreman.getContext().getCurrentEndpoint());
+    b.setStart(startTime);
+    b.setEnd(endTime);
+    b.setTotalFragments(totalFragments);
+    b.setFinishedFragments(finishedFragments);
     return b.build();
   }
 }

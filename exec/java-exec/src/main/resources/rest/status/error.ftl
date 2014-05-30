@@ -10,11 +10,12 @@
   language governing permissions and limitations under the License. -->
 
 <html>
-Welcome to Drill! 
-<br />
-<#list model as query>
+<a href="/queries">back</a><br />
 
-<a href="/query/${query.getQueryId()}">${query}</a><br />
+<pre>
+${model.printStackTrace()}
+</pre>
 
-</#list>
-</html>
+
+
+<html>
