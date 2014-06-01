@@ -6,7 +6,7 @@
       workspaces: {
         "home" : {
           location: "/",
-          writable: false
+          writable: true
         },
         "tmp" : {
           location: "/tmp/drilltest",

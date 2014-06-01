@@ -34,7 +34,7 @@ import com.google.common.collect.Multimap;
 public class Accountor {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Accountor.class);
 
-  private static final boolean ENABLE_ACCOUNTING = AssertionUtil.isAssertionsEnabled();
+  private static final boolean ENABLE_ACCOUNTING = AssertionUtil.isAssertionsEnabled() && false;
   private final AtomicRemainder remainder;
   private final long total;
   private ConcurrentMap<ByteBuf, DebugStackTrace> buffers = Maps.newConcurrentMap();
@@ -87,7 +87,11 @@ public class Accountor {
     if(additional > 0) remainder.forceGet(additional);
 
     if (ENABLE_ACCOUNTING) {
-      buffers.put(buf, new DebugStackTrace(buf.capacity(), Thread.currentThread().getStackTrace()));
+      DebugStackTrace st = new DebugStackTrace(buf.capacity(), Thread.currentThread().getStackTrace());
+      StringBuffer buffer = new StringBuffer();
+      st.addToString(buffer);
+      logger.debug("getting stack trace: {}", buffer.toString());
+      buffers.put(buf, st);
     }
   }
 

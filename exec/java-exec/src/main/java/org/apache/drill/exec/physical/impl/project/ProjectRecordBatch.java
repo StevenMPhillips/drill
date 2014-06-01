@@ -111,6 +111,7 @@ public class ProjectRecordBatch extends AbstractSingleRecordBatch<Project>{
       }
       this.recordCount = outputRecords;
     }
+    logger.debug("Project record count {}", recordCount);
   }
 
   private void handleRemainder() {
@@ -139,6 +140,7 @@ public class ProjectRecordBatch extends AbstractSingleRecordBatch<Project>{
       }
       this.recordCount = remainingRecordCount;
     }
+    logger.debug("Project record count {}", recordCount);
   }
 
   /** hack to make ref and full work together... need to figure out if this is still necessary. **/
