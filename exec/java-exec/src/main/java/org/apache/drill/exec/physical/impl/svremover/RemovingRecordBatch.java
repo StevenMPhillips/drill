@@ -95,6 +95,13 @@ public class RemovingRecordBatch extends AbstractSingleRecordBatch<SelectionVect
   protected void doWork() {
     recordCount = incoming.getRecordCount();
     int copiedRecords = copier.copyRecords(0, recordCount);
+    StringBuilder builder = new StringBuilder();
+    for (VectorWrapper w : container) {
+      builder.append(w.getField().getPath());
+      builder.append(" ");
+      builder.append(w.getValueVector().getValueCapacity());
+    }
+    logger.debug(builder.toString());
     if (copiedRecords < recordCount) {
       for(VectorWrapper<?> v : container){
         ValueVector.Mutator m = v.getValueVector().getMutator();
@@ -129,6 +136,13 @@ public class RemovingRecordBatch extends AbstractSingleRecordBatch<SelectionVect
     int remainingRecordCount = incoming.getRecordCount() - remainderIndex;
     int copiedRecords = copier.copyRecords(remainderIndex, remainingRecordCount);
 
+    StringBuilder builder = new StringBuilder();
+    for (VectorWrapper w : container) {
+      builder.append(w.getField().getPath());
+      builder.append(" ");
+      builder.append(w.getValueVector().getValueCapacity());
+    }
+    logger.debug(builder.toString());
     if (copiedRecords < remainingRecordCount) {
       for(VectorWrapper<?> v : container){
         ValueVector.Mutator m = v.getValueVector().getMutator();

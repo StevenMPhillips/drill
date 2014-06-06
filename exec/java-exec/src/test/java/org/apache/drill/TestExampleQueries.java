@@ -23,6 +23,12 @@ import org.junit.Test;
 public class TestExampleQueries extends BaseTestQuery{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
+  @Test
+  public void testQ() throws Exception {
+    test("use dfs.tpch");
+    testSqlFromFile("q.sql");
+  }
+
   @Test // see DRILL-553
   public void testQueryWithNullValues() throws Exception {
     test("select count(*) from cp.`customer.json` limit 1");

@@ -12,6 +12,10 @@
           location: "/tmp/drilltest",
           writable: true,
           storageformat: "csv"
+        },
+        "tpch" : {
+          location: "/Users/sphillips/tpch_SF1/",
+          writable: false
         }
       },
       formats: {
