@@ -18,6 +18,8 @@
 package org.apache.drill.exec.physical.impl;
 
 import org.apache.drill.exec.ops.OperatorStats;
+import org.apache.drill.exec.record.RecordBatch;
+import org.apache.drill.exec.record.RecordBatch.IterOutcome;
 
 public abstract class BaseRootExec implements RootExec {
 
@@ -33,6 +35,22 @@ public abstract class BaseRootExec implements RootExec {
     } finally {
       stats.stopProcessing();
     }
+  }
+
+  public final IterOutcome next(RecordBatch b){
+    stats.stopProcessing();
+    IterOutcome next = b.next();
+    stats.startProcessing();
+
+    switch(next){
+      case OK_NEW_SCHEMA:
+        stats.batchReceived(0, b.getRecordCount(), true);
+        break;
+      case OK:
+        stats.batchReceived(0, b.getRecordCount(), false);
+        break;
+    }
+    return next;
   }
 
   public void setStats(OperatorStats stats) {

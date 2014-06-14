@@ -91,7 +91,8 @@ public class PartitionSenderRootExec extends BaseRootExec {
       return false;
     }
 
-    RecordBatch.IterOutcome out = incoming.next();
+    RecordBatch.IterOutcome out = next(incoming);
+
     logger.debug("Partitioner.next(): got next record batch with status {}", out);
     switch(out){
       case NONE:
@@ -123,7 +124,6 @@ public class PartitionSenderRootExec extends BaseRootExec {
             partitioner.flushOutgoingBatches(false, true);
             partitioner.clear();
           }
-          // update DeprecatedOutgoingRecordBatch's schema and generate partitioning code
           createPartitioner();
         } catch (IOException e) {
           incoming.kill();
