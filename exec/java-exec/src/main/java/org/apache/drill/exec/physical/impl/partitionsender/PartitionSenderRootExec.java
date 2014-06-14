@@ -57,28 +57,22 @@ public class PartitionSenderRootExec extends BaseRootExec {
   private HashPartitionSender operator;
   private Partitioner partitioner;
   private FragmentContext context;
-  private OperatorContext oContext;
   private boolean ok = true;
   private final SendingAccountor sendCount = new SendingAccountor();
   private final int outGoingBatchCount;
   private final HashPartitionSender popConfig;
   private final StatusHandler statusHandler;
-  private final SenderStats stats;
 
   public PartitionSenderRootExec(FragmentContext context,
                                  RecordBatch incoming,
                                  HashPartitionSender operator) throws OutOfMemoryException {
-
+    super(context, operator);
     this.incoming = incoming;
     this.operator = operator;
     this.context = context;
     this.outGoingBatchCount = operator.getDestinations().size();
     this.popConfig = operator;
     this.statusHandler = new StatusHandler(sendCount, context);
-    this.stats = new SenderStats(operator);
-    context.getStats().addOperatorStats(this.stats);
-    setStats(stats);
-    this.oContext = new OperatorContext(operator, context, stats);
   }
 
   @Override
@@ -137,7 +131,6 @@ public class PartitionSenderRootExec extends BaseRootExec {
           return false;
         }
       case OK:
-        stats.batchReceived(0, incoming.getRecordCount(), newSchema);
         try {
           partitioner.partitionBatch(incoming);
         } catch (IOException e) {

@@ -21,8 +21,12 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.List;
 
+import org.apache.drill.exec.memory.OutOfMemoryException;
 import org.apache.drill.exec.ops.FragmentContext;
+import org.apache.drill.exec.ops.OperatorContext;
+import org.apache.drill.exec.ops.SenderStats;
 import org.apache.drill.exec.physical.config.BroadcastSender;
+import org.apache.drill.exec.physical.impl.BaseRootExec;
 import org.apache.drill.exec.physical.impl.RootExec;
 import org.apache.drill.exec.physical.impl.SendingAccountor;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
@@ -43,7 +47,7 @@ import org.apache.drill.exec.work.ErrorHelper;
  * This is useful in cases such as broadcast join where sending the entire table to join
  * to all nodes is cheaper than merging and computing all the joins in the same node.
  */
-public class BroadcastSenderRootExec implements RootExec {
+public class BroadcastSenderRootExec extends BaseRootExec {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(BroadcastSenderRootExec.class);
   private final FragmentContext context;
   private final BroadcastSender config;
@@ -54,7 +58,8 @@ public class BroadcastSenderRootExec implements RootExec {
 
   public BroadcastSenderRootExec(FragmentContext context,
                                  RecordBatch incoming,
-                                 BroadcastSender config) {
+                                 BroadcastSender config) throws OutOfMemoryException {
+    super(context, config);
     this.ok = true;
     this.context = context;
     this.incoming = incoming;
@@ -69,13 +74,13 @@ public class BroadcastSenderRootExec implements RootExec {
   }
 
   @Override
-  public boolean next() {
+  public boolean innerNext() {
     if(!ok) {
       context.fail(statusHandler.ex);
       return false;
     }
 
-    RecordBatch.IterOutcome out = incoming.next();
+    RecordBatch.IterOutcome out = next(incoming);
     logger.debug("Outcome of sender next {}", out);
     switch(out){
       case STOP:
@@ -135,6 +140,7 @@ public class BroadcastSenderRootExec implements RootExec {
   public void stop() {
       ok = false;
       statusHandler.sendCount.waitForSendComplete();
+      oContext.close();
       incoming.cleanup();
   }
   
