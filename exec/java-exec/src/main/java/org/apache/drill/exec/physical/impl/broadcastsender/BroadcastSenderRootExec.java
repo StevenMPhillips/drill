@@ -87,7 +87,12 @@ public class BroadcastSenderRootExec extends BaseRootExec {
       case NONE:
         for (int i = 0; i < tunnels.length; ++i) {
           FragmentWritableBatch b2 = FragmentWritableBatch.getEmptyLast(handle.getQueryId(), handle.getMajorFragmentId(), handle.getMinorFragmentId(), config.getOppositeMajorFragmentId(), i);
-          tunnels[i].sendRecordBatch(this.statusHandler, b2);
+          stats.startWait();
+          try {
+            tunnels[i].sendRecordBatch(this.statusHandler, b2);
+          } finally {
+            stats.stopWait();
+          }
           statusHandler.sendCount.increment();
         }
 
@@ -101,7 +106,12 @@ public class BroadcastSenderRootExec extends BaseRootExec {
         }
         for (int i = 0; i < tunnels.length; ++i) {
           FragmentWritableBatch batch = new FragmentWritableBatch(false, handle.getQueryId(), handle.getMajorFragmentId(), handle.getMinorFragmentId(), config.getOppositeMajorFragmentId(), i, writableBatch);
-          tunnels[i].sendRecordBatch(this.statusHandler, batch);   
+          stats.startWait();
+          try {
+            tunnels[i].sendRecordBatch(this.statusHandler, batch);
+          } finally {
+            stats.stopWait();
+          }
           statusHandler.sendCount.increment();
         }
 

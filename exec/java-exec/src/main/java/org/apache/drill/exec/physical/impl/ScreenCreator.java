@@ -95,7 +95,12 @@ public class ScreenCreator implements RootCreator<Screen>{
               .setIsLastChunk(true) //
               .build();
           QueryWritableBatch batch = new QueryWritableBatch(header);
-          connection.sendResult(listener, batch);
+          stats.startWait();
+          try {
+            connection.sendResult(listener, batch);
+          } finally {
+            stats.stopWait();
+          }
           sendCount.increment();
 
           return false;
@@ -110,7 +115,12 @@ public class ScreenCreator implements RootCreator<Screen>{
             .setIsLastChunk(true) //
             .build();
         QueryWritableBatch batch = new QueryWritableBatch(header);
-        connection.sendResult(listener, batch);
+        stats.startWait();
+        try {
+          connection.sendResult(listener, batch);
+        } finally {
+          stats.stopWait();
+        }
         sendCount.increment();
 
         return false;
@@ -122,7 +132,12 @@ public class ScreenCreator implements RootCreator<Screen>{
 //        context.getStats().batchesCompleted.inc(1);
 //        context.getStats().recordsCompleted.inc(incoming.getRecordCount());
         QueryWritableBatch batch = materializer.convertNext(false);
-        connection.sendResult(listener, batch);
+        stats.startWait();
+        try {
+          connection.sendResult(listener, batch);
+        } finally {
+          stats.stopWait();
+        }
         sendCount.increment();
 
         return true;

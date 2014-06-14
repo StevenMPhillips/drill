@@ -131,6 +131,7 @@ public class PartitionSenderRootExec extends BaseRootExec {
           return false;
         }
       case OK:
+        stats.batchReceived(0, incoming.getRecordCount(), newSchema);
         try {
           partitioner.partitionBatch(incoming);
         } catch (IOException e) {
@@ -221,6 +222,12 @@ public class PartitionSenderRootExec extends BaseRootExec {
               fieldId,
               WritableBatch.getBatchNoHVWrap(0, container, false));
       tunnel.sendRecordBatch(statusHandler, writableBatch);
+      stats.startWait();
+      try {
+        tunnel.sendRecordBatch(statusHandler, writableBatch);
+      } finally {
+        stats.stopWait();
+      }
       this.sendCount.increment();
       fieldId++;
     }

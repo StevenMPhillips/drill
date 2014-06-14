@@ -82,14 +82,24 @@ public class SingleSenderCreator implements RootCreator<SingleSender>{
       case NONE:
         FragmentWritableBatch b2 = FragmentWritableBatch.getEmptyLast(handle.getQueryId(), handle.getMajorFragmentId(), handle.getMinorFragmentId(), recMajor, 0);
         sendCount.increment();
-        tunnel.sendRecordBatch(new RecordSendFailure(), b2);
+        stats.startWait();
+        try {
+          tunnel.sendRecordBatch(new RecordSendFailure(), b2);
+        } finally {
+          stats.stopWait();
+        }
         return false;
 
       case OK_NEW_SCHEMA:
       case OK:
         FragmentWritableBatch batch = new FragmentWritableBatch(false, handle.getQueryId(), handle.getMajorFragmentId(), handle.getMinorFragmentId(), recMajor, 0, incoming.getWritableBatch());
         sendCount.increment();
-        tunnel.sendRecordBatch(new RecordSendFailure(), batch);
+        stats.startWait();
+        try {
+          tunnel.sendRecordBatch(new RecordSendFailure(), batch);
+        } finally {
+          stats.stopWait();
+        }
         return true;
 
       case NOT_YET:

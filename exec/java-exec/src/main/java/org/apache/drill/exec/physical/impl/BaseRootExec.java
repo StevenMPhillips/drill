@@ -51,8 +51,12 @@ public abstract class BaseRootExec implements RootExec {
 
   public final IterOutcome next(RecordBatch b){
     stats.stopProcessing();
-    IterOutcome next = b.next();
-    stats.startProcessing();
+    IterOutcome next;
+    try {
+      next = b.next();
+    } finally {
+      stats.startProcessing();
+    }
 
     switch(next){
       case OK_NEW_SCHEMA:
