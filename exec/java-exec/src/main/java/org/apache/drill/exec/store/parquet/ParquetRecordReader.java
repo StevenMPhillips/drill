@@ -119,6 +119,8 @@ public class ParquetRecordReader implements RecordReader {
 
   int rowGroupIndex;
 
+  private OutputMutator mutator;
+
   public ParquetRecordReader(FragmentContext fragmentContext, //
                              String path, //
                              int rowGroupIndex, //
@@ -190,7 +192,7 @@ public class ParquetRecordReader implements RecordReader {
 
   @Override
   public void setup(OutputMutator output) throws ExecutionSetupException {
-
+    mutator = output;
     columnStatuses = new ArrayList<>();
     totalRecords = footer.getBlocks().get(rowGroupIndex).getRowCount();
     List<ColumnDescriptor> columns = footer.getFileMetaData().getSchema().getColumns();
@@ -405,6 +407,8 @@ public class ParquetRecordReader implements RecordReader {
         // jacques believes that variable length fields will be encoded as |length|value|length|value|...
         // cannot find more information on this right now, will keep looking
       }
+      recordsToRead = Math.min(recordsToRead, mutator.getRecordCapacity());
+      logger.debug("Attempting to read {} records", recordsToRead);
 
 //      logger.debug("records to read in this pass: {}", recordsToRead);
       if (allFieldsFixedLength) {
@@ -414,6 +418,7 @@ public class ParquetRecordReader implements RecordReader {
         readAllFixedFields(fixedRecordsToRead, firstColumnStatus);
       }
 
+      logger.debug("Read {} records", firstColumnStatus.valuesReadInCurrentPass);
       return firstColumnStatus.valuesReadInCurrentPass;
     } catch (IOException e) {
       throw new DrillRuntimeException(e);

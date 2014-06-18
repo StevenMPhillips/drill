@@ -206,6 +206,9 @@ public class ParquetRecordReaderTest extends BaseTestQuery{
     List<MaterializedField> removedFields = Lists.newArrayList();
     List<ValueVector> addFields = Lists.newArrayList();
 
+    public int getRecordCapacity() {
+      return 0;
+    }
 
     List<MaterializedField> getRemovedFields() {
       return removedFields;

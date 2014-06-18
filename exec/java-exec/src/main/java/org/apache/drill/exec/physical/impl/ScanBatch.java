@@ -19,9 +19,11 @@ package org.apache.drill.exec.physical.impl;
 
 import io.netty.buffer.Unpooled;
 
+import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.drill.common.config.DrillConfig;
@@ -39,6 +41,7 @@ import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.exec.record.MaterializedField;
+import org.apache.drill.exec.record.MaterializedField.Key;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorContainer;
@@ -48,11 +51,13 @@ import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
 import org.apache.drill.exec.store.RecordReader;
 import org.apache.drill.exec.vector.AllocationHelper;
+import org.apache.drill.exec.vector.FixedWidthVector;
 import org.apache.drill.exec.vector.NullableVarCharVector;
 import org.apache.drill.exec.vector.ValueVector;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.drill.exec.vector.VariableWidthVector;
 
 /**
  * Record batch used for a particular scan. Operators against one or more
@@ -66,6 +71,7 @@ public class ScanBatch implements RecordBatch {
   private static final int MAX_RECORD_CNT = Character.MAX_VALUE;
 
   private final Map<MaterializedField.Key, ValueVector> fieldVectorMap = Maps.newHashMap();
+  private final Map<MaterializedField.Key, Integer> fieldValueSizeMap = Maps.newHashMap();
 
   private final VectorContainer container = new VectorContainer();
   private int recordCount;
@@ -155,6 +161,7 @@ public class ScanBatch implements RecordBatch {
         }
       }
 
+      mutator.recalculateRecordSizes();
       populatePartitionVectors();
       if (mutator.isNewSchema()) {
         container.buildSchema(SelectionVectorMode.NONE);
@@ -231,6 +238,7 @@ public class ScanBatch implements RecordBatch {
   private class Mutator implements OutputMutator {
 
     boolean schemaChange = true;
+    int batchCount = 0;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -244,9 +252,11 @@ public class ScanBatch implements RecordBatch {
         if(!clazz.isAssignableFrom(v.getClass())) throw new SchemaChangeException(String.format("The class that was provided %s does not correspond to the expected vector type of %s.", clazz.getSimpleName(), v.getClass().getSimpleName()));
         container.add(v);
         fieldVectorMap.put(field.key(), v);
+        fieldValueSizeMap.put(field.key(), TypeHelper.getSize(v.getMetadata().getMajorType()));
 
         // Adding new vectors to the container mark that the schema has changed
         schemaChange = true;
+        batchCount = 1;
       }
 
       return (T) v;
@@ -261,11 +271,48 @@ public class ScanBatch implements RecordBatch {
       schemaChange = true;
     }
 
+    private int calculateTargetRecordCount() {
+      int recordSize = 0;
+      for (Integer i : fieldValueSizeMap.values()) {
+        recordSize += i;
+      }
+      if (recordSize > 0) {
+        return 256 * 1024 / recordSize;
+      } else {
+        return 0;
+      }
+    }
+
+    public void recalculateRecordSizes() {
+      for (MaterializedField.Key key : fieldVectorMap.keySet()) {
+        ValueVector v = fieldVectorMap.get(key);
+        if (v instanceof VariableWidthVector) {
+          int currentSize = ((VariableWidthVector) v).getByteCapacity() / v.getAccessor().getValueCount();
+          int updatedSize = ((fieldValueSizeMap.get(key) * batchCount) + currentSize) / (batchCount + 1);
+          fieldValueSizeMap.put(key, updatedSize);
+        }
+      }
+    }
+
     @Override
     public void allocate(int recordCount) {
-      for (ValueVector v : fieldVectorMap.values()) {
-        AllocationHelper.allocate(v, recordCount, 50, 10);
+      int size = 0;
+      int count = calculateTargetRecordCount();
+      for (Key key : fieldVectorMap.keySet()) {
+        ValueVector v = fieldVectorMap.get(key);
+        AllocationHelper.allocate(v, count, fieldValueSizeMap.get(key));
+        size += (v instanceof VariableWidthVector) ? ((VariableWidthVector) v).getByteCapacity() : v.getValueCapacity() * TypeHelper.getSize(v.getMetadata().getMajorType());
       }
+      logger.debug("Allocated batch of size {}", NumberFormat.getInstance(Locale.US).format(size));
+    }
+
+    @Override
+    public int getRecordCapacity() {
+      int max = 0;
+      for (ValueVector v : fieldVectorMap.values()) {
+        max = Math.max(max, v.getValueCapacity());
+      }
+      return max;
     }
 
     @Override

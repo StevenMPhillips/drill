@@ -34,4 +34,5 @@ public interface OutputMutator {
    * One to many layers to rip out, address it as a separate JIRA.
    */
   public void addFields(List<ValueVector> vvList);
+  public int getRecordCapacity();
 }

@@ -61,6 +61,11 @@ public class TestOutputMutator implements OutputMutator, Iterable<VectorWrapper<
     return;
   }
 
+  @Override
+  public int getRecordCapacity() {
+    return 0;
+  }
+
   public Iterator<VectorWrapper<?>> iterator() {
     return container.iterator();
   }

@@ -135,7 +135,7 @@ public class VarLenBinaryReader {
         }
         lengthVarFieldsInCurrentRecord += columnReader.dataTypeLengthInBits;
 
-        if (columnReader.bytesReadInCurrentPass + columnReader.dataTypeLengthInBits > columnReader.capacity()) {
+        if (columnReader.bytesReadInCurrentPass - (columnReader.valuesReadInCurrentPass * 4) + columnReader.dataTypeLengthInBits > columnReader.capacity()) {
           break outer;
         }
       }
