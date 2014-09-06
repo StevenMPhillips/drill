@@ -59,6 +59,7 @@ import org.apache.drill.exec.record.WritableBatch;
 import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
 import org.apache.drill.exec.util.Utilities;
+import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.CopyUtil;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.allocator.VectorAllocator;
@@ -109,6 +110,7 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
   private long totalSizeInMemory = 0;
   private long highWaterMark = Long.MAX_VALUE;
   private int targetRecordCount;
+  private boolean getSchemaBatch = true;
 
   public ExternalSortBatch(ExternalSort popConfig, FragmentContext context, RecordBatch incoming) throws OutOfMemoryException {
     super(popConfig, context);
@@ -190,9 +192,19 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
     incoming.cleanup();
   }
 
+  private void buildSchemaBatch() {
+    for (VectorWrapper w : incoming) {
+      ValueVector v = TypeHelper.getNewVector(w.getField(), oContext.getAllocator());
+      AllocationHelper.allocate(v, 1, 1, 1);
+      container.add(v);
+    }
+    container.buildSchema(SelectionVectorMode.NONE);
+    container.setRecordCount(0);
+  }
+
   @Override
   public IterOutcome innerNext() {
-    if (schema != null) {
+    if(schema != null && !first && !getSchemaBatch){
       if (spillCount == 0) {
         if (schema != null) {
           if (getSelectionVector4().next()) {
@@ -224,7 +236,17 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
       outer: while (true) {
         Stopwatch watch = new Stopwatch();
         watch.start();
-        IterOutcome upstream = incoming.next();
+        IterOutcome upstream;
+        if (getSchemaBatch || !first) {
+          upstream = next(incoming);
+          if (getSchemaBatch) {
+            buildSchemaBatch();
+            getSchemaBatch = false;
+            return IterOutcome.OK_NEW_SCHEMA;
+          }
+        } else {
+          upstream = IterOutcome.OK_NEW_SCHEMA;
+        }
 //        logger.debug("Took {} us to get next", watch.elapsed(TimeUnit.MICROSECONDS));
         switch (upstream) {
         case NONE:
@@ -305,6 +327,7 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
         }
       }
 
+      container.clear();
       if (spillCount == 0) {
         Stopwatch watch = new Stopwatch();
         watch.start();

@@ -49,10 +49,12 @@ import org.apache.drill.exec.proto.BitControl.FinishedReceiver;
 import org.apache.drill.exec.proto.ExecProtos.FragmentHandle;
 import org.apache.drill.exec.proto.GeneralRPCProtos.Ack;
 import org.apache.drill.exec.proto.UserBitShared;
+import org.apache.drill.exec.proto.UserBitShared.SerializedField;
 import org.apache.drill.exec.record.AbstractRecordBatch;
 import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.exec.record.ExpandableHyperContainer;
+import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.RawFragmentBatch;
 import org.apache.drill.exec.record.RawFragmentBatchProvider;
 import org.apache.drill.exec.record.RecordBatch;
@@ -105,6 +107,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   private PriorityQueue <Node> pqueue;
   private RawFragmentBatch emptyBatch = null;
   private boolean done = false;
+  private boolean first = true;
 
   public static enum Metric implements MetricDef{
     BYTES_RECEIVED,
@@ -206,6 +209,18 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
           } else {
             rawBatches.add(emptyBatch);
           }
+        }
+      }
+
+      if (first) {
+        first = false;
+        if (emptyBatch != null) {
+          for (SerializedField field :emptyBatch.getHeader().getDef().getFieldList()) {
+            ValueVector v = TypeHelper.getNewVector(MaterializedField.create(field), oContext.getAllocator());
+            outgoingContainer.add(v);
+          }
+          outgoingContainer.buildSchema(SelectionVectorMode.NONE);
+          return IterOutcome.OK_NEW_SCHEMA;
         }
       }
 

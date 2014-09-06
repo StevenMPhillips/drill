@@ -42,7 +42,6 @@ import org.junit.rules.TestRule;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
-@Ignore
 public class TestSimpleExternalSort extends BaseTestQuery {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestSimpleExternalSort.class);
   DrillConfig c = DrillConfig.create();
@@ -67,9 +66,7 @@ public class TestSimpleExternalSort extends BaseTestQuery {
     int batchCount = 0;
 
     for (QueryResultBatch b : results) {
-      if (b.getHeader().getRowCount() == 0) {
-        break;
-      }
+      if (b.getHeader().getRowCount() == 0) continue;
       batchCount++;
       RecordBatchLoader loader = new RecordBatchLoader(allocator);
       loader.load(b.getHeader().getDef(),b.getData());

@@ -57,6 +57,7 @@ import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.WritableBatch;
 import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
+import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.ValueVector;
 import org.eigenbase.rel.RelFieldCollation.Direction;
 
@@ -86,6 +87,8 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
   private long countSincePurge;
   private int batchCount;
   private Copier copier;
+  private boolean first = true;
+  private boolean getSchemaBatch = true;
 
   public TopNBatch(TopN popConfig, FragmentContext context, RecordBatch incoming) throws OutOfMemoryException {
     super(popConfig, context);
@@ -96,7 +99,11 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
 
   @Override
   public int getRecordCount() {
-    return sv4.getCount();
+    if (sv4 != null) {
+      return sv4.getCount();
+    } else {
+      return container.getRecordCount();
+    }
   }
 
   @Override
@@ -111,11 +118,7 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
 
   @Override
   public BatchSchema getSchema() {
-    List<MaterializedField> fields = Lists.newArrayList();
-    for (MaterializedField field : incoming.getSchema()) {
-      fields.add(field);
-    }
-    return BatchSchema.newBuilder().addFields(fields).setSelectionVectorMode(SelectionVectorMode.FOUR_BYTE).build();
+    return container.getSchema();
   }
 
   @Override
@@ -128,6 +131,16 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
     }
     super.cleanup();
     incoming.cleanup();
+  }
+
+  private void buildSchemaBatch() {
+    for (VectorWrapper w : incoming) {
+      ValueVector v = TypeHelper.getNewVector(w.getField(), oContext.getAllocator());
+      AllocationHelper.allocate(v, 1, 1, 1);
+      container.add(v);
+    }
+    container.buildSchema(SelectionVectorMode.NONE);
+    container.setRecordCount(0);
   }
 
   @Override
@@ -145,7 +158,19 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
       outer: while (true) {
         Stopwatch watch = new Stopwatch();
         watch.start();
-        IterOutcome upstream = incoming.next();
+        IterOutcome upstream;
+        if (getSchemaBatch || !first) {
+          upstream = next(incoming);
+          if (getSchemaBatch) {
+            buildSchemaBatch();
+            getSchemaBatch = false;
+            return IterOutcome.OK_NEW_SCHEMA;
+          }
+        } else {
+          first = false;
+          container.clear();
+          upstream = IterOutcome.OK_NEW_SCHEMA;
+        }
         logger.debug("Took {} us to get next", watch.elapsed(TimeUnit.MICROSECONDS));
         switch (upstream) {
         case NONE:

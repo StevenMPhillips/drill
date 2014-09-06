@@ -69,6 +69,7 @@ public class PartitionSenderRootExec extends BaseRootExec {
 
   long minReceiverRecordCount = Long.MAX_VALUE;
   long maxReceiverRecordCount = Long.MIN_VALUE;
+  private boolean first = true;
 
   public enum Metric implements MetricDef {
     BATCHES_SENT,
@@ -109,6 +110,8 @@ public class PartitionSenderRootExec extends BaseRootExec {
 
   @Override
   public boolean innerNext() {
+
+
     boolean newSchema = false;
 
     if (!ok) {
@@ -120,6 +123,22 @@ public class PartitionSenderRootExec extends BaseRootExec {
     IterOutcome out;
     if (!done) {
       out = next(incoming);
+      if (first) {
+        try {
+          createPartitioner();
+          partitioner.flushOutgoingBatches(false, true);
+          first = false;
+        } catch (SchemaChangeException e) {
+          incoming.kill(false);
+          logger.error("Error while setting up partitioner", e);
+          context.fail(e);
+          return false;
+        } catch (IOException e) {
+          incoming.kill(false);
+          logger.error("Error while creating partitioning sender or flushing outgoing batches", e);
+          context.fail(e);
+        }
+      }
     } else {
       incoming.kill(true);
       out = IterOutcome.NONE;

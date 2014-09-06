@@ -25,6 +25,11 @@ public class TestExampleQueries extends BaseTestQuery{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
   @Test
+  public void testQ() {
+
+  }
+
+  @Test
   public void testParquetComplex() throws Exception {
     test("select recipe from cp.`parquet/complex.parquet`");
     test("select * from cp.`parquet/complex.parquet`");
