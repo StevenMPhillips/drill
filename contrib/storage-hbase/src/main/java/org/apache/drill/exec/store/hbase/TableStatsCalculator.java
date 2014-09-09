@@ -62,7 +62,7 @@ public class TableStatsCalculator {
    *
    * @param table
    * @param hbaseScanSpec
-   * @param config
+   * @param drillConfig
    * @throws IOException
    */
   public TableStatsCalculator(HTable table, HBaseScanSpec hbaseScanSpec, DrillConfig config, HBaseStoragePluginConfig storageConfig) throws IOException {
