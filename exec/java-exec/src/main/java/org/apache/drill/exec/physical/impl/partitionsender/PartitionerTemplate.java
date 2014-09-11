@@ -212,6 +212,7 @@ public abstract class PartitionerTemplate implements Partitioner {
     private final int oppositeMinorFragmentId;
 
     private boolean isLast = false;
+    private boolean isFirst = true;
     private volatile boolean terminated = false;
     private boolean dropAll = false;
     private BatchSchema outSchema;
@@ -287,9 +288,11 @@ public abstract class PartitionerTemplate implements Partitioner {
           stats.stopWait();
         }
         this.sendCount.increment();
+        if (isFirst) isFirst = false;
       } else {
         logger.debug("Flush requested on an empty outgoing record batch" + (isLast ? " (last batch)" : ""));
-        if (isLast || terminated) {
+        if (isFirst || terminated) {
+          isFirst = false;
           // send final (empty) batch
           FragmentWritableBatch writableBatch = new FragmentWritableBatch(true,
                   handle.getQueryId(),

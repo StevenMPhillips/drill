@@ -69,6 +69,7 @@ import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
 import org.apache.drill.exec.rpc.RpcException;
 import org.apache.drill.exec.rpc.RpcOutcomeListener;
+import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.CopyUtil;
 import org.apache.drill.exec.vector.ValueVector;
 import org.eigenbase.rel.RelFieldCollation.Direction;
@@ -187,8 +188,9 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
           context.fail(e);
           return IterOutcome.STOP;
         }
-        if (rawBatch.getHeader().getDef().getRecordCount() != 0) {
+//        if (rawBatch.getHeader().getDef().getRecordCount() != 0) {
           rawBatches.add(rawBatch);
+        /*
         } else {
           if (emptyBatch == null) {
             emptyBatch = rawBatch;
@@ -210,13 +212,14 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
             rawBatches.add(emptyBatch);
           }
         }
+        */
       }
 
       if (first) {
-        first = false;
         if (emptyBatch != null) {
           for (SerializedField field :emptyBatch.getHeader().getDef().getFieldList()) {
             ValueVector v = TypeHelper.getNewVector(MaterializedField.create(field), oContext.getAllocator());
+            AllocationHelper.allocate(v, 1, 1);
             outgoingContainer.add(v);
           }
           outgoingContainer.buildSchema(SelectionVectorMode.NONE);
@@ -347,6 +350,14 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
 
       hasRun = true;
       // finished lazy initialization
+    }
+
+    if (first) {
+      for (VectorWrapper w : outgoingContainer) {
+        w.getValueVector().getMutator().setValueCount(0);
+      }
+      first = false;
+      return IterOutcome.OK_NEW_SCHEMA;
     }
 
     while (!pqueue.isEmpty()) {

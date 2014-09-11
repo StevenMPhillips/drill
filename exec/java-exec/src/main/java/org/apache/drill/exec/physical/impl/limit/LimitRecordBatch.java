@@ -141,6 +141,10 @@ public class LimitRecordBatch extends AbstractSingleRecordBatch<Limit> {
     }
   }
 
+  private void emptyBatch() {
+
+  }
+
   private IterOutcome produceEmptyFirstBatch() {
     incoming.next();
     first = false;

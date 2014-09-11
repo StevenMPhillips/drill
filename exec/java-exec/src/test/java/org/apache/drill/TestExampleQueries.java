@@ -25,8 +25,8 @@ public class TestExampleQueries extends BaseTestQuery{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
   @Test
-  public void testQ() {
-
+  public void testQ() throws Exception {
+    test("select * from dfs.`/drill/sf1/lineitem` order by l_extendedprice limit 10");
   }
 
   @Test
