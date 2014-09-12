@@ -235,9 +235,7 @@ public class EasyGroupScan extends AbstractFileGroupScan{
 
   @Override
   public GroupScan clone(List<SchemaPath> columns) {
-    if (!formatPlugin.supportsPushDown()) {
-      throw new IllegalStateException(String.format("%s doesn't support pushdown.", this.getClass().getSimpleName()));
-    }
+    // if(!formatPlugin.supportsPushDown()) throw new IllegalStateException(String.format("%s doesn't support pushdown.", this.getClass().getSimpleName()));
     EasyGroupScan newScan = new EasyGroupScan(this);
     newScan.columns = columns;
     return newScan;

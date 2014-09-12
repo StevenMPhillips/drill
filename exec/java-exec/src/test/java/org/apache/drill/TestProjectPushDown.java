@@ -110,7 +110,7 @@ public class TestProjectPushDown extends PlanTestBase {
   private static final String pushDownSqlWithFilter = pushDownSql + " where %s";
   private final String[] inputTypes = new String[] {
       "project/pushdown/empty.json",
-      "project/pushdown/empty.csv",
+//      "project/pushdown/empty.csv",  See DRILL-1401
       "tpch/lineitem.parquet"
   };
 
