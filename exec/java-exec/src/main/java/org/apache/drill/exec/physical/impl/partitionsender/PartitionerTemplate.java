@@ -260,6 +260,8 @@ public abstract class PartitionerTemplate implements Partitioner {
     protected boolean doEval(@Named("inIndex") int inIndex, @Named("outIndex") int outIndex) { return false; };
 
     public void flush() throws IOException {
+      logger.debug("Flushing batch. Frag: {}:{}. Sending to {}. Record count {}", context.getHandle().getMajorFragmentId(),
+              context.getHandle().getMinorFragmentId(), oppositeMinorFragmentId, recordCount);
       if (dropAll) {
         vectorContainer.zeroVectors();
         return;
@@ -294,7 +296,7 @@ public abstract class PartitionerTemplate implements Partitioner {
         if (isFirst || terminated) {
           isFirst = false;
           // send final (empty) batch
-          FragmentWritableBatch writableBatch = new FragmentWritableBatch(true,
+          FragmentWritableBatch writableBatch = new FragmentWritableBatch(!isFirst,
                   handle.getQueryId(),
                   handle.getMajorFragmentId(),
                   handle.getMinorFragmentId(),

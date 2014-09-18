@@ -107,8 +107,10 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   private int[] batchOffsets;
   private PriorityQueue <Node> pqueue;
   private RawFragmentBatch emptyBatch = null;
+  private RawFragmentBatch firstBatch = null;
   private boolean done = false;
   private boolean first = true;
+  private boolean getSchemaBatch = true;
 
   public static enum Metric implements MetricDef{
     BYTES_RECEIVED,
@@ -155,6 +157,25 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
     if (done) {
       return IterOutcome.NONE;
     }
+    if (getSchemaBatch) {
+      try {
+        firstBatch = getNext(fragProviders[0]);
+      } catch (IOException e) {
+        context.fail(e);
+        return IterOutcome.STOP;
+      }
+      getSchemaBatch = false;
+      for (SerializedField field : firstBatch.getHeader().getDef().getFieldList()) {
+        ValueVector v = TypeHelper.getNewVector(MaterializedField.create(field), oContext.getAllocator());
+        AllocationHelper.allocate(v, 1, 1, 1);
+        v.getMutator().setValueCount(0);
+        outgoingContainer.add(v);
+      }
+      outgoingContainer.buildSchema(SelectionVectorMode.NONE);
+      return IterOutcome.OK_NEW_SCHEMA;
+    } else {
+      outgoingContainer.clear();
+    }
     boolean schemaChanged = false;
 
     if (prevBatchWasFull) {
@@ -177,10 +198,16 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
       // set up each (non-empty) incoming record batch
       List<RawFragmentBatch> rawBatches = Lists.newArrayList();
       boolean firstBatch = true;
+      boolean firstProvider = true;
       for (RawFragmentBatchProvider provider : fragProviders) {
         RawFragmentBatch rawBatch = null;
         try {
-          rawBatch = getNext(provider);
+          if (firstProvider) {
+            rawBatch = this.firstBatch;
+            firstProvider = false;
+          } else {
+            rawBatch = getNext(provider);
+          }
           if (rawBatch == null && context.isCancelled()) {
             return IterOutcome.STOP;
           }
@@ -188,9 +215,8 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
           context.fail(e);
           return IterOutcome.STOP;
         }
-//        if (rawBatch.getHeader().getDef().getRecordCount() != 0) {
+        if (rawBatch.getHeader().getDef().getRecordCount() != 0) {
           rawBatches.add(rawBatch);
-        /*
         } else {
           if (emptyBatch == null) {
             emptyBatch = rawBatch;
@@ -212,20 +238,21 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
             rawBatches.add(emptyBatch);
           }
         }
-        */
       }
 
+      /*
       if (first) {
+        first = false;
         if (emptyBatch != null) {
           for (SerializedField field :emptyBatch.getHeader().getDef().getFieldList()) {
             ValueVector v = TypeHelper.getNewVector(MaterializedField.create(field), oContext.getAllocator());
-            AllocationHelper.allocate(v, 1, 1);
             outgoingContainer.add(v);
           }
           outgoingContainer.buildSchema(SelectionVectorMode.NONE);
           return IterOutcome.OK_NEW_SCHEMA;
         }
       }
+      */
 
       // allocate the incoming record batch loaders
       senderCount = rawBatches.size();
@@ -350,14 +377,6 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
 
       hasRun = true;
       // finished lazy initialization
-    }
-
-    if (first) {
-      for (VectorWrapper w : outgoingContainer) {
-        w.getValueVector().getMutator().setValueCount(0);
-      }
-      first = false;
-      return IterOutcome.OK_NEW_SCHEMA;
     }
 
     while (!pqueue.isEmpty()) {
