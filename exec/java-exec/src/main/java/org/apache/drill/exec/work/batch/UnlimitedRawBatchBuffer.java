@@ -119,6 +119,7 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
   @Override
   public RawFragmentBatch getNext() {
 
+
     if (outOfMemory.get() && buffer.size() < 10) {
       logger.debug("Setting autoread true");
       outOfMemory.set(false);
@@ -136,6 +137,10 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
       } catch (InterruptedException e) {
         return null;
       }
+    }
+    if (b != null) {
+    logger.debug("Got batch. Frag {}:{}. Sender {}:{}. Recordcount {}. Last batch: {}", context.getHandle().getMajorFragmentId(), context.getHandle().getMinorFragmentId(),
+            b.getHeader().getSendingMajorFragmentId(), b.getHeader().getSendingMinorFragmentId(), b.getHeader().getDef().getRecordCount(), b.getHeader().getIsLastBatch());
     }
 
     if (b != null && b.getHeader().getIsOutOfMemory()) {

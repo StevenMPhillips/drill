@@ -290,13 +290,15 @@ public abstract class PartitionerTemplate implements Partitioner {
           stats.stopWait();
         }
         this.sendCount.increment();
-        if (isFirst) isFirst = false;
+        if (isFirst) {
+          isFirst = false;
+        }
       } else {
         logger.debug("Flush requested on an empty outgoing record batch" + (isLast ? " (last batch)" : ""));
         if (isFirst || terminated) {
           isFirst = false;
           // send final (empty) batch
-          FragmentWritableBatch writableBatch = new FragmentWritableBatch(!isFirst,
+          FragmentWritableBatch writableBatch = new FragmentWritableBatch(isLast,
                   handle.getQueryId(),
                   handle.getMajorFragmentId(),
                   handle.getMinorFragmentId(),

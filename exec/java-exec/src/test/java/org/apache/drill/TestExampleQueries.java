@@ -26,7 +26,7 @@ public class TestExampleQueries extends BaseTestQuery{
 
   @Test
   public void testQ() throws Exception {
-    test("select * from dfs.`/drill/sf1/lineitem` order by l_extendedprice limit 10");
+    test("select l_extendedprice from dfs.`/drill/sf1/lineitem` order by l_extendedprice limit 10");
   }
 
   @Test

@@ -46,8 +46,10 @@ import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
+import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
+import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.ValueVector;
 
 import com.sun.codemodel.JExpr;
@@ -108,7 +110,11 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
           done = true;
           return IterOutcome.STOP;
         }
-        break;
+        for (VectorWrapper w : container) {
+          AllocationHelper.allocate(w.getValueVector(), 1,1,1);
+          w.getValueVector().getMutator().setValueCount(0);
+        }
+        return IterOutcome.OK_NEW_SCHEMA;
       case OK:
         throw new IllegalStateException("You should never get a first batch without a new schema");
       default:
