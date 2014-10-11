@@ -51,6 +51,7 @@ import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.record.VectorWrapper;
+import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.allocator.VectorAllocator;
 import org.eigenbase.rel.JoinRelType;
@@ -133,6 +134,19 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
   @Override
   public int getRecordCount() {
     return status.getOutPosition();
+  }
+
+  @Override
+  public IterOutcome buildSchema() throws SchemaChangeException {
+    left.buildSchema();
+    right.buildSchema();
+    try {
+      allocateBatch();
+      worker = generateNewWorker();
+    } catch (IOException | ClassTransformationException e) {
+      throw new SchemaChangeException(e);
+    }
+    return IterOutcome.OK_NEW_SCHEMA;
   }
 
   @Override
@@ -420,7 +434,7 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
 
   private void allocateBatch() {
     // allocate new batch space.
-    container.clear();
+    container.zeroVectors();
 
     //estimation of joinBatchSize : max of left/right size, expanded by a factor of 16, which is then bounded by MAX_BATCH_SIZE.
     int leftCount = worker == null ? left.getRecordCount() : (status.isLeftPositionAllowed() ? left.getRecordCount() : 0);
@@ -428,8 +442,6 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
     int joinBatchSize = Math.min(Math.max(leftCount, rightCount) * 16, MAX_BATCH_SIZE);
 
     // add fields from both batches
-    if (worker == null || leftCount > 0) {
-
       for (VectorWrapper<?> w : left) {
         MajorType inputType = w.getField().getType();
         MajorType outputType;
@@ -438,13 +450,10 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
         } else {
           outputType = inputType;
         }
-        ValueVector outgoingVector = TypeHelper.getNewVector(MaterializedField.create(w.getField().getPath(), outputType), oContext.getAllocator());
-        VectorAllocator.getAllocator(outgoingVector, (int) Math.ceil(w.getValueVector().getBufferSize() / Math.max(1, left.getRecordCount()))).alloc(joinBatchSize);
-        container.add(outgoingVector);
+        MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
+        AllocationHelper.allocate(container.addOrGet(newField), 5000, 50);
       }
-    }
 
-    if (worker == null || rightCount > 0) {
       for (VectorWrapper<?> w : right) {
         MajorType inputType = w.getField().getType();
         MajorType outputType;
@@ -453,11 +462,9 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
         } else {
           outputType = inputType;
         }
-        ValueVector outgoingVector = TypeHelper.getNewVector(MaterializedField.create(w.getField().getPath(), outputType), oContext.getAllocator());
-        VectorAllocator.getAllocator(outgoingVector, (int) Math.ceil(w.getValueVector().getBufferSize() / Math.max(1, right.getRecordCount()))).alloc(joinBatchSize);
-        container.add(outgoingVector);
+        MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
+        AllocationHelper.allocate(container.addOrGet(newField), 5000, 50);
       }
-    }
 
     container.buildSchema(BatchSchema.SelectionVectorMode.NONE);
     logger.debug("Built joined schema: {}", container.getSchema());
