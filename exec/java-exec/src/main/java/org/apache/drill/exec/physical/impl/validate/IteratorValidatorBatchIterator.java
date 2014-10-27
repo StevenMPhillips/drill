@@ -112,7 +112,7 @@ public class IteratorValidatorBatchIterator implements RecordBatch {
 
   @Override
   public VectorWrapper<?> getValueAccessorById(Class<?> clazz, int... ids) {
-    validateReadState();
+//    validateReadState(); TODO fix this
     return incoming.getValueAccessorById(clazz, ids);
   }
 
