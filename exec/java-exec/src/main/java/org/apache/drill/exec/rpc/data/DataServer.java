@@ -114,6 +114,7 @@ public class DataServer extends BasicServer<RpcType, BitServerConnection> {
       this.fragmentBatch = fragmentBatch;
       this.connection = connection;
       this.body = body;
+      this.body.retain();
     }
 
     public String getId(){
@@ -126,9 +127,7 @@ public class DataServer extends BasicServer<RpcType, BitServerConnection> {
       try{
         FragmentManager manager = workBus.getFragmentManager(fragmentBatch.getHandle());
         if (manager == null) {
-          if (body != null) {
-            body.release();
-          }
+          return;
         }else{
           consume(manager);
         }
