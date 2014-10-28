@@ -33,6 +33,7 @@ import org.apache.drill.exec.client.DrillClient;
 import org.apache.drill.exec.proto.UserBitShared.QueryId;
 import org.apache.drill.exec.proto.UserBitShared.QueryResult.QueryState;
 import org.apache.drill.exec.proto.UserBitShared.QueryType;
+import org.apache.drill.exec.proto.helper.QueryIdHelper;
 import org.apache.drill.exec.record.RecordBatchLoader;
 import org.apache.drill.exec.rpc.RpcException;
 import org.apache.drill.exec.rpc.user.ConnectionThrottle;
@@ -196,6 +197,7 @@ public class DrillResultSet extends AvaticaResultSet {
 
     @Override
     public void queryIdArrived(QueryId queryId) {
+      System.out.println("QueryId: " + QueryIdHelper.getQueryId(queryId));
       DrillResultSet.this.queryId = queryId;
     }
   }
