@@ -17,8 +17,10 @@
  */
 package org.apache.drill.exec.rpc;
 
+import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
+
 
 public interface ResponseSender {
   public void send(Response r);
-
+  public void fail(DrillbitEndpoint nodeIdentity, String message, Throwable t);
 }

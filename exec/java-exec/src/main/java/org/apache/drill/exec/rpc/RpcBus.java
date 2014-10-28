@@ -168,6 +168,15 @@ public abstract class RpcBus<T extends EnumLite, C extends RemoteConnection> imp
       connection.getChannel().writeAndFlush(outMessage);
     }
 
+    public void fail(DrillbitEndpoint nodeIdentity, String message, Throwable t){
+      DrillPBError error = ErrorHelper.logAndConvertError(nodeIdentity, message, t, logger);
+      OutboundRpcMessage outMessage = new OutboundRpcMessage(RpcMode.RESPONSE_FAILURE, 0, coordinationId, error);
+      if (RpcConstants.EXTRA_DEBUGGING) {
+        logger.debug("Adding message to outbound buffer. {}", outMessage);
+      }
+      connection.getChannel().writeAndFlush(outMessage);
+    }
+
   }
 
   protected class InboundHandler extends MessageToMessageDecoder<InboundRpcMessage> {

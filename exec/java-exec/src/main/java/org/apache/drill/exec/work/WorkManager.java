@@ -39,6 +39,7 @@ import org.apache.drill.exec.rpc.control.WorkEventBus;
 import org.apache.drill.exec.rpc.data.DataConnectionCreator;
 import org.apache.drill.exec.rpc.data.DataResponseHandler;
 import org.apache.drill.exec.rpc.data.DataResponseHandlerImpl;
+import org.apache.drill.exec.rpc.data.DataServer.FragmentWatcher;
 import org.apache.drill.exec.server.BootStrapContext;
 import org.apache.drill.exec.server.DrillbitContext;
 import org.apache.drill.exec.store.sys.PStoreProvider;
@@ -157,6 +158,11 @@ public class WorkManager implements Closeable {
   public class WorkerBee {
 
 
+
+    public void addFragmentWatcher(FragmentWatcher g){
+      RunnableWrapper wrapper = new RunnableWrapper(g, g.getId());
+      pendingTasks.add(wrapper);
+    }
 
     public void addFragmentRunner(FragmentExecutor runner) {
       logger.debug("Adding pending task {}", runner);

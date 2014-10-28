@@ -31,7 +31,7 @@ import org.apache.drill.exec.rpc.RpcException;
 import org.apache.drill.exec.work.WorkManager.WorkerBee;
 import org.apache.drill.exec.work.fragment.FragmentManager;
 
-public class DataResponseHandlerImpl implements DataResponseHandler{
+public class DataResponseHandlerImpl implements DataResponseHandler {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DataResponseHandlerImpl.class);
 
   private final WorkerBee bee;
@@ -41,31 +41,26 @@ public class DataResponseHandlerImpl implements DataResponseHandler{
     this.bee = bee;
   }
 
-
   @Override
   public void informOutOfMemory() {
     logger.error("Out of memory outside any particular fragment.");
   }
 
-
-  public void handle(RemoteConnection connection, FragmentManager manager, FragmentRecordBatch fragmentBatch, DrillBuf data, ResponseSender sender) throws RpcException {
-//    logger.debug("Fragment Batch received {}", fragmentBatch);
-    try {
-      boolean canRun = manager.handle(new RawFragmentBatch(connection, fragmentBatch, data, sender));
-      if (canRun) {
-//        logger.debug("Arriving batch means local batch can run, starting local batch.");
-        // if we've reached the canRun threshold, we'll proceed. This expects handler.handle() to only return a single
-        // true.
-        bee.startFragmentPendingRemote(manager);
-      }
-      if (fragmentBatch.getIsLastBatch() && !manager.isWaiting()) {
-//        logger.debug("Removing handler.  Is Last Batch {}.  Is Waiting for more {}", fragmentBatch.getIsLastBatch(),
-//            manager.isWaiting());
-        bee.getContext().getWorkBus().removeFragmentManager(manager.getHandle());
-      }
-
-    } catch (FragmentSetupException e) {
-      logger.error("Failure while attempting to setup new fragment.", e);
-      sender.send(new Response(RpcType.ACK, Acks.FAIL));
+  public void handle(RemoteConnection connection, FragmentManager manager, FragmentRecordBatch fragmentBatch,
+      DrillBuf data, ResponseSender sender) throws FragmentSetupException {
+    // logger.debug("Fragment Batch received {}", fragmentBatch);
+    boolean canRun = manager.handle(new RawFragmentBatch(connection, fragmentBatch, data, sender));
+    if (canRun) {
+      // logger.debug("Arriving batch means local batch can run, starting local batch.");
+      // if we've reached the canRun threshold, we'll proceed. This expects handler.handle() to only return a single
+      // true.
+      bee.startFragmentPendingRemote(manager);
     }
-  }}
+    if (fragmentBatch.getIsLastBatch() && !manager.isWaiting()) {
+      // logger.debug("Removing handler.  Is Last Batch {}.  Is Waiting for more {}", fragmentBatch.getIsLastBatch(),
+      // manager.isWaiting());
+      bee.getContext().getWorkBus().removeFragmentManager(manager.getHandle());
+    }
+
+  }
+}

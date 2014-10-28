@@ -153,7 +153,7 @@ public class TestBitRpc extends ExecTest {
 
     @Override
     public void handle(RemoteConnection connection, FragmentManager manager, FragmentRecordBatch fragmentBatch, DrillBuf data, ResponseSender sender)
-        throws RpcException {
+        {
       // System.out.println("Received.");
       try {
         v++;

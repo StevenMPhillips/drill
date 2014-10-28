@@ -19,16 +19,16 @@ package org.apache.drill.exec.rpc.data;
 
 import io.netty.buffer.DrillBuf;
 
+import org.apache.drill.exec.exception.FragmentSetupException;
 import org.apache.drill.exec.proto.BitData.FragmentRecordBatch;
 import org.apache.drill.exec.rpc.RemoteConnection;
 import org.apache.drill.exec.rpc.ResponseSender;
-import org.apache.drill.exec.rpc.RpcException;
 import org.apache.drill.exec.work.fragment.FragmentManager;
 
 public interface DataResponseHandler {
 
   public void handle(RemoteConnection connection, FragmentManager manager, FragmentRecordBatch fragmentBatch,
-      DrillBuf data, ResponseSender responder) throws RpcException;
+      DrillBuf data, ResponseSender responder) throws FragmentSetupException;
 
   public void informOutOfMemory();
 }

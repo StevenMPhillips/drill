@@ -17,25 +17,21 @@
  */
 package org.apache.drill.exec.rpc.control;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.drill.exec.cache.DistributedMap;
 import org.apache.drill.exec.exception.FragmentSetupException;
 import org.apache.drill.exec.proto.BitControl.FragmentStatus;
-import org.apache.drill.exec.proto.BitControl.PlanFragment;
+import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
 import org.apache.drill.exec.proto.ExecProtos.FragmentHandle;
 import org.apache.drill.exec.proto.UserBitShared.QueryId;
 import org.apache.drill.exec.proto.helper.QueryIdHelper;
 import org.apache.drill.exec.rpc.RpcException;
+import org.apache.drill.exec.rpc.data.DataServer.FragmentWatcher;
 import org.apache.drill.exec.work.WorkManager.WorkerBee;
-import org.apache.drill.exec.work.foreman.Foreman;
 import org.apache.drill.exec.work.foreman.FragmentStatusListener;
 import org.apache.drill.exec.work.fragment.FragmentManager;
-import org.apache.drill.exec.work.fragment.NonRootFragmentManager;
-import org.apache.drill.exec.work.fragment.RootFragmentManager;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -55,6 +51,14 @@ public class WorkEventBus {
 
   public WorkEventBus(WorkerBee bee) {
     this.bee = bee;
+  }
+
+  public DrillbitEndpoint getIdentity(){
+    return bee.getContext().getEndpoint();
+  }
+
+  public void submitFragmentWatcher(FragmentWatcher watcher){
+    bee.addFragmentWatcher(watcher);
   }
 
   public void removeFragmentStatusListener(QueryId queryId) {

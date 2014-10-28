@@ -32,11 +32,9 @@ import org.apache.drill.exec.proto.BitData.RpcType;
 import org.apache.drill.exec.proto.ExecProtos.FragmentHandle;
 import org.apache.drill.exec.proto.UserBitShared.RpcChannel;
 import org.apache.drill.exec.proto.helper.QueryIdHelper;
-import org.apache.drill.exec.rpc.Acks;
 import org.apache.drill.exec.rpc.BasicServer;
 import org.apache.drill.exec.rpc.OutOfMemoryHandler;
 import org.apache.drill.exec.rpc.ProtobufLengthDecoder;
-import org.apache.drill.exec.rpc.Response;
 import org.apache.drill.exec.rpc.ResponseSender;
 import org.apache.drill.exec.rpc.RpcException;
 import org.apache.drill.exec.rpc.control.WorkEventBus;
@@ -100,20 +98,54 @@ public class DataServer extends BasicServer<RpcType, BitServerConnection> {
 
   private final static FragmentRecordBatch OOM_FRAGMENT = FragmentRecordBatch.newBuilder().setIsOutOfMemory(true).build();
 
-  @Override
-  protected void handle(BitServerConnection connection, int rpcType, ByteBuf pBody, ByteBuf body, ResponseSender sender) throws RpcException {
-    assert rpcType == RpcType.REQ_RECORD_BATCH_VALUE;
+  /**
+   * Helper class that can be used to defer retrieval of a fragment manager rather than sitting on the RPC thread.
+   */
+  public class FragmentWatcher implements Runnable {
+    ResponseSender sender;
+    FragmentRecordBatch fragmentBatch;
+    BitServerConnection connection;
+    ByteBuf body;
 
-    FragmentRecordBatch fragmentBatch = get(pBody, FragmentRecordBatch.PARSER);
-    FragmentHandle handle = fragmentBatch.getHandle();
+    public FragmentWatcher(ResponseSender sender, FragmentRecordBatch fragmentBatch, BitServerConnection connection,
+        ByteBuf body) {
+      super();
+      this.sender = sender;
+      this.fragmentBatch = fragmentBatch;
+      this.connection = connection;
+      this.body = body;
+    }
 
-    try {
-      FragmentManager manager = workBus.getFragmentManager(fragmentBatch.getHandle());
-      if (manager == null) {
-        if (body != null) {
-          body.release();
+    public String getId(){
+      FragmentHandle handle = fragmentBatch.getHandle();
+      return "FragmentWatcher: " + QueryIdHelper.getQueryId(handle.getQueryId()) + ':' + handle.getMajorFragmentId() + ':' + handle.getMinorFragmentId();
+    }
+
+    @Override
+    public void run() {
+      try{
+        FragmentManager manager = workBus.getFragmentManager(fragmentBatch.getHandle());
+        if (manager == null) {
+          if (body != null) {
+            body.release();
+          }
+        }else{
+          consume(manager);
         }
+      }catch(FragmentSetupException e){
+        fail(e);
       }
+    }
+
+    public void consumeNoException(FragmentManager m){
+      try{
+        consume(m);
+      }catch(FragmentSetupException e){
+        fail(e);
+      }
+    }
+
+    public void consume(FragmentManager manager) throws FragmentSetupException{
       BufferAllocator allocator = manager.getFragmentContext().getAllocator();
       if (body != null) {
         if (!allocator.takeOwnership((DrillBuf) body.unwrap())) {
@@ -121,11 +153,27 @@ public class DataServer extends BasicServer<RpcType, BitServerConnection> {
         }
       }
       dataHandler.handle(connection, manager, fragmentBatch, (DrillBuf) body, sender);
-
-    } catch (FragmentSetupException e) {
-      logger.error("Failure while getting fragment manager. {}", QueryIdHelper.getQueryIdentifier(handle),  e);
-      sender.send(new Response(RpcType.ACK, Acks.FAIL));
     }
+
+    private void fail(FragmentSetupException e){
+      sender.fail(workBus.getIdentity(), "Failure while setting up fragment manager", e);
+    }
+
+  }
+
+  @Override
+  protected void handle(BitServerConnection connection, int rpcType, ByteBuf pBody, ByteBuf body, ResponseSender sender) throws RpcException {
+    assert rpcType == RpcType.REQ_RECORD_BATCH_VALUE;
+
+    FragmentRecordBatch fragmentBatch = get(pBody, FragmentRecordBatch.PARSER);
+    FragmentWatcher watcher = new FragmentWatcher(sender,fragmentBatch, connection, body);
+    FragmentManager manager = workBus.getFragmentManagerIfExists(fragmentBatch.getHandle());
+    if(manager != null){
+      watcher.consumeNoException(manager);
+    }else{
+      workBus.submitFragmentWatcher(watcher);
+    }
+
   }
 
   private class ProxyCloseHandler implements GenericFutureListener<ChannelFuture> {
