@@ -38,6 +38,7 @@ import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.physical.base.ScanStats;
 import org.apache.drill.exec.physical.base.ScanStats.GroupScanProperty;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
+import org.apache.drill.exec.store.NamedStoragePluginConfig;
 import org.apache.drill.exec.store.StoragePluginRegistry;
 import org.apache.drill.exec.store.dfs.FileSelection;
 import org.apache.drill.exec.store.dfs.ReadEntryFromHDFS;
@@ -94,6 +95,8 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
 
   private List<SchemaPath> columns;
 
+  private NamedStoragePluginConfig namedConfig;
+
   /*
    * total number of rows (obtained from parquet footer)
    */
@@ -115,6 +118,9 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
 
   @JsonProperty("storage")
   public StoragePluginConfig getEngineConfig() {
+    if (namedConfig != null) {
+      return namedConfig;
+    }
     return this.formatPlugin.getStorageConfig();
   }
 
@@ -156,6 +162,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     this.columns = columns;
     this.formatConfig = formatPlugin.getConfig();
     this.fs = formatPlugin.getFileSystem().getUnderlying();
+    this.namedConfig = formatPlugin.getContext().getStorage().getNamedConfig(formatPlugin.getStorageConfig());
 
     this.entries = Lists.newArrayList();
     for (FileStatus file : files) {
@@ -163,7 +170,6 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     }
 
     this.selectionRoot = selectionRoot;
-
     readFooter(files);
   }
 
@@ -182,6 +188,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     this.rowGroupInfos = that.rowGroupInfos;
     this.selectionRoot = that.selectionRoot;
     this.columnValueCounts = that.columnValueCounts;
+    this.namedConfig = that.namedConfig;
   }
 
   private void readFooterFromEntries()  throws IOException {

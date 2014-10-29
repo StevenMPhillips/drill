@@ -74,6 +74,7 @@ public class StoragePluginRegistry implements Iterable<Map.Entry<String, Storage
 
   private Map<Object, Constructor<? extends StoragePlugin>> availablePlugins = new HashMap<Object, Constructor<? extends StoragePlugin>>();
   private ConcurrentMap<String, StoragePlugin> plugins;
+  private Map<StoragePluginConfig, String> reverseMap = new HashMap();
 
   private DrillbitContext context;
   private final DrillSchemaFactory schemaFactory = new DrillSchemaFactory();
@@ -168,6 +169,7 @@ public class StoragePluginRegistry implements Iterable<Map.Entry<String, Storage
           try {
             StoragePlugin plugin = create(name, config);
             activePlugins.put(name, plugin);
+            reverseMap.put(config, name);
           } catch (ExecutionSetupException e) {
             logger.error("Failure while setting up StoragePlugin with name: '{}', disabling.", name, e);
             config.setEnabled(false);
@@ -184,6 +186,16 @@ public class StoragePluginRegistry implements Iterable<Map.Entry<String, Storage
       logger.error("Failure setting up storage plugins.  Drillbit exiting.", e);
       throw new IllegalStateException(e);
     }
+  }
+
+  public NamedStoragePluginConfig getNamedConfig(StoragePluginConfig config) {
+    NamedStoragePluginConfig namedConfig = new NamedStoragePluginConfig();
+    String name = reverseMap.get(config);
+    if (name != null) {
+      namedConfig.name = name;
+      return namedConfig;
+    }
+    return null;
   }
 
   public void deletePlugin(String name) {
