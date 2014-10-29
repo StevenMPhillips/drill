@@ -95,6 +95,14 @@ public class DrillResultSet extends AvaticaResultSet {
     return this;
   }
 
+  public String getQueryId() {
+    if (queryId != null) {
+      return QueryIdHelper.getQueryId(queryId);
+    } else {
+      return null;
+    }
+  }
+
   class Listener implements UserResultsListener {
     private static final int MAX = 100;
     private volatile RpcException ex;
@@ -197,7 +205,6 @@ public class DrillResultSet extends AvaticaResultSet {
 
     @Override
     public void queryIdArrived(QueryId queryId) {
-      System.out.println("QueryId: " + QueryIdHelper.getQueryId(queryId));
       DrillResultSet.this.queryId = queryId;
     }
   }
