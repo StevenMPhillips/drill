@@ -95,8 +95,8 @@ public class RoundRobinSenderRootExec extends BaseRootExec {
       FragmentWritableBatch batch = FragmentWritableBatch.getEmptyBatchWithSchema(handle.getQueryId(),
               handle.getMajorFragmentId(), handle.getMinorFragmentId(), config.getOppositeMajorFragmentId(), 0, incoming.getSchema());
 
-      stats.startWait();
       for (int i = 0; i < tunnels.length; i++) {
+        stats.startWait();
         try {
           tunnels[i].sendRecordBatch(this.statusHandler, batch);
         } finally {
