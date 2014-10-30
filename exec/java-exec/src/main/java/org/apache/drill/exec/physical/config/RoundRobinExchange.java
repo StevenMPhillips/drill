@@ -57,7 +57,7 @@ public class RoundRobinExchange extends AbstractExchange {
 
   @Override
   public Sender getSender(int minorFragmentId, PhysicalOperator child) throws PhysicalOperatorSetupException {
-    return new BroadcastSender(receiverMajorFragmentId, child, receiverLocations);
+    return new RoundRobinSender(receiverMajorFragmentId, child, receiverLocations);
   }
 
   @Override
