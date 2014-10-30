@@ -31,6 +31,7 @@ import org.apache.drill.exec.physical.config.OrderedPartitionSender;
 import org.apache.drill.exec.physical.config.ProducerConsumer;
 import org.apache.drill.exec.physical.config.Project;
 import org.apache.drill.exec.physical.config.RangeSender;
+import org.apache.drill.exec.physical.config.RoundRobinSender;
 import org.apache.drill.exec.physical.config.Screen;
 import org.apache.drill.exec.physical.config.SingleSender;
 import org.apache.drill.exec.physical.config.Sort;
@@ -78,6 +79,7 @@ public interface PhysicalVisitor<RETURN, EXTRA, EXCEP extends Throwable> {
   public RETURN visitHashPartitionSender(HashToRandomExchange op, EXTRA value) throws EXCEP;
   public RETURN visitRangeSender(RangeSender op, EXTRA value) throws EXCEP;
   public RETURN visitBroadcastSender(BroadcastSender op, EXTRA value) throws EXCEP;
+  public RETURN visitRoundRobinSender(RoundRobinSender op, EXTRA value) throws EXCEP;
   public RETURN visitScreen(Screen op, EXTRA value) throws EXCEP;
   public RETURN visitSingleSender(SingleSender op, EXTRA value) throws EXCEP;
   public RETURN visitUnionExchange(UnionExchange op, EXTRA value) throws EXCEP;
