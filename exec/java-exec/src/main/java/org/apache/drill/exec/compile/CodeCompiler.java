@@ -40,7 +40,7 @@ public class CodeCompiler {
   private final OptionManager systemOptionManager;
 
   public CodeCompiler(DrillConfig config, OptionManager systemOptionManager){
-    this.transformer = new ClassTransformer();
+    this.transformer = new ClassTransformer(true);
     this.cache = CacheBuilder //
         .newBuilder() //
         .maximumSize(1000) //

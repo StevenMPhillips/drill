@@ -17,8 +17,9 @@
  */
 package org.apache.drill.exec.compile.bytecode;
 
-
-import org.apache.drill.exec.expr.holders.IntHolder;
+import org.apache.drill.exec.compile.CheckMethodVisitorFsm;
+import org.apache.drill.exec.compile.CompilationConfig;
+import org.apache.drill.exec.util.AssertionUtil;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
@@ -29,19 +30,23 @@ import org.objectweb.asm.tree.analysis.Frame;
 public class ScalarReplacementNode extends MethodNode {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ScalarReplacementNode.class);
 
+  private final String[] exceptionsArr;
+  private final MethodVisitor inner;
 
-  String[] exceptionsArr;
-  MethodVisitor inner;
-
-  public ScalarReplacementNode(int access, String name, String desc, String signature, String[] exceptions, MethodVisitor inner) {
-    super(access, name, desc, signature, exceptions);
+  public ScalarReplacementNode(int access, String name, String desc, String signature,
+      String[] exceptions, MethodVisitor inner) {
+      super(CompilationConfig.ASM_API_VERSION, access, name, desc, signature, exceptions);
     this.exceptionsArr = exceptions;
     this.inner = inner;
   }
 
-
   @Override
   public void visitEnd() {
+    /*
+     * Note this is a MethodNode, not a MethodVisitor. As a result, calls to the various visitX()
+     * methods will be building up a method. Then, once we analyze it, we use accept() to visit that
+     * method and transform it with the InstructionModifier at the bottom.
+     */
     super.visitEnd();
 
     Analyzer<BasicValue> a = new Analyzer<>(new ReplacingInterpreter());
@@ -51,16 +56,17 @@ public class ScalarReplacementNode extends MethodNode {
     } catch (AnalyzerException e) {
       throw new IllegalStateException(e);
     }
+
+    // wrap the instruction handler so that we can do additional things
     TrackingInstructionList list = new TrackingInstructionList(frames, this.instructions);
     this.instructions = list;
-    InstructionModifier holderV = new InstructionModifier(this.access, this.name, this.desc, this.signature, this.exceptionsArr, list, inner);
+
+    MethodVisitor methodVisitor = inner;
+    if (AssertionUtil.isAssertionsEnabled()) {
+      methodVisitor = new CheckMethodVisitorFsm(CompilationConfig.ASM_API_VERSION, methodVisitor);
+    }
+    InstructionModifier holderV = new InstructionModifier(this.access, this.name, this.desc,
+        this.signature, this.exceptionsArr, list, methodVisitor);
     accept(holderV);
-  }
-
-
-  IntHolder local;
-  public void x(){
-    IntHolder h = new IntHolder();
-    local = h;
   }
 }

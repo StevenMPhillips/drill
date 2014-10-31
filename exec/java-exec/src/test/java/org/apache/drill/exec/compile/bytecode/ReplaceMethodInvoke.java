@@ -23,6 +23,7 @@ import java.io.StringWriter;
 import java.net.URL;
 
 import org.apache.drill.common.config.DrillConfig;
+import org.apache.drill.exec.compile.DrillCheckClassAdapter;
 import org.apache.drill.exec.compile.QueryClassLoader;
 import org.apache.drill.exec.server.options.SystemOptionManager;
 import org.apache.drill.exec.store.sys.local.LocalPStoreProvider;
@@ -30,7 +31,6 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.util.ASMifier;
-import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceClassVisitor;
 
@@ -77,12 +77,12 @@ public class ReplaceMethodInvoke {
   private static final void check(byte[] b) {
     ClassReader cr = new ClassReader(b);
     ClassWriter cw = writer();
-    ClassVisitor cv = new CheckClassAdapter(cw);
+    ClassVisitor cv = new DrillCheckClassAdapter(cw);
     cr.accept(cv, 0);
 
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
-    CheckClassAdapter.verify(new ClassReader(cw.toByteArray()), false, pw);
+    DrillCheckClassAdapter.verify(new ClassReader(cw.toByteArray()), false, pw);
 
     assert sw.toString().length() == 0 : sw.toString();
   }

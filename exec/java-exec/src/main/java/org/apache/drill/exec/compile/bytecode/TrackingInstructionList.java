@@ -27,43 +27,33 @@ public class TrackingInstructionList extends InsnList {
 
   Frame<?> currentFrame;
   Frame<?> nextFrame;
-  Frame<?>[] frames;
-  InsnList inner;
-  int index = 0;
+  AbstractInsnNode currentInsn;
+  private int index = 0;
+  private final Frame<?>[] frames;
+  private final InsnList inner;
 
-
-
-  public TrackingInstructionList(Frame<?>[] frames, InsnList inner) {
+  public TrackingInstructionList(final Frame<?>[] frames, final InsnList inner) {
     super();
 
     this.frames = frames;
     this.inner = inner;
   }
 
-  public InsnList getInner(){
-    return inner;
-  }
-
   @Override
-  public void accept(MethodVisitor mv) {
-    AbstractInsnNode insn = inner.getFirst();
-    while (insn != null) {
+  public void accept(final MethodVisitor mv) {
+    currentInsn = inner.getFirst();
+    while (currentInsn != null) {
         currentFrame = frames[index];
-        nextFrame = index +1 < frames.length ? frames[index+1] : null;
-        insn.accept(mv);
+        nextFrame = index + 1 < frames.length ? frames[index + 1] : null;
+        currentInsn.accept(mv);
 
-        insn = insn.getNext();
+        currentInsn = currentInsn.getNext();
         index++;
     }
   }
-
 
   @Override
   public int size() {
     return inner.size();
   }
-
-
-
-
 }

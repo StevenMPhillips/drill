@@ -40,7 +40,10 @@ public class ClassTransformer {
 
   private final ByteCodeLoader byteCodeLoader = new ByteCodeLoader();
 
-  public ClassTransformer() {
+  private boolean scalarReplace;
+
+  public ClassTransformer(boolean scalarReplace) {
+    this.scalarReplace = scalarReplace;
   }
 
   public static class ClassSet{
@@ -173,13 +176,6 @@ public class ClassTransformer {
     }
   }
 
-  private static ClassNode getClassNodeFromByteCode(byte[] bytes) {
-    ClassReader iReader = new ClassReader(bytes);
-    ClassNode impl = new ClassNode();
-    iReader.accept(impl, ClassReader.EXPAND_FRAMES);
-    return impl;
-  }
-
   public Class<?> getImplementationClass( //
       QueryClassLoader classLoader, //
       TemplateClassDefinition<?> templateDefinition, //
@@ -195,7 +191,8 @@ public class ClassTransformer {
       Map<String, ClassNode> classesToMerge = Maps.newHashMap();
       for (byte[] clazz : implementationClasses) {
         totalBytecodeSize += clazz.length;
-        ClassNode node = getClassNodeFromByteCode(clazz);
+        final ClassNode node = AsmUtil.classFromBytes(clazz);
+        assert AsmUtil.isClassOk(node, "implementationClasses", logger);
         classesToMerge.put(node.name, node);
       }
 
@@ -212,7 +209,7 @@ public class ClassTransformer {
         final byte[] precompiledBytes = byteCodeLoader.getClassByteCodeFromPath(nextPrecompiled.clazz);
         ClassNames nextGenerated = nextSet.generated;
         ClassNode generatedNode = classesToMerge.get(nextGenerated.slash);
-        MergedClassResult result = MergeAdapter.getMergedClass(nextSet, precompiledBytes, generatedNode);
+        MergedClassResult result = MergeAdapter.getMergedClass(nextSet, precompiledBytes, generatedNode, scalarReplace);
 
         for (String s : result.innerClasses) {
           s = s.replace(FileUtils.separatorChar, '.');
