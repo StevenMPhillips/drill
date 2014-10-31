@@ -26,14 +26,14 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.drill.exec.compile.ClassTransformer.ClassSet;
+import org.apache.drill.exec.compile.bytecode.ValueHolderReplacementVisitor;
 import org.apache.drill.exec.compile.sig.SignatureHolder;
-import org.objectweb.asm.AnnotationVisitor;
+import org.apache.drill.exec.util.AssertionUtil;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingClassAdapter;
 import org.objectweb.asm.commons.RemappingMethodAdapter;
@@ -41,7 +41,6 @@ import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import com.google.common.collect.Sets;
@@ -53,7 +52,6 @@ import com.google.common.collect.Sets;
 class MergeAdapter extends ClassVisitor {
 
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MergeAdapter.class);
-
   private ClassNode classToMerge;
   private ClassSet set;
   private Set<String> mergingNames = Sets.newHashSet();
@@ -61,7 +59,7 @@ class MergeAdapter extends ClassVisitor {
   private String name;
 
   private MergeAdapter(ClassSet set, ClassVisitor cv, ClassNode cn) {
-    super(Opcodes.ASM4, cv);
+    super(CompilationConfig.ASM_API_VERSION, cv);
     this.classToMerge = cn;
     this.set = set;
     for (Object o  : classToMerge.methods) {
@@ -90,12 +88,6 @@ class MergeAdapter extends ClassVisitor {
     } else {
       super.visitInnerClass(name, outerName, innerName, access);
     }
-  }
-
-  @Override
-  public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-//    System.out.println("Annotation");
-    return super.visitAnnotation(desc, visible);
   }
 
   // visit the class
@@ -141,7 +133,6 @@ class MergeAdapter extends ClassVisitor {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void visitEnd() {
 
     // add all the fields of the class we're going to merge.
@@ -159,7 +150,10 @@ class MergeAdapter extends ClassVisitor {
 
       String[] exceptions = new String[mn.exceptions.size()];
       mn.exceptions.toArray(exceptions);
-      MethodVisitor   mv = cv.visitMethod(mn.access | Modifier.FINAL, mn.name, mn.desc, mn.signature, exceptions);
+      MethodVisitor mv = cv.visitMethod(mn.access | Modifier.FINAL, mn.name, mn.desc, mn.signature, exceptions);
+      if (AssertionUtil.isAssertionsEnabled()) {
+        mv = new CheckMethodVisitorFsm(api, mv);
+      }
 
       mn.instructions.resetLabels();
 
@@ -169,7 +163,8 @@ class MergeAdapter extends ClassVisitor {
       while (top.parent != null) {
         top = top.parent;
       }
-      mn.accept(new RemappingMethodAdapter(mn.access, mn.desc, mv, new SimpleRemapper(top.precompiled.slash, top.generated.slash)));
+      mn.accept(new RemappingMethodAdapter(mn.access, mn.desc, mv,
+          new SimpleRemapper(top.precompiled.slash, top.generated.slash)));
 
     }
     super.visitEnd();
@@ -188,23 +183,48 @@ class MergeAdapter extends ClassVisitor {
       this.bytes = bytes;
       this.innerClasses = innerClasses;
     }
-
   }
 
-  public static MergedClassResult getMergedClass(ClassSet set, byte[] precompiledClass, ClassNode generatedClass) throws IOException{
+  public static MergedClassResult getMergedClass(final ClassSet set, final byte[] precompiledClass,
+      ClassNode generatedClass, final boolean scalarReplace) throws IOException {
 
     // Setup adapters for merging, remapping class names and class writing. This is done in reverse order of how they
     // will be evaluated.
-
-    ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+    assert AsmUtil.isClassBytesOk(precompiledClass, "precompiledClass", logger);
+    assert (generatedClass == null) || AsmUtil.isClassOk(generatedClass, "generatedClass", logger);
     RemapClasses re = new RemapClasses(set);
     try {
-//      if(generatedClass != null) {
-//        ClassNode generatedMerged = new ClassNode();
-//        generatedClass.accept(new ValueHolderReplacementVisitor(generatedMerged));
-//        generatedClass = generatedMerged;
-//      }
-      ClassVisitor remappingAdapter = new RemappingClassAdapter(writer, re);
+      if (scalarReplace && generatedClass != null) {
+        final ClassNode generatedMerged = new ClassNode();
+        ClassVisitor mergeGenerator = generatedMerged;
+        if (AssertionUtil.isAssertionsEnabled()) {
+          mergeGenerator = new DrillCheckClassAdapter(CompilationConfig.ASM_API_VERSION,
+              new CheckClassVisitorFsm(CompilationConfig.ASM_API_VERSION, generatedMerged), true);
+        }
+
+        /*
+         * Even though we're effectively transforming-creating a new class in mergeGenerator,
+         * there's no way to pass in ClassWriter.COMPUTE_MAXS, which would save us from having
+         * to figure out stack size increases on our own. That gets handled by the
+         * InstructionModifier (from inside ValueHolderReplacement > ScalarReplacementNode).
+         */
+        generatedClass.accept(new ValueHolderReplacementVisitor(mergeGenerator));
+        assert AsmUtil.isClassOk(generatedMerged, "generatedMerged", logger);
+        generatedClass = generatedMerged;
+      }
+
+      final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+      ClassVisitor writerVisitor = writer;
+      if (AssertionUtil.isAssertionsEnabled()) {
+        writerVisitor = new DrillCheckClassAdapter(CompilationConfig.ASM_API_VERSION,
+            new CheckClassVisitorFsm(CompilationConfig.ASM_API_VERSION, writerVisitor), true);
+      }
+      ClassVisitor remappingAdapter = new RemappingClassAdapter(writerVisitor, re);
+      if (AssertionUtil.isAssertionsEnabled()) {
+        remappingAdapter = new DrillCheckClassAdapter(CompilationConfig.ASM_API_VERSION,
+            new CheckClassVisitorFsm(CompilationConfig.ASM_API_VERSION, remappingAdapter), true);
+      }
+
       ClassVisitor visitor = remappingAdapter;
       if (generatedClass != null) {
         visitor = new MergeAdapter(set, remappingAdapter, generatedClass);
@@ -219,6 +239,7 @@ class MergeAdapter extends ClassVisitor {
       return new MergedClassResult(outputClass, re.getInnerClasses());
     } catch (Error | RuntimeException e) {
       logger.error("Failure while merging classes.", e);
+      AsmUtil.logClass("generatedClass", generatedClass, logger);
       throw e;
     }
   }
@@ -267,12 +288,12 @@ class MergeAdapter extends ClassVisitor {
 
     try {
       ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-      ClassVisitor cv = new CheckClassAdapter(cw, true);
+      ClassVisitor cv = new DrillCheckClassAdapter(CompilationConfig.ASM_API_VERSION, cw, true);
       node.accept(cv);
 
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw);
-      CheckClassAdapter.verify(new ClassReader(cw.toByteArray()), false, pw);
+      DrillCheckClassAdapter.verify(new ClassReader(cw.toByteArray()), false, pw);
 
       error = sw.toString();
     } catch (Exception ex) {
@@ -285,9 +306,11 @@ class MergeAdapter extends ClassVisitor {
       TraceClassVisitor v = new TraceClassVisitor(pw2);
       node.accept(v);
       if (e != null) {
-        throw new RuntimeException("Failure validating class.  ByteCode: \n" + sw2.toString() + "\n\n====ERRROR====\n" + error, e);
+        throw new RuntimeException("Failure validating class.  ByteCode: \n" +
+            sw2.toString() + "\n\n====ERRROR====\n" + error, e);
       } else {
-        throw new RuntimeException("Failure validating class.  ByteCode: \n" + sw2.toString() + "\n\n====ERRROR====\n" + error);
+        throw new RuntimeException("Failure validating class.  ByteCode: \n" +
+            sw2.toString() + "\n\n====ERRROR====\n" + error);
       }
     }
   }

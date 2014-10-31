@@ -49,11 +49,12 @@ public class ReplacingInterpreter extends BasicInterpreter {
 
   @Override
   public BasicValue newOperation(AbstractInsnNode insn) throws AnalyzerException {
-    if(insn.getOpcode() == Opcodes.NEW){
+    if(insn.getOpcode() == Opcodes.NEW) {
       TypeInsnNode t = (TypeInsnNode) insn;
-      ValueHolderIden iden = HOLDERS.get(t.desc);
 
-      if(iden != null){
+      // if this is for a holder class, we'll replace it
+      ValueHolderIden iden = HOLDERS.get(t.desc);
+      if(iden != null) {
         return new ReplacingBasicValue(Type.getObjectType(t.desc), iden, index++);
       }
     }

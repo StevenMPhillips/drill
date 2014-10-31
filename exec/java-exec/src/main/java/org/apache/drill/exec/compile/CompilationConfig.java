@@ -15,20 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.compile.bytecode;
+package org.apache.drill.exec.compile;
 
-import org.apache.drill.exec.compile.CompilationConfig;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.commons.LocalVariablesSorter;
+import org.objectweb.asm.Opcodes;
 
-public class DirectSorter extends LocalVariablesSorter{
-  static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DirectSorter.class);
-
-  public DirectSorter(int access, String desc, MethodVisitor mv) {
-    super(CompilationConfig.ASM_API_VERSION, access, desc, mv);
-  }
-
-  public void directVarInsn(int opcode, int var) {
-    mv.visitVarInsn(opcode, var);
-  }
+public class CompilationConfig {
+  /*
+   * Never use asm.Opcodes values directly in calls that require them. Use ASM_OPCODES
+   * instead, so that we can change it here once for all references.
+   */
+  public final static int ASM_API_VERSION = Opcodes.ASM5;
 }
