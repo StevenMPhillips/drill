@@ -21,6 +21,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.drill.common.config.DrillConfig;
 import org.apache.drill.common.expression.FunctionCall;
@@ -30,6 +31,7 @@ import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.planner.sql.DrillOperatorTable;
 import org.apache.drill.exec.resolver.FunctionResolver;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 
 public class FunctionImplementationRegistry {
@@ -39,6 +41,9 @@ public class FunctionImplementationRegistry {
   private List<PluggableFunctionRegistry> pluggableFuncRegistries = Lists.newArrayList();
 
   public FunctionImplementationRegistry(DrillConfig config){
+    Stopwatch w = new Stopwatch().start();
+
+    logger.debug("Generating Function Registry.");
     drillFuncRegistry = new DrillFunctionRegistry(config);
 
     Set<Class<? extends PluggableFunctionRegistry>> registryClasses = PathScanner.scanForImplementations(
@@ -63,7 +68,10 @@ public class FunctionImplementationRegistry {
         break;
       }
     }
+    logger.debug("Function registry loaded.  {} functions loaded in {}ms.", drillFuncRegistry.size(), w.elapsed(TimeUnit.MILLISECONDS));
   }
+
+
 
   /**
    * Register functions in given operator table.
