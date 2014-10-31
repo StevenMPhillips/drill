@@ -20,26 +20,36 @@ package org.apache.drill.exec.compile.bytecode;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.analysis.BasicValue;
 
-public class ReplacingBasicValue extends BasicValue{
+public class ReplacingBasicValue extends BasicValue {
+  private final ValueHolderIden iden;
+  private final int index;
+  private boolean isFunctionReturn = false;
+  private boolean isFunctionArgument = false;
 
-  ValueHolderIden iden;
-  int index;
-  Type type;
-  boolean isFunctionReturn = false;
-
-  public ReplacingBasicValue(Type type, ValueHolderIden iden, int index) {
+  public ReplacingBasicValue(final Type type, final ValueHolderIden iden, final int index) {
     super(type);
     this.index = index;
     this.iden = iden;
-    this.type = type;
   }
 
-  public void markFunctionReturn(){
-    this.isFunctionReturn = true;
+  public void markFunctionReturn() {
+    isFunctionReturn = true;
   }
 
-  public void disableFunctionReturn(){
-    this.isFunctionReturn = false;
+  public void disableFunctionReturn() {
+    isFunctionReturn = false;
+  }
+
+  public boolean isFunctionReturn() {
+    return isFunctionReturn;
+  }
+
+  public void setFunctionArgument() {
+    isFunctionArgument = true;
+  }
+
+  public boolean isFunctionArgument() {
+    return isFunctionArgument;
   }
 
   public ValueHolderIden getIden() {
@@ -49,10 +59,4 @@ public class ReplacingBasicValue extends BasicValue{
   public int getIndex() {
     return index;
   }
-
-  @Override
-  public Type getType(){
-    return type;
-  }
-
 }
