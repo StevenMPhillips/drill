@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.drill.exec.compile.ClassTransformer.ClassSet;
+import org.apache.drill.exec.compile.bytecode.ValueHolderReplacementVisitor;
 import org.apache.drill.exec.compile.sig.SignatureHolder;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
@@ -199,11 +200,11 @@ class MergeAdapter extends ClassVisitor {
     ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
     RemapClasses re = new RemapClasses(set);
     try {
-//      if(generatedClass != null) {
-//        ClassNode generatedMerged = new ClassNode();
-//        generatedClass.accept(new ValueHolderReplacementVisitor(generatedMerged));
-//        generatedClass = generatedMerged;
-//      }
+      if(generatedClass != null) {
+        ClassNode generatedMerged = new ClassNode();
+        generatedClass.accept(new ValueHolderReplacementVisitor(generatedMerged));
+        generatedClass = generatedMerged;
+      }
       ClassVisitor remappingAdapter = new RemappingClassAdapter(writer, re);
       ClassVisitor visitor = remappingAdapter;
       if (generatedClass != null) {

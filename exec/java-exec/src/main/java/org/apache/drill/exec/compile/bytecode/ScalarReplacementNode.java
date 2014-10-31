@@ -20,6 +20,7 @@ package org.apache.drill.exec.compile.bytecode;
 
 import org.apache.drill.exec.expr.holders.IntHolder;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
@@ -34,7 +35,7 @@ public class ScalarReplacementNode extends MethodNode {
   MethodVisitor inner;
 
   public ScalarReplacementNode(int access, String name, String desc, String signature, String[] exceptions, MethodVisitor inner) {
-    super(access, name, desc, signature, exceptions);
+    super(Opcodes.ASM5, access, name, desc, signature, exceptions);
     this.exceptionsArr = exceptions;
     this.inner = inner;
   }
