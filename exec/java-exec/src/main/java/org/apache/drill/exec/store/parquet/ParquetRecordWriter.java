@@ -76,7 +76,7 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
   private int dictionaryPageSize = pageSize;
   private boolean enableDictionary = false;
   private boolean validating = false;
-  private CompressionCodecName codec = CompressionCodecName.SNAPPY;
+  private CompressionCodecName codec = CompressionCodecName.UNCOMPRESSED;
   private WriterVersion writerVersion = WriterVersion.PARQUET_1_0;
 
   private long recordCount = 0;

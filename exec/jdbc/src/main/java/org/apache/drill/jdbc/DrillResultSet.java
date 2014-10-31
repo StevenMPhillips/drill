@@ -205,6 +205,7 @@ public class DrillResultSet extends AvaticaResultSet {
 
     @Override
     public void queryIdArrived(QueryId queryId) {
+      System.out.println("QueryId: " + QueryIdHelper.getQueryId(queryId));
       DrillResultSet.this.queryId = queryId;
     }
   }
