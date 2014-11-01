@@ -40,7 +40,10 @@ public class ClassTransformer {
 
   private final ByteCodeLoader byteCodeLoader = new ByteCodeLoader();
 
-  public ClassTransformer() {
+  private boolean scalarReplace;
+
+  public ClassTransformer(boolean scalarReplace) {
+    this.scalarReplace = scalarReplace;
   }
 
   public static class ClassSet{
@@ -212,7 +215,7 @@ public class ClassTransformer {
         final byte[] precompiledBytes = byteCodeLoader.getClassByteCodeFromPath(nextPrecompiled.clazz);
         ClassNames nextGenerated = nextSet.generated;
         ClassNode generatedNode = classesToMerge.get(nextGenerated.slash);
-        MergedClassResult result = MergeAdapter.getMergedClass(nextSet, precompiledBytes, generatedNode);
+        MergedClassResult result = MergeAdapter.getMergedClass(nextSet, precompiledBytes, generatedNode, scalarReplace);
 
         for (String s : result.innerClasses) {
           s = s.replace(FileUtils.separatorChar, '.');

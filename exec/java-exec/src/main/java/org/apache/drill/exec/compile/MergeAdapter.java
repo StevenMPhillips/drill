@@ -192,7 +192,7 @@ class MergeAdapter extends ClassVisitor {
 
   }
 
-  public static MergedClassResult getMergedClass(ClassSet set, byte[] precompiledClass, ClassNode generatedClass) throws IOException{
+  public static MergedClassResult getMergedClass(ClassSet set, byte[] precompiledClass, ClassNode generatedClass, boolean scalarReplace) throws IOException{
 
     // Setup adapters for merging, remapping class names and class writing. This is done in reverse order of how they
     // will be evaluated.
@@ -200,7 +200,7 @@ class MergeAdapter extends ClassVisitor {
     ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
     RemapClasses re = new RemapClasses(set);
     try {
-      if(generatedClass != null) {
+      if(scalarReplace && generatedClass != null) {
         ClassNode generatedMerged = new ClassNode();
         generatedClass.accept(new ValueHolderReplacementVisitor(generatedMerged));
         generatedClass = generatedMerged;
