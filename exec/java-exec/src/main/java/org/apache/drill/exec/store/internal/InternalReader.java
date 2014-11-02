@@ -31,6 +31,9 @@ import org.apache.drill.exec.proto.UserBitShared.SerializedField;
 import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.MaterializedField.Key;
+import org.apache.drill.exec.record.RecordBatchLoader;
+import org.apache.drill.exec.record.TransferPair;
+import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.RecordReader;
@@ -39,6 +42,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import parquet.hadoop.util.CompatibilityUtil;
+import parquet.org.apache.thrift.meta_data.FieldMetaData;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -56,6 +60,8 @@ public class InternalReader extends AbstractRecordReader {
   private FSDataInputStream input;
   private List<SchemaPath> columns;
   private boolean starRequested;
+  private RecordBatchLoader loader;
+  private List<TransferPair> transfers;
 
   public InternalReader(FileSystem fs, Path path, List<SchemaPath> columns) throws ExecutionSetupException {
     try {
@@ -101,6 +107,7 @@ public class InternalReader extends AbstractRecordReader {
   @Override
   public void setOperatorContext(OperatorContext operatorContext) {
     this.oContext = operatorContext;
+    this.loader = new RecordBatchLoader(oContext.getAllocator());
   }
 
   @Override
@@ -117,6 +124,25 @@ public class InternalReader extends AbstractRecordReader {
     int recordCount = batchDef.getRecordCount();
 
     List<SerializedField> fieldList = batchDef.getFieldList();
+    int length = 0;
+    for (SerializedField field : fieldList) {
+      length += field.getBufferLength();
+    }
+    try {
+      ByteBuffer buffer = CompatibilityUtil.getBuf(input, length);
+      DrillBuf buf = DrillBuf.wrapByteBuffer(buffer);
+      buf.setAllocator(oContext.getAllocator());
+      boolean newSchema = loader.load(batchDef, buf);
+      if (newSchema) {
+        newSchema();
+      }
+      for (TransferPair tp : transfers) {
+        tp.transfer();
+      }
+    } catch (IOException | SchemaChangeException e) {
+      throw new RuntimeException(e);
+    }
+    /*
     for (SerializedField metaData : fieldList) {
       int dataLength = metaData.getBufferLength();
       MaterializedField field = MaterializedField.create(metaData);
@@ -127,12 +153,8 @@ public class InternalReader extends AbstractRecordReader {
           continue;
         }
         ByteBuffer buffer = CompatibilityUtil.getBuf(input, dataLength);
-//        buffer.mark();
-//        input.read(buffer);
-//        buffer.reset();
         buf = DrillBuf.wrapByteBuffer(buffer);
         buf.setAllocator(oContext.getAllocator());
-//        buf.writeBytes(input, dataLength);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -145,7 +167,19 @@ public class InternalReader extends AbstractRecordReader {
       vector.load(metaData, buf);
       buf.release();
     }
+    */
     return recordCount;
+  }
+
+  private void newSchema() throws SchemaChangeException {
+    if (transfers != null) {
+      transfers.clear();
+    }
+    transfers = Lists.newArrayList();
+    for (VectorWrapper w : loader) {
+      TransferPair tp = w.getValueVector().makeTransferPair(output.addField(w.getField(), w.getVectorClass()));
+      transfers.add(tp);
+    }
   }
 
   @Override

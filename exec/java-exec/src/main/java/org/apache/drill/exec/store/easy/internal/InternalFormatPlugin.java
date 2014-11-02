@@ -60,7 +60,7 @@ public class InternalFormatPlugin extends EasyFormatPlugin<InternalFormatConfig>
   }
 
   public InternalFormatPlugin(String name, DrillbitContext context, DrillFileSystem fs, StoragePluginConfig config, InternalFormatConfig formatPluginConfig) {
-    super(name, context, fs, config, formatPluginConfig, true, false, false, true, ImmutableList.of(".d"), "internal");
+    super(name, context, fs, config, formatPluginConfig, true, false, false, true, ImmutableList.of("d"), "internal");
   }
 
 
@@ -88,7 +88,7 @@ public class InternalFormatPlugin extends EasyFormatPlugin<InternalFormatConfig>
 
     options.put(FileSystem.FS_DEFAULT_NAME_KEY, ((FileSystemConfig)writer.getStorageConfig()).connection);
 
-    options.put("extension", ".d");
+    options.put("extension", "d");
 
     RecordWriter recordWriter = new InternalWriter(context.getAllocator());
     recordWriter.init(options);
@@ -131,7 +131,7 @@ public class InternalFormatPlugin extends EasyFormatPlugin<InternalFormatConfig>
 
   @Override
   public boolean supportsPushDown() {
-    return true;
+    return false;
   }
 
 }
