@@ -45,6 +45,7 @@ import java.util.concurrent.ConcurrentMap;
 public class Accountor {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Accountor.class);
 
+  private static final boolean EXTRA_DEBUG = false;
   private static final boolean ENABLE_ACCOUNTING = AssertionUtil.isAssertionsEnabled();
   private final AtomicRemainder remainder;
   private final long total;
@@ -138,7 +139,7 @@ public class Accountor {
   }
 
   public boolean reserve(long size) {
-    logger.debug("Fragment:"+fragmentStr+" Reserved "+size+" bytes. Total Allocated: "+getAllocation());
+    if(EXTRA_DEBUG) logger.debug("Fragment:"+fragmentStr+" Reserved "+size+" bytes. Total Allocated: "+getAllocation());
     return remainder.get(size, this.applyFragmentLimit);
   }
 
