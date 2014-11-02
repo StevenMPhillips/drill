@@ -139,7 +139,9 @@ public class Accountor {
   }
 
   public boolean reserve(long size) {
-    if(EXTRA_DEBUG) logger.debug("Fragment:"+fragmentStr+" Reserved "+size+" bytes. Total Allocated: "+getAllocation());
+    if(EXTRA_DEBUG){
+      logger.debug("Fragment:"+fragmentStr+" Reserved "+size+" bytes. Total Allocated: "+getAllocation());
+    }
     return remainder.get(size, this.applyFragmentLimit);
   }
 
