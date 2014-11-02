@@ -56,11 +56,11 @@ import java.util.Map;
 public class InternalFormatPlugin extends EasyFormatPlugin<InternalFormatConfig> {
 
   public InternalFormatPlugin(String name, DrillbitContext context, DrillFileSystem fs, StoragePluginConfig storageConfig) {
-    super(name, context, fs, storageConfig, new InternalFormatConfig(), true, false, false, true, new ArrayList<String>(), "text");
+    super(name, context, fs, storageConfig, new InternalFormatConfig(), true, false, false, true, new ArrayList<String>(), "internal");
   }
 
   public InternalFormatPlugin(String name, DrillbitContext context, DrillFileSystem fs, StoragePluginConfig config, InternalFormatConfig formatPluginConfig) {
-    super(name, context, fs, config, formatPluginConfig, true, false, false, true, ImmutableList.of(".d"), "text");
+    super(name, context, fs, config, formatPluginConfig, true, false, false, true, ImmutableList.of(".d"), "internal");
   }
 
 
@@ -110,12 +110,11 @@ public class InternalFormatPlugin extends EasyFormatPlugin<InternalFormatConfig>
         return true;
       } else if (obj == null) {
         return false;
-      } else if (!(obj instanceof InternalFormatConfig)) {
+      } else if (obj instanceof InternalFormatConfig) {
+        return true;
+      } else {
         return false;
       }
-
-      InternalFormatConfig that = (InternalFormatConfig) obj;
-      return false;
     }
 
   }
