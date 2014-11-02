@@ -42,6 +42,10 @@ public class EventBasedRecordWriter {
   private RecordWriter recordWriter;
   private List<FieldConverter> fieldConverters;
 
+  public EventBasedRecordWriter() {
+
+  }
+
   public EventBasedRecordWriter(VectorAccessible batch, RecordWriter recordWriter)
           throws IOException {
     this.batch = batch;

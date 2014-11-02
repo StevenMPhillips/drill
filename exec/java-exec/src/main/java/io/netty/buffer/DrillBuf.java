@@ -113,6 +113,10 @@ public final class DrillBuf extends AbstractByteBuf {
     this.fContext = c;
   }
 
+  public void setAllocator(BufferAllocator allocator) {
+    this.allocator = allocator;
+  }
+
   public BufferAllocator getAllocator() {
     return allocator;
   }

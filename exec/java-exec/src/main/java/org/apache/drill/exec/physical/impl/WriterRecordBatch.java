@@ -37,6 +37,8 @@ import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.store.EventBasedRecordWriter;
 import org.apache.drill.exec.store.RecordWriter;
+import org.apache.drill.exec.store.internal.BatchWriter;
+import org.apache.drill.exec.store.internal.InternalWriter;
 import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.BigIntVector;
 import org.apache.drill.exec.vector.VarCharVector;
@@ -179,7 +181,11 @@ public class WriterRecordBatch extends AbstractRecordBatch<Writer> {
       stats.stopSetup();
     }
 
-    eventBasedRecordWriter = new EventBasedRecordWriter(incoming, recordWriter);
+    if (recordWriter instanceof InternalWriter) {
+      eventBasedRecordWriter = new BatchWriter(incoming, (InternalWriter) recordWriter);
+    } else {
+      eventBasedRecordWriter = new EventBasedRecordWriter(incoming, recordWriter);
+    }
     container.buildSchema(SelectionVectorMode.NONE);
     schema = container.getSchema();
   }
