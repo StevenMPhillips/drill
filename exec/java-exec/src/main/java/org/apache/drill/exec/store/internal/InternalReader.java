@@ -123,7 +123,7 @@ public class InternalReader extends AbstractRecordReader {
       DrillBuf buf;
       try {
         if (!fieldSelected(field.getPath())) {
-          input.skip(dataLength);
+          input.seek(input.getPos() + dataLength);
           continue;
         }
         ByteBuffer buffer = CompatibilityUtil.getBuf(input, dataLength);
