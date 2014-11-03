@@ -18,6 +18,7 @@
 package org.apache.drill.exec.store.internal;
 
 import com.google.common.collect.Lists;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
@@ -129,10 +130,13 @@ public class InternalReader extends AbstractRecordReader {
       length += field.getBufferLength();
     }
     try {
-      ByteBuffer buffer = CompatibilityUtil.getBuf(input, length);
-      DrillBuf buf = DrillBuf.wrapByteBuffer(buffer);
-      buf.setAllocator(oContext.getAllocator());
+//      ByteBuffer buffer = CompatibilityUtil.getBuf(input, length);
+//      DrillBuf buf = DrillBuf.wrapByteBuffer(buffer);
+//      buf.setAllocator(oContext.getAllocator());
+      DrillBuf buf = oContext.getAllocator().buffer(length);
+      buf.writeBytes(input, length);
       boolean newSchema = loader.load(batchDef, buf);
+      buf.release();
       if (newSchema) {
         newSchema();
       }
