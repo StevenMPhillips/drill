@@ -17,38 +17,35 @@
  */
 package org.apache.drill.exec.store.internal;
 
-import com.google.common.collect.Lists;
-import io.netty.buffer.ByteBuf;
+import com.google.common.collect.Queues;
 import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.exception.SchemaChangeException;
-import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.memory.OutOfMemoryException;
+import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.physical.impl.OutputMutator;
+import org.apache.drill.exec.physical.impl.sort.RecordBatchData;
 import org.apache.drill.exec.proto.UserBitShared;
 import org.apache.drill.exec.proto.UserBitShared.SerializedField;
-import org.apache.drill.exec.record.BatchSchema;
-import org.apache.drill.exec.record.MaterializedField;
+import org.apache.drill.exec.proto.helper.QueryIdHelper;
 import org.apache.drill.exec.record.MaterializedField.Key;
 import org.apache.drill.exec.record.RecordBatchLoader;
 import org.apache.drill.exec.record.TransferPair;
 import org.apache.drill.exec.record.VectorWrapper;
-import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.store.AbstractRecordReader;
-import org.apache.drill.exec.store.RecordReader;
+import org.apache.drill.exec.store.dfs.easy.EasySubScan;
+import org.apache.drill.exec.store.sys.PStoreProvider.DistributedLatch;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import parquet.hadoop.util.CompatibilityUtil;
-import parquet.org.apache.thrift.meta_data.FieldMetaData;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 /**
  * Created by sphillips on 11/1/14.
@@ -63,12 +60,18 @@ public class InternalReader extends AbstractRecordReader {
   private boolean starRequested;
   private RecordBatchLoader loader;
   private List<TransferPair> transfers;
+  private FragmentContext context;
+  private EasySubScan scan;
+  private DistributedLatch latch;
+  private Queue<RecordBatchData> batches = Queues.newLinkedBlockingQueue();
 
-  public InternalReader(FileSystem fs, Path path, List<SchemaPath> columns) throws ExecutionSetupException {
+  public InternalReader(EasySubScan scan, FileSystem fs, Path path, List<SchemaPath> columns, FragmentContext context) throws ExecutionSetupException {
     try {
       this.input = fs.open(path);
       this.columns = columns;
       this.starRequested = containsStar();
+      this.context = context;
+      this.scan = scan;
     } catch (IOException e) {
       throw new ExecutionSetupException(e);
     }
@@ -113,76 +116,68 @@ public class InternalReader extends AbstractRecordReader {
 
   @Override
   public int next() {
-    UserBitShared.RecordBatchDef batchDef = null;
+    if (latch == null) {
+      latch = context.getDrillbitContext().getPersistentStoreProvider().getDistributedLatch(QueryIdHelper.getQueryId(context.getHandle().getQueryId()), scan.getWidth());
+      load();
+      latch.countDown();
+
+      try {
+        latch.await();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
     try {
-      batchDef = UserBitShared.RecordBatchDef.parseDelimitedFrom(input);
-      if (batchDef == null) {
+      RecordBatchData rbd = batches.poll();
+      if (rbd == null) {
         return 0;
       }
-    } catch (IOException e) {
+      transfer(rbd);
+      return rbd.getRecordCount();
+    } catch (SchemaChangeException e) {
       throw new RuntimeException(e);
     }
-    int recordCount = batchDef.getRecordCount();
+  }
 
-    List<SerializedField> fieldList = batchDef.getFieldList();
-    int length = 0;
-    for (SerializedField field : fieldList) {
-      length += field.getBufferLength();
-    }
-    try {
-//      ByteBuffer buffer = CompatibilityUtil.getBuf(input, length);
-//      DrillBuf buf = DrillBuf.wrapByteBuffer(buffer);
-//      buf.setAllocator(oContext.getAllocator());
-      DrillBuf buf = oContext.getAllocator().buffer(length);
-      buf.writeBytes(input, length);
-      boolean newSchema = loader.load(batchDef, buf);
-      buf.release();
-      if (newSchema) {
-        newSchema();
-      }
-      for (TransferPair tp : transfers) {
-        tp.transfer();
-      }
-    } catch (IOException | SchemaChangeException e) {
-      throw new RuntimeException(e);
-    }
-    /*
-    for (SerializedField metaData : fieldList) {
-      int dataLength = metaData.getBufferLength();
-      MaterializedField field = MaterializedField.create(metaData);
-      DrillBuf buf;
+  private void load() {
+    while (true) {
+      UserBitShared.RecordBatchDef batchDef = null;
       try {
-        if (!fieldSelected(field.getPath())) {
-          input.seek(input.getPos() + dataLength);
-          continue;
+        batchDef = UserBitShared.RecordBatchDef.parseDelimitedFrom(input);
+        if (batchDef == null) {
+          return;
         }
-        ByteBuffer buffer = CompatibilityUtil.getBuf(input, dataLength);
-        buf = DrillBuf.wrapByteBuffer(buffer);
-        buf.setAllocator(oContext.getAllocator());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-      ValueVector vector = null;
+      int recordCount = batchDef.getRecordCount();
+
+      List<SerializedField> fieldList = batchDef.getFieldList();
+      int length = 0;
+      for (SerializedField field : fieldList) {
+        length += field.getBufferLength();
+      }
       try {
-        vector = output.addField(field, (Class<ValueVector>) TypeHelper.getValueVectorClass(field.getType().getMinorType(), field.getDataMode()));
-      } catch (SchemaChangeException e) {
+//      ByteBuffer buffer = CompatibilityUtil.getBuf(input, length);
+//      DrillBuf buf = DrillBuf.wrapByteBuffer(buffer);
+//      buf.setAllocator(oContext.getAllocator());
+        DrillBuf buf = oContext.getAllocator().buffer(length);
+        buf.writeBytes(input, length);
+        boolean newSchema = loader.load(batchDef, buf);
+        buf.release();
+        RecordBatchData rbd = new RecordBatchData(loader);
+        batches.add(rbd);
+      } catch (IOException | SchemaChangeException e) {
         throw new RuntimeException(e);
       }
-      vector.load(metaData, buf);
-      buf.release();
     }
-    */
-    return recordCount;
   }
 
-  private void newSchema() throws SchemaChangeException {
-    if (transfers != null) {
-      transfers.clear();
-    }
-    transfers = Lists.newArrayList();
-    for (VectorWrapper w : loader) {
+  private void transfer(RecordBatchData rbd) throws SchemaChangeException {
+    for (VectorWrapper w : rbd.getContainer()) {
       TransferPair tp = w.getValueVector().makeTransferPair(output.addField(w.getField(), w.getVectorClass()));
-      transfers.add(tp);
+      tp.transfer();
     }
   }
 

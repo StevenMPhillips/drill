@@ -36,6 +36,7 @@ import org.apache.drill.exec.store.dfs.FileSelection;
 import org.apache.drill.exec.store.dfs.FileSystemConfig;
 import org.apache.drill.exec.store.dfs.easy.EasyFormatPlugin;
 import org.apache.drill.exec.store.dfs.easy.EasyGroupScan;
+import org.apache.drill.exec.store.dfs.easy.EasySubScan;
 import org.apache.drill.exec.store.dfs.easy.EasyWriter;
 import org.apache.drill.exec.store.dfs.easy.FileWork;
 import org.apache.drill.exec.store.dfs.shim.DrillFileSystem;
@@ -65,10 +66,10 @@ public class InternalFormatPlugin extends EasyFormatPlugin<InternalFormatConfig>
 
 
   @Override
-  public RecordReader getRecordReader(FragmentContext context, FileWork fileWork,
+  public RecordReader getRecordReader(FragmentContext context, EasySubScan scan, FileWork fileWork,
       List<SchemaPath> columns) throws ExecutionSetupException {
     Path path = getFileSystem().getUnderlying().makeQualified(new Path(fileWork.getPath()));
-    return new InternalReader(getFileSystem().getUnderlying(), path, columns);
+    return new InternalReader(scan, getFileSystem().getUnderlying(), path, columns, context);
   }
 
   @Override

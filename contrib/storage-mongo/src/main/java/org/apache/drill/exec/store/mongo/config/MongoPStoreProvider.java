@@ -62,6 +62,11 @@ public class MongoPStoreProvider implements PStoreProvider, DrillMongoConstants 
   }
 
   @Override
+  public DistributedLatch getDistributedLatch(String name, int seed) {
+    throw new UnsupportedOperationException("MongoPStoreProvider does not supported distributed latch");
+  }
+
+  @Override
   public <V> PStore<V> getPStore(PStoreConfig<V> config) throws IOException {
     return new MongoPStore<>(config, collection);
   }

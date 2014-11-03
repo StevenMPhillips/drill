@@ -113,7 +113,7 @@ public abstract class EasyFormatPlugin<T extends FormatPluginConfig> implements 
     return compressible;
   }
 
-  public abstract RecordReader getRecordReader(FragmentContext context, FileWork fileWork, List<SchemaPath> columns) throws ExecutionSetupException;
+  public abstract RecordReader getRecordReader(FragmentContext context, EasySubScan scan, FileWork fileWork, List<SchemaPath> columns) throws ExecutionSetupException;
 
   RecordBatch getReaderBatch(FragmentContext context, EasySubScan scan) throws ExecutionSetupException {
     String partitionDesignator = context.getConfig().getString(ExecConstants.FILESYSTEM_PARTITION_COLUMN_LABEL);
@@ -137,12 +137,12 @@ public abstract class EasyFormatPlugin<T extends FormatPluginConfig> implements 
         }
       }
       // Create a new sub scan object with the new set of columns;
-      scan = new EasySubScan(scan.getWorkUnits(), scan.getFormatPlugin(), newColumns, scan.getSelectionRoot());
+      scan = new EasySubScan(scan.getWorkUnits(), scan.getFormatPlugin(), newColumns, scan.getSelectionRoot(), scan.getWidth());
     }
 
     int numParts = 0;
     for(FileWork work : scan.getWorkUnits()){
-      readers.add(getRecordReader(context, work, scan.getColumns()));
+      readers.add(getRecordReader(context, scan, work, scan.getColumns()));
       if (scan.getSelectionRoot() != null) {
         String[] r = scan.getSelectionRoot().split("/");
         String[] p = work.getPath().split("/");

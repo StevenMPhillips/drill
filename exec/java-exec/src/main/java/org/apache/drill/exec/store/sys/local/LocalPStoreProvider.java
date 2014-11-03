@@ -19,7 +19,9 @@ package org.apache.drill.exec.store.sys.local;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.drill.common.config.DrillConfig;
 import org.apache.drill.exec.ExecConstants;
@@ -72,6 +74,39 @@ public class LocalPStoreProvider implements PStoreProvider{
 
   @Override
   public void start() {
+  }
+
+  private ConcurrentHashMap<String,LocalLatch> latchMap = new ConcurrentHashMap<>();
+
+  @Override
+  public DistributedLatch getDistributedLatch(String name, int seed) {
+    LocalLatch latch = new LocalLatch(name, seed);
+    LocalLatch latchToReturn = latchMap.putIfAbsent(name, latch);
+    return latchToReturn == null ? latch : latchToReturn;
+  }
+
+  public class LocalLatch implements DistributedLatch {
+
+    private CountDownLatch countDownLatch;
+
+    public LocalLatch(String name, int seed) {
+      this.countDownLatch = new CountDownLatch(seed);
+    }
+
+    @Override
+    public int getCount() {
+      return (int) countDownLatch.getCount();
+    }
+
+    @Override
+    public void countDown() {
+      countDownLatch.countDown();
+    }
+
+    @Override
+    public void await() throws InterruptedException {
+      countDownLatch.await();
+    }
   }
 
 }

@@ -31,10 +31,12 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HConnection;
 import org.apache.hadoop.hbase.client.HConnectionManager;
 import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -105,6 +107,11 @@ public class HBasePStoreProvider implements PStoreProvider {
   }
 
   @Override
+  public DistributedLatch getDistributedLatch(String name, int seed) {
+    return new HBaseLatch(name, seed);
+  }
+
+  @Override
   public synchronized void close() {
     if (this.table != null) {
       try {
@@ -121,6 +128,51 @@ public class HBasePStoreProvider implements PStoreProvider {
         logger.warn("Caught exception while closing HBase connection.", e);
       }
       this.connection = null;
+    }
+  }
+
+
+  public class HBaseLatch implements DistributedLatch {
+
+    byte[] row;
+
+    public HBaseLatch(String name, int seed) {
+      row = ("latch_" + name).getBytes();
+      Put put = new Put(row);
+      put.add(FAMILY, QUALIFIER, Bytes.toBytes((long) seed));
+      try {
+        table.checkAndPut(row, FAMILY, QUALIFIER, null, put);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    public int getCount() {
+      Get get = new Get(row);
+      get.addColumn(FAMILY, QUALIFIER);
+      try {
+        byte[] val = table.get(get).getValue(FAMILY, QUALIFIER);
+        return (int) Bytes.toLong(val);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    public void countDown() {
+      try {
+        table.incrementColumnValue(row, FAMILY, QUALIFIER, -1);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    public void await() throws InterruptedException {
+      while (getCount() > 0) {
+        Thread.sleep(100);
+      }
     }
   }
 

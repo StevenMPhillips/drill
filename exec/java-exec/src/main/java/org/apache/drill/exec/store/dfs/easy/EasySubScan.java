@@ -44,6 +44,7 @@ public class EasySubScan extends AbstractSubScan{
   private final EasyFormatPlugin<?> formatPlugin;
   private final List<SchemaPath> columns;
   private String selectionRoot;
+  private int width;
 
   @JsonCreator
   public EasySubScan(
@@ -52,7 +53,8 @@ public class EasySubScan extends AbstractSubScan{
       @JsonProperty("format") FormatPluginConfig formatConfig, //
       @JacksonInject StoragePluginRegistry engineRegistry, //
       @JsonProperty("columns") List<SchemaPath> columns, //
-      @JsonProperty("selectionRoot") String selectionRoot
+      @JsonProperty("selectionRoot") String selectionRoot,
+      @JsonProperty("width") int width
       ) throws IOException, ExecutionSetupException {
 
     this.formatPlugin = (EasyFormatPlugin<?>) engineRegistry.getFormatPlugin(storageConfig, formatConfig);
@@ -60,13 +62,19 @@ public class EasySubScan extends AbstractSubScan{
     this.files = files;
     this.columns = columns;
     this.selectionRoot = selectionRoot;
+    this.width = width;
   }
 
-  public EasySubScan(List<FileWorkImpl> files, EasyFormatPlugin<?> plugin, List<SchemaPath> columns, String selectionRoot){
+  public EasySubScan(List<FileWorkImpl> files, EasyFormatPlugin<?> plugin, List<SchemaPath> columns, String selectionRoot, int width){
     this.formatPlugin = plugin;
     this.files = files;
     this.columns = columns;
     this.selectionRoot = selectionRoot;
+    this.width = width;
+  }
+
+  public int getWidth() {
+    return width;
   }
 
   @JsonProperty

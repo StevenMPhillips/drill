@@ -19,8 +19,13 @@ package org.apache.drill.exec.store.sys.zk;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.shared.SharedCount;
+import org.apache.curator.framework.recipes.shared.SharedCountListener;
+import org.apache.curator.framework.recipes.shared.SharedCountReader;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.drill.exec.coord.ClusterCoordinator;
 import org.apache.drill.exec.coord.zk.ZKClusterCoordinator;
 import org.apache.drill.exec.exception.DrillbitStartupException;
@@ -96,6 +101,66 @@ public class ZkPStoreProvider implements PStoreProvider{
 
   @Override
   public void start() {
+  }
+
+  public DistributedLatch getDistributedLatch(String name, int seed) {
+    return new ZKLatch(this.curator, name, seed);
+  }
+
+  public class ZKLatch implements DistributedLatch {
+    SharedCount count;
+    CountDownLatch latch = new CountDownLatch(1);
+
+    public ZKLatch(CuratorFramework framework, String name, int seed) {
+      count = new SharedCount(framework, name, seed);
+      SharedCountListener countListener = new SharedCountListener() {
+        @Override
+        public void countHasChanged(SharedCountReader sharedCountReader, int i) throws Exception {
+          if (sharedCountReader.getCount() == 0) {
+            latch.countDown();
+          }
+        }
+
+        @Override
+        public void stateChanged(CuratorFramework client, ConnectionState newState) {
+
+        }
+      };
+      count.addListener(countListener);
+      try {
+        count.start();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    public int getCount() {
+      return count.getCount();
+    }
+
+    @Override
+    public void countDown() {
+      boolean success = false;
+      while (!success) {
+        synchronized(curator) {
+          int currentCount = count.getCount();
+          try {
+            success = count.trySetCount(currentCount - 1);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      }
+    }
+
+    @Override
+    public void await() throws InterruptedException {
+      if (count.getCount() == 0) {
+        return;
+      }
+      latch.await();
+    }
   }
 
 }

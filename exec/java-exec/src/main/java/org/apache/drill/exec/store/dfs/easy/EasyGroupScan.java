@@ -202,7 +202,7 @@ public class EasyGroupScan extends AbstractFileGroupScan{
     Preconditions.checkArgument(!filesForMinor.isEmpty(),
         String.format("MinorFragmentId %d has no read entries assigned", minorFragmentId));
 
-    return new EasySubScan(convert(filesForMinor), formatPlugin, columns, selectionRoot);
+    return new EasySubScan(convert(filesForMinor), formatPlugin, columns, selectionRoot, mappings.size());
   }
 
   private List<FileWorkImpl> convert(List<CompleteFileWork> list) {

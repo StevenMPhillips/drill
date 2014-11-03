@@ -33,6 +33,7 @@ import org.apache.drill.exec.store.RecordReader;
 import org.apache.drill.exec.store.RecordWriter;
 import org.apache.drill.exec.store.dfs.FileSystemConfig;
 import org.apache.drill.exec.store.dfs.easy.EasyFormatPlugin;
+import org.apache.drill.exec.store.dfs.easy.EasySubScan;
 import org.apache.drill.exec.store.dfs.easy.EasyWriter;
 import org.apache.drill.exec.store.dfs.easy.FileWork;
 import org.apache.drill.exec.store.dfs.shim.DrillFileSystem;
@@ -54,7 +55,7 @@ public class JSONFormatPlugin extends EasyFormatPlugin<JSONFormatConfig> {
   }
 
   @Override
-  public RecordReader getRecordReader(FragmentContext context, FileWork fileWork,
+  public RecordReader getRecordReader(FragmentContext context, EasySubScan scan, FileWork fileWork,
       List<SchemaPath> columns) throws ExecutionSetupException {
     return new JSONRecordReader2(context, fileWork.getPath(), this.getFileSystem().getUnderlying(), columns);
   }

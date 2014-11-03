@@ -23,4 +23,11 @@ import java.io.IOException;
 public interface PStoreProvider extends AutoCloseable, Closeable{
   public <V> PStore<V> getPStore(PStoreConfig<V> table) throws IOException;
   public void start() throws IOException;
+  public DistributedLatch getDistributedLatch(String name, int seed);
+
+  public static interface DistributedLatch {
+    public int getCount();
+    public void countDown();
+    public void await() throws InterruptedException;
+  }
 }
