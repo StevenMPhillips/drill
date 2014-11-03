@@ -25,6 +25,9 @@ import org.apache.drill.exec.proto.UserBitShared.StreamProfile;
 import com.carrotsearch.hppc.IntDoubleOpenHashMap;
 import com.carrotsearch.hppc.IntLongOpenHashMap;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
+
 public class OperatorStats {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(OperatorStats.class);
 
@@ -47,12 +50,18 @@ public class OperatorStats {
   protected long processingNanos;
   protected long setupNanos;
   protected long waitNanos;
+  protected long userNanos;
+  protected long sysNanos;
 
   private long processingMark;
   private long setupMark;
   private long waitMark;
+  private long userMark;
+  private long cpuMark;
 
   private long schemas;
+
+  private ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
 
   public OperatorStats(OpProfileDef def, BufferAllocator allocator){
     this(def.getOperatorId(), def.getOperatorType(), def.getIncomingCount(), allocator);
@@ -88,12 +97,18 @@ public class OperatorStats {
   public void startProcessing() {
     assert !inProcessing : assertionError("starting processing");
     processingMark = System.nanoTime();
+    cpuMark = mxBean.getCurrentThreadCpuTime();
+    userMark = mxBean.getCurrentThreadUserTime();
     inProcessing = true;
   }
 
   public void stopProcessing() {
     assert inProcessing : assertionError("stopping processing");
+    long cpuTime = mxBean.getCurrentThreadCpuTime();
+    long userTime = mxBean.getCurrentThreadUserTime();
     processingNanos += System.nanoTime() - processingMark;
+    userNanos += userTime - userMark;
+    sysNanos += cpuTime - cpuMark - (userTime - userMark);
     inProcessing = false;
   }
 
@@ -126,6 +141,8 @@ public class OperatorStats {
         .setOperatorId(operatorId) //
         .setSetupNanos(setupNanos) //
         .setProcessNanos(processingNanos)
+        .setUserNanos(userNanos)
+        .setSysNanos(sysNanos)
         .setWaitNanos(waitNanos);
 
     if(allocator != null){

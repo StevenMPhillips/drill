@@ -57,6 +57,8 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
     private long localMemoryAllocated;
     private List<MetricValue> metric;
     private long waitNanos;
+    private long userNanos;
+    private long sysNanos;
 
     public OperatorProfile()
     {
@@ -169,6 +171,32 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
         return this;
     }
 
+    // userNanos
+
+    public long getUserNanos()
+    {
+        return userNanos;
+    }
+
+    public OperatorProfile setUserNanos(long userNanos)
+    {
+        this.userNanos = userNanos;
+        return this;
+    }
+
+    // sysNanos
+
+    public long getSysNanos()
+    {
+        return sysNanos;
+    }
+
+    public OperatorProfile setSysNanos(long sysNanos)
+    {
+        this.sysNanos = sysNanos;
+        return this;
+    }
+
     // java serialization
 
     public void readExternal(ObjectInput in) throws IOException
@@ -253,6 +281,12 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
                 case 9:
                     message.waitNanos = input.readInt64();
                     break;
+                case 10:
+                    message.userNanos = input.readInt64();
+                    break;
+                case 11:
+                    message.sysNanos = input.readInt64();
+                    break;
                 default:
                     input.handleUnknownField(number, this);
             }   
@@ -299,6 +333,12 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
 
         if(message.waitNanos != 0)
             output.writeInt64(9, message.waitNanos, false);
+
+        if(message.userNanos != 0)
+            output.writeInt64(10, message.userNanos, false);
+
+        if(message.sysNanos != 0)
+            output.writeInt64(11, message.sysNanos, false);
     }
 
     public String getFieldName(int number)
@@ -313,6 +353,8 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
             case 7: return "localMemoryAllocated";
             case 8: return "metric";
             case 9: return "waitNanos";
+            case 10: return "userNanos";
+            case 11: return "sysNanos";
             default: return null;
         }
     }
@@ -334,6 +376,8 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
         __fieldMap.put("localMemoryAllocated", 7);
         __fieldMap.put("metric", 8);
         __fieldMap.put("waitNanos", 9);
+        __fieldMap.put("userNanos", 10);
+        __fieldMap.put("sysNanos", 11);
     }
     
 }

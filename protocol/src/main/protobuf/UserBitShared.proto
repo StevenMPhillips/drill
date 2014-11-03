@@ -160,6 +160,8 @@ message OperatorProfile {
   optional int64 local_memory_allocated = 7;
   repeated MetricValue metric = 8;
   optional int64 wait_nanos = 9;
+  optional int64 user_nanos = 10;
+  optional int64 sys_nanos = 11;
 }
 
 message StreamProfile {
