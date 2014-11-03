@@ -26,6 +26,17 @@ public class TestExampleQueries extends BaseTestQuery{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
   @Test
+  public void testInternalWriter() throws Exception {
+    test("alter session set `store.format` = 'internal'");
+    test("alter session set `planner.slice_target` = 1");
+    test("use dfs.tmp");
+//    test("create table nation_internal as select * from dfs.`/drill/SF10/nation/`");
+//    test("select sum(l_extendedprice) from lineitem_internal");
+//    test("select sum(l_extendedprice) from cp.`tpch/lineitem.parquet`");
+    test("select count(*) from nation_internal");
+  }
+
+  @Test
   public void testParquetComplex() throws Exception {
     test("select recipe from cp.`parquet/complex.parquet`");
     test("select * from cp.`parquet/complex.parquet`");
