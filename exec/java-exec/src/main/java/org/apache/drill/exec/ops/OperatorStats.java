@@ -84,6 +84,7 @@ public class OperatorStats {
     this.recordsReceivedByInput = new long[inputCount];
     this.batchesReceivedByInput = new long[inputCount];
     this.schemaCountByInput = new long[inputCount];
+    this.mxBean.setThreadContentionMonitoringEnabled(true);
   }
 
   private String assertionError(String msg){
