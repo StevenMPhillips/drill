@@ -26,6 +26,7 @@ import com.carrotsearch.hppc.IntDoubleOpenHashMap;
 import com.carrotsearch.hppc.IntLongOpenHashMap;
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 
 public class OperatorStats {
@@ -52,12 +53,20 @@ public class OperatorStats {
   protected long waitNanos;
   protected long userNanos;
   protected long sysNanos;
+  protected long blockNanos;
+  protected long blockCount;
+  protected long threadWaitNanos;
+  protected long threadWaitCount;
 
   private long processingMark;
   private long setupMark;
   private long waitMark;
   private long userMark;
   private long cpuMark;
+  private long blockNanosMark;
+  private long blockCountMark;
+  private long threadWaitNanosMark;
+  private long threadWaitCountMark;
 
   private long schemas;
 
@@ -99,6 +108,11 @@ public class OperatorStats {
     processingMark = System.nanoTime();
     cpuMark = mxBean.getCurrentThreadCpuTime();
     userMark = mxBean.getCurrentThreadUserTime();
+    ThreadInfo info = mxBean.getThreadInfo(Thread.currentThread().getId());
+    blockNanosMark = info.getBlockedTime();
+    blockCountMark = info.getBlockedCount();
+    threadWaitNanosMark = info.getWaitedTime();
+    threadWaitCountMark = info.getWaitedCount();
     inProcessing = true;
   }
 
@@ -106,9 +120,14 @@ public class OperatorStats {
     assert inProcessing : assertionError("stopping processing");
     long cpuTime = mxBean.getCurrentThreadCpuTime();
     long userTime = mxBean.getCurrentThreadUserTime();
+    ThreadInfo info = mxBean.getThreadInfo(Thread.currentThread().getId());
     processingNanos += System.nanoTime() - processingMark;
     userNanos += userTime - userMark;
     sysNanos += cpuTime - cpuMark - (userTime - userMark);
+    blockNanos += info.getBlockedTime() - blockNanosMark;
+    blockCount += info.getBlockedCount() - blockCountMark;
+    threadWaitNanos += info.getWaitedTime() - threadWaitNanosMark;
+    threadWaitCount += info.getWaitedCount() - threadWaitCountMark;
     inProcessing = false;
   }
 
@@ -143,6 +162,10 @@ public class OperatorStats {
         .setProcessNanos(processingNanos)
         .setUserNanos(userNanos)
         .setSysNanos(sysNanos)
+        .setBlockNanos(blockNanos)
+        .setBlockCount(blockCount)
+        .setWaitedNanos(threadWaitNanos)
+        .setWaitedCount(threadWaitCount)
         .setWaitNanos(waitNanos);
 
     if(allocator != null){

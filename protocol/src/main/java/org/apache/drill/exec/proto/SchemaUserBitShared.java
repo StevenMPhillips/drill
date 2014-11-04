@@ -2045,6 +2045,14 @@ public final class SchemaUserBitShared
                     output.writeInt64(10, message.getUserNanos(), false);
                 if(message.hasSysNanos())
                     output.writeInt64(11, message.getSysNanos(), false);
+                if(message.hasBlockNanos())
+                    output.writeInt64(12, message.getBlockNanos(), false);
+                if(message.hasBlockCount())
+                    output.writeInt64(13, message.getBlockCount(), false);
+                if(message.hasWaitedNanos())
+                    output.writeInt64(14, message.getWaitedNanos(), false);
+                if(message.hasWaitedCount())
+                    output.writeInt64(15, message.getWaitedCount(), false);
             }
             public boolean isInitialized(org.apache.drill.exec.proto.UserBitShared.OperatorProfile message)
             {
@@ -2116,6 +2124,18 @@ public final class SchemaUserBitShared
                         case 11:
                             builder.setSysNanos(input.readInt64());
                             break;
+                        case 12:
+                            builder.setBlockNanos(input.readInt64());
+                            break;
+                        case 13:
+                            builder.setBlockCount(input.readInt64());
+                            break;
+                        case 14:
+                            builder.setWaitedNanos(input.readInt64());
+                            break;
+                        case 15:
+                            builder.setWaitedCount(input.readInt64());
+                            break;
                         default:
                             input.handleUnknownField(number, this);
                     }
@@ -2166,6 +2186,10 @@ public final class SchemaUserBitShared
                 case 9: return "waitNanos";
                 case 10: return "userNanos";
                 case 11: return "sysNanos";
+                case 12: return "blockNanos";
+                case 13: return "blockCount";
+                case 14: return "waitedNanos";
+                case 15: return "waitedCount";
                 default: return null;
             }
         }
@@ -2187,6 +2211,10 @@ public final class SchemaUserBitShared
             fieldMap.put("waitNanos", 9);
             fieldMap.put("userNanos", 10);
             fieldMap.put("sysNanos", 11);
+            fieldMap.put("blockNanos", 12);
+            fieldMap.put("blockCount", 13);
+            fieldMap.put("waitedNanos", 14);
+            fieldMap.put("waitedCount", 15);
         }
     }
 

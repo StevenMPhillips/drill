@@ -59,6 +59,10 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
     private long waitNanos;
     private long userNanos;
     private long sysNanos;
+    private long blockNanos;
+    private long blockCount;
+    private long waitedNanos;
+    private long waitedCount;
 
     public OperatorProfile()
     {
@@ -197,6 +201,58 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
         return this;
     }
 
+    // blockNanos
+
+    public long getBlockNanos()
+    {
+        return blockNanos;
+    }
+
+    public OperatorProfile setBlockNanos(long blockNanos)
+    {
+        this.blockNanos = blockNanos;
+        return this;
+    }
+
+    // blockCount
+
+    public long getBlockCount()
+    {
+        return blockCount;
+    }
+
+    public OperatorProfile setBlockCount(long blockCount)
+    {
+        this.blockCount = blockCount;
+        return this;
+    }
+
+    // waitedNanos
+
+    public long getWaitedNanos()
+    {
+        return waitedNanos;
+    }
+
+    public OperatorProfile setWaitedNanos(long waitedNanos)
+    {
+        this.waitedNanos = waitedNanos;
+        return this;
+    }
+
+    // waitedCount
+
+    public long getWaitedCount()
+    {
+        return waitedCount;
+    }
+
+    public OperatorProfile setWaitedCount(long waitedCount)
+    {
+        this.waitedCount = waitedCount;
+        return this;
+    }
+
     // java serialization
 
     public void readExternal(ObjectInput in) throws IOException
@@ -287,6 +343,18 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
                 case 11:
                     message.sysNanos = input.readInt64();
                     break;
+                case 12:
+                    message.blockNanos = input.readInt64();
+                    break;
+                case 13:
+                    message.blockCount = input.readInt64();
+                    break;
+                case 14:
+                    message.waitedNanos = input.readInt64();
+                    break;
+                case 15:
+                    message.waitedCount = input.readInt64();
+                    break;
                 default:
                     input.handleUnknownField(number, this);
             }   
@@ -339,6 +407,18 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
 
         if(message.sysNanos != 0)
             output.writeInt64(11, message.sysNanos, false);
+
+        if(message.blockNanos != 0)
+            output.writeInt64(12, message.blockNanos, false);
+
+        if(message.blockCount != 0)
+            output.writeInt64(13, message.blockCount, false);
+
+        if(message.waitedNanos != 0)
+            output.writeInt64(14, message.waitedNanos, false);
+
+        if(message.waitedCount != 0)
+            output.writeInt64(15, message.waitedCount, false);
     }
 
     public String getFieldName(int number)
@@ -355,6 +435,10 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
             case 9: return "waitNanos";
             case 10: return "userNanos";
             case 11: return "sysNanos";
+            case 12: return "blockNanos";
+            case 13: return "blockCount";
+            case 14: return "waitedNanos";
+            case 15: return "waitedCount";
             default: return null;
         }
     }
@@ -378,6 +462,10 @@ public final class OperatorProfile implements Externalizable, Message<OperatorPr
         __fieldMap.put("waitNanos", 9);
         __fieldMap.put("userNanos", 10);
         __fieldMap.put("sysNanos", 11);
+        __fieldMap.put("blockNanos", 12);
+        __fieldMap.put("blockCount", 13);
+        __fieldMap.put("waitedNanos", 14);
+        __fieldMap.put("waitedCount", 15);
     }
     
 }

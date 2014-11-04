@@ -16211,6 +16211,46 @@ public final class UserBitShared {
      * <code>optional int64 sys_nanos = 11;</code>
      */
     long getSysNanos();
+
+    // optional int64 block_nanos = 12;
+    /**
+     * <code>optional int64 block_nanos = 12;</code>
+     */
+    boolean hasBlockNanos();
+    /**
+     * <code>optional int64 block_nanos = 12;</code>
+     */
+    long getBlockNanos();
+
+    // optional int64 block_count = 13;
+    /**
+     * <code>optional int64 block_count = 13;</code>
+     */
+    boolean hasBlockCount();
+    /**
+     * <code>optional int64 block_count = 13;</code>
+     */
+    long getBlockCount();
+
+    // optional int64 waited_nanos = 14;
+    /**
+     * <code>optional int64 waited_nanos = 14;</code>
+     */
+    boolean hasWaitedNanos();
+    /**
+     * <code>optional int64 waited_nanos = 14;</code>
+     */
+    long getWaitedNanos();
+
+    // optional int64 waited_count = 15;
+    /**
+     * <code>optional int64 waited_count = 15;</code>
+     */
+    boolean hasWaitedCount();
+    /**
+     * <code>optional int64 waited_count = 15;</code>
+     */
+    long getWaitedCount();
   }
   /**
    * Protobuf type {@code exec.shared.OperatorProfile}
@@ -16317,6 +16357,26 @@ public final class UserBitShared {
             case 88: {
               bitField0_ |= 0x00000080;
               sysNanos_ = input.readInt64();
+              break;
+            }
+            case 96: {
+              bitField0_ |= 0x00000100;
+              blockNanos_ = input.readInt64();
+              break;
+            }
+            case 104: {
+              bitField0_ |= 0x00000200;
+              blockCount_ = input.readInt64();
+              break;
+            }
+            case 112: {
+              bitField0_ |= 0x00000400;
+              waitedNanos_ = input.readInt64();
+              break;
+            }
+            case 120: {
+              bitField0_ |= 0x00000800;
+              waitedCount_ = input.readInt64();
               break;
             }
           }
@@ -16565,6 +16625,70 @@ public final class UserBitShared {
       return sysNanos_;
     }
 
+    // optional int64 block_nanos = 12;
+    public static final int BLOCK_NANOS_FIELD_NUMBER = 12;
+    private long blockNanos_;
+    /**
+     * <code>optional int64 block_nanos = 12;</code>
+     */
+    public boolean hasBlockNanos() {
+      return ((bitField0_ & 0x00000100) == 0x00000100);
+    }
+    /**
+     * <code>optional int64 block_nanos = 12;</code>
+     */
+    public long getBlockNanos() {
+      return blockNanos_;
+    }
+
+    // optional int64 block_count = 13;
+    public static final int BLOCK_COUNT_FIELD_NUMBER = 13;
+    private long blockCount_;
+    /**
+     * <code>optional int64 block_count = 13;</code>
+     */
+    public boolean hasBlockCount() {
+      return ((bitField0_ & 0x00000200) == 0x00000200);
+    }
+    /**
+     * <code>optional int64 block_count = 13;</code>
+     */
+    public long getBlockCount() {
+      return blockCount_;
+    }
+
+    // optional int64 waited_nanos = 14;
+    public static final int WAITED_NANOS_FIELD_NUMBER = 14;
+    private long waitedNanos_;
+    /**
+     * <code>optional int64 waited_nanos = 14;</code>
+     */
+    public boolean hasWaitedNanos() {
+      return ((bitField0_ & 0x00000400) == 0x00000400);
+    }
+    /**
+     * <code>optional int64 waited_nanos = 14;</code>
+     */
+    public long getWaitedNanos() {
+      return waitedNanos_;
+    }
+
+    // optional int64 waited_count = 15;
+    public static final int WAITED_COUNT_FIELD_NUMBER = 15;
+    private long waitedCount_;
+    /**
+     * <code>optional int64 waited_count = 15;</code>
+     */
+    public boolean hasWaitedCount() {
+      return ((bitField0_ & 0x00000800) == 0x00000800);
+    }
+    /**
+     * <code>optional int64 waited_count = 15;</code>
+     */
+    public long getWaitedCount() {
+      return waitedCount_;
+    }
+
     private void initFields() {
       inputProfile_ = java.util.Collections.emptyList();
       operatorId_ = 0;
@@ -16576,6 +16700,10 @@ public final class UserBitShared {
       waitNanos_ = 0L;
       userNanos_ = 0L;
       sysNanos_ = 0L;
+      blockNanos_ = 0L;
+      blockCount_ = 0L;
+      waitedNanos_ = 0L;
+      waitedCount_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -16618,6 +16746,18 @@ public final class UserBitShared {
       }
       if (((bitField0_ & 0x00000080) == 0x00000080)) {
         output.writeInt64(11, sysNanos_);
+      }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        output.writeInt64(12, blockNanos_);
+      }
+      if (((bitField0_ & 0x00000200) == 0x00000200)) {
+        output.writeInt64(13, blockCount_);
+      }
+      if (((bitField0_ & 0x00000400) == 0x00000400)) {
+        output.writeInt64(14, waitedNanos_);
+      }
+      if (((bitField0_ & 0x00000800) == 0x00000800)) {
+        output.writeInt64(15, waitedCount_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -16667,6 +16807,22 @@ public final class UserBitShared {
       if (((bitField0_ & 0x00000080) == 0x00000080)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(11, sysNanos_);
+      }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(12, blockNanos_);
+      }
+      if (((bitField0_ & 0x00000200) == 0x00000200)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(13, blockCount_);
+      }
+      if (((bitField0_ & 0x00000400) == 0x00000400)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(14, waitedNanos_);
+      }
+      if (((bitField0_ & 0x00000800) == 0x00000800)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(15, waitedCount_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -16814,6 +16970,14 @@ public final class UserBitShared {
         bitField0_ = (bitField0_ & ~0x00000100);
         sysNanos_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000200);
+        blockNanos_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000400);
+        blockCount_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000800);
+        waitedNanos_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00001000);
+        waitedCount_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00002000);
         return this;
       }
 
@@ -16892,6 +17056,22 @@ public final class UserBitShared {
           to_bitField0_ |= 0x00000080;
         }
         result.sysNanos_ = sysNanos_;
+        if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
+          to_bitField0_ |= 0x00000100;
+        }
+        result.blockNanos_ = blockNanos_;
+        if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
+          to_bitField0_ |= 0x00000200;
+        }
+        result.blockCount_ = blockCount_;
+        if (((from_bitField0_ & 0x00001000) == 0x00001000)) {
+          to_bitField0_ |= 0x00000400;
+        }
+        result.waitedNanos_ = waitedNanos_;
+        if (((from_bitField0_ & 0x00002000) == 0x00002000)) {
+          to_bitField0_ |= 0x00000800;
+        }
+        result.waitedCount_ = waitedCount_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -16983,6 +17163,18 @@ public final class UserBitShared {
         }
         if (other.hasSysNanos()) {
           setSysNanos(other.getSysNanos());
+        }
+        if (other.hasBlockNanos()) {
+          setBlockNanos(other.getBlockNanos());
+        }
+        if (other.hasBlockCount()) {
+          setBlockCount(other.getBlockCount());
+        }
+        if (other.hasWaitedNanos()) {
+          setWaitedNanos(other.getWaitedNanos());
+        }
+        if (other.hasWaitedCount()) {
+          setWaitedCount(other.getWaitedCount());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -17751,6 +17943,138 @@ public final class UserBitShared {
       public Builder clearSysNanos() {
         bitField0_ = (bitField0_ & ~0x00000200);
         sysNanos_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // optional int64 block_nanos = 12;
+      private long blockNanos_ ;
+      /**
+       * <code>optional int64 block_nanos = 12;</code>
+       */
+      public boolean hasBlockNanos() {
+        return ((bitField0_ & 0x00000400) == 0x00000400);
+      }
+      /**
+       * <code>optional int64 block_nanos = 12;</code>
+       */
+      public long getBlockNanos() {
+        return blockNanos_;
+      }
+      /**
+       * <code>optional int64 block_nanos = 12;</code>
+       */
+      public Builder setBlockNanos(long value) {
+        bitField0_ |= 0x00000400;
+        blockNanos_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 block_nanos = 12;</code>
+       */
+      public Builder clearBlockNanos() {
+        bitField0_ = (bitField0_ & ~0x00000400);
+        blockNanos_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // optional int64 block_count = 13;
+      private long blockCount_ ;
+      /**
+       * <code>optional int64 block_count = 13;</code>
+       */
+      public boolean hasBlockCount() {
+        return ((bitField0_ & 0x00000800) == 0x00000800);
+      }
+      /**
+       * <code>optional int64 block_count = 13;</code>
+       */
+      public long getBlockCount() {
+        return blockCount_;
+      }
+      /**
+       * <code>optional int64 block_count = 13;</code>
+       */
+      public Builder setBlockCount(long value) {
+        bitField0_ |= 0x00000800;
+        blockCount_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 block_count = 13;</code>
+       */
+      public Builder clearBlockCount() {
+        bitField0_ = (bitField0_ & ~0x00000800);
+        blockCount_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // optional int64 waited_nanos = 14;
+      private long waitedNanos_ ;
+      /**
+       * <code>optional int64 waited_nanos = 14;</code>
+       */
+      public boolean hasWaitedNanos() {
+        return ((bitField0_ & 0x00001000) == 0x00001000);
+      }
+      /**
+       * <code>optional int64 waited_nanos = 14;</code>
+       */
+      public long getWaitedNanos() {
+        return waitedNanos_;
+      }
+      /**
+       * <code>optional int64 waited_nanos = 14;</code>
+       */
+      public Builder setWaitedNanos(long value) {
+        bitField0_ |= 0x00001000;
+        waitedNanos_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 waited_nanos = 14;</code>
+       */
+      public Builder clearWaitedNanos() {
+        bitField0_ = (bitField0_ & ~0x00001000);
+        waitedNanos_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // optional int64 waited_count = 15;
+      private long waitedCount_ ;
+      /**
+       * <code>optional int64 waited_count = 15;</code>
+       */
+      public boolean hasWaitedCount() {
+        return ((bitField0_ & 0x00002000) == 0x00002000);
+      }
+      /**
+       * <code>optional int64 waited_count = 15;</code>
+       */
+      public long getWaitedCount() {
+        return waitedCount_;
+      }
+      /**
+       * <code>optional int64 waited_count = 15;</code>
+       */
+      public Builder setWaitedCount(long value) {
+        bitField0_ |= 0x00002000;
+        waitedCount_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 waited_count = 15;</code>
+       */
+      public Builder clearWaitedCount() {
+        bitField0_ = (bitField0_ & ~0x00002000);
+        waitedCount_ = 0L;
         onChanged();
         return this;
       }
@@ -19041,41 +19365,44 @@ public final class UserBitShared {
       "\nstart_time\030\005 \001(\003\022\020\n\010end_time\030\006 \001(\003\022\023\n\013m" +
       "emory_used\030\007 \001(\003\022\027\n\017max_memory_used\030\010 \001(" +
       "\003\022(\n\010endpoint\030\t \001(\0132\026.exec.DrillbitEndpo" +
-      "int\"\241\002\n\017OperatorProfile\0221\n\rinput_profile" +
+      "int\"\367\002\n\017OperatorProfile\0221\n\rinput_profile" +
       "\030\001 \003(\0132\032.exec.shared.StreamProfile\022\023\n\013op" +
       "erator_id\030\003 \001(\005\022\025\n\roperator_type\030\004 \001(\005\022\023" +
       "\n\013setup_nanos\030\005 \001(\003\022\025\n\rprocess_nanos\030\006 \001" +
       "(\003\022\036\n\026local_memory_allocated\030\007 \001(\003\022(\n\006me",
       "tric\030\010 \003(\0132\030.exec.shared.MetricValue\022\022\n\n" +
       "wait_nanos\030\t \001(\003\022\022\n\nuser_nanos\030\n \001(\003\022\021\n\t" +
-      "sys_nanos\030\013 \001(\003\"B\n\rStreamProfile\022\017\n\007reco" +
-      "rds\030\001 \001(\003\022\017\n\007batches\030\002 \001(\003\022\017\n\007schemas\030\003 " +
-      "\001(\003\"J\n\013MetricValue\022\021\n\tmetric_id\030\001 \001(\005\022\022\n" +
-      "\nlong_value\030\002 \001(\003\022\024\n\014double_value\030\003 \001(\001*" +
-      "5\n\nRpcChannel\022\017\n\013BIT_CONTROL\020\000\022\014\n\010BIT_DA" +
-      "TA\020\001\022\010\n\004USER\020\002*/\n\tQueryType\022\007\n\003SQL\020\001\022\013\n\007" +
-      "LOGICAL\020\002\022\014\n\010PHYSICAL\020\003*k\n\rFragmentState" +
-      "\022\013\n\007SENDING\020\000\022\027\n\023AWAITING_ALLOCATION\020\001\022\013",
-      "\n\007RUNNING\020\002\022\014\n\010FINISHED\020\003\022\r\n\tCANCELLED\020\004" +
-      "\022\n\n\006FAILED\020\005*\264\005\n\020CoreOperatorType\022\021\n\rSIN" +
-      "GLE_SENDER\020\000\022\024\n\020BROADCAST_SENDER\020\001\022\n\n\006FI" +
-      "LTER\020\002\022\022\n\016HASH_AGGREGATE\020\003\022\r\n\tHASH_JOIN\020" +
-      "\004\022\016\n\nMERGE_JOIN\020\005\022\031\n\025HASH_PARTITION_SEND" +
-      "ER\020\006\022\t\n\005LIMIT\020\007\022\024\n\020MERGING_RECEIVER\020\010\022\034\n" +
-      "\030ORDERED_PARTITION_SENDER\020\t\022\013\n\007PROJECT\020\n" +
-      "\022\026\n\022UNORDERED_RECEIVER\020\013\022\020\n\014RANGE_SENDER" +
-      "\020\014\022\n\n\006SCREEN\020\r\022\034\n\030SELECTION_VECTOR_REMOV" +
-      "ER\020\016\022\027\n\023STREAMING_AGGREGATE\020\017\022\016\n\nTOP_N_S",
-      "ORT\020\020\022\021\n\rEXTERNAL_SORT\020\021\022\t\n\005TRACE\020\022\022\t\n\005U" +
-      "NION\020\023\022\014\n\010OLD_SORT\020\024\022\032\n\026PARQUET_ROW_GROU" +
-      "P_SCAN\020\025\022\021\n\rHIVE_SUB_SCAN\020\026\022\025\n\021SYSTEM_TA" +
-      "BLE_SCAN\020\027\022\021\n\rMOCK_SUB_SCAN\020\030\022\022\n\016PARQUET" +
-      "_WRITER\020\031\022\023\n\017DIRECT_SUB_SCAN\020\032\022\017\n\013TEXT_W" +
-      "RITER\020\033\022\021\n\rTEXT_SUB_SCAN\020\034\022\021\n\rJSON_SUB_S" +
-      "CAN\020\035\022\030\n\024INFO_SCHEMA_SUB_SCAN\020\036\022\023\n\017COMPL" +
-      "EX_TO_JSON\020\037\022\025\n\021PRODUCER_CONSUMER\020 \022\022\n\016H" +
-      "BASE_SUB_SCAN\020!\022\n\n\006WINDOW\020\"B.\n\033org.apach" +
-      "e.drill.exec.protoB\rUserBitSharedH\001"
+      "sys_nanos\030\013 \001(\003\022\023\n\013block_nanos\030\014 \001(\003\022\023\n\013" +
+      "block_count\030\r \001(\003\022\024\n\014waited_nanos\030\016 \001(\003\022" +
+      "\024\n\014waited_count\030\017 \001(\003\"B\n\rStreamProfile\022\017" +
+      "\n\007records\030\001 \001(\003\022\017\n\007batches\030\002 \001(\003\022\017\n\007sche" +
+      "mas\030\003 \001(\003\"J\n\013MetricValue\022\021\n\tmetric_id\030\001 " +
+      "\001(\005\022\022\n\nlong_value\030\002 \001(\003\022\024\n\014double_value\030" +
+      "\003 \001(\001*5\n\nRpcChannel\022\017\n\013BIT_CONTROL\020\000\022\014\n\010" +
+      "BIT_DATA\020\001\022\010\n\004USER\020\002*/\n\tQueryType\022\007\n\003SQL",
+      "\020\001\022\013\n\007LOGICAL\020\002\022\014\n\010PHYSICAL\020\003*k\n\rFragmen" +
+      "tState\022\013\n\007SENDING\020\000\022\027\n\023AWAITING_ALLOCATI" +
+      "ON\020\001\022\013\n\007RUNNING\020\002\022\014\n\010FINISHED\020\003\022\r\n\tCANCE" +
+      "LLED\020\004\022\n\n\006FAILED\020\005*\264\005\n\020CoreOperatorType\022" +
+      "\021\n\rSINGLE_SENDER\020\000\022\024\n\020BROADCAST_SENDER\020\001" +
+      "\022\n\n\006FILTER\020\002\022\022\n\016HASH_AGGREGATE\020\003\022\r\n\tHASH" +
+      "_JOIN\020\004\022\016\n\nMERGE_JOIN\020\005\022\031\n\025HASH_PARTITIO" +
+      "N_SENDER\020\006\022\t\n\005LIMIT\020\007\022\024\n\020MERGING_RECEIVE" +
+      "R\020\010\022\034\n\030ORDERED_PARTITION_SENDER\020\t\022\013\n\007PRO" +
+      "JECT\020\n\022\026\n\022UNORDERED_RECEIVER\020\013\022\020\n\014RANGE_",
+      "SENDER\020\014\022\n\n\006SCREEN\020\r\022\034\n\030SELECTION_VECTOR" +
+      "_REMOVER\020\016\022\027\n\023STREAMING_AGGREGATE\020\017\022\016\n\nT" +
+      "OP_N_SORT\020\020\022\021\n\rEXTERNAL_SORT\020\021\022\t\n\005TRACE\020" +
+      "\022\022\t\n\005UNION\020\023\022\014\n\010OLD_SORT\020\024\022\032\n\026PARQUET_RO" +
+      "W_GROUP_SCAN\020\025\022\021\n\rHIVE_SUB_SCAN\020\026\022\025\n\021SYS" +
+      "TEM_TABLE_SCAN\020\027\022\021\n\rMOCK_SUB_SCAN\020\030\022\022\n\016P" +
+      "ARQUET_WRITER\020\031\022\023\n\017DIRECT_SUB_SCAN\020\032\022\017\n\013" +
+      "TEXT_WRITER\020\033\022\021\n\rTEXT_SUB_SCAN\020\034\022\021\n\rJSON" +
+      "_SUB_SCAN\020\035\022\030\n\024INFO_SCHEMA_SUB_SCAN\020\036\022\023\n" +
+      "\017COMPLEX_TO_JSON\020\037\022\025\n\021PRODUCER_CONSUMER\020",
+      " \022\022\n\016HBASE_SUB_SCAN\020!\022\n\n\006WINDOW\020\"B.\n\033org" +
+      ".apache.drill.exec.protoB\rUserBitSharedH" +
+      "\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -19171,7 +19498,7 @@ public final class UserBitShared {
           internal_static_exec_shared_OperatorProfile_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_shared_OperatorProfile_descriptor,
-              new java.lang.String[] { "InputProfile", "OperatorId", "OperatorType", "SetupNanos", "ProcessNanos", "LocalMemoryAllocated", "Metric", "WaitNanos", "UserNanos", "SysNanos", });
+              new java.lang.String[] { "InputProfile", "OperatorId", "OperatorType", "SetupNanos", "ProcessNanos", "LocalMemoryAllocated", "Metric", "WaitNanos", "UserNanos", "SysNanos", "BlockNanos", "BlockCount", "WaitedNanos", "WaitedCount", });
           internal_static_exec_shared_StreamProfile_descriptor =
             getDescriptor().getMessageTypes().get(15);
           internal_static_exec_shared_StreamProfile_fieldAccessorTable = new

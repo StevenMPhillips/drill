@@ -162,6 +162,10 @@ message OperatorProfile {
   optional int64 wait_nanos = 9;
   optional int64 user_nanos = 10;
   optional int64 sys_nanos = 11;
+  optional int64 block_nanos = 12;
+  optional int64 block_count = 13;
+  optional int64 waited_nanos = 14;
+  optional int64 waited_count = 15;
 }
 
 message StreamProfile {
