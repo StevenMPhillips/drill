@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.drill.exec.compile.ClassTransformer.ClassSet;
 import org.apache.drill.exec.compile.bytecode.ValueHolderReplacementVisitor;
 import org.apache.drill.exec.compile.sig.SignatureHolder;
+import org.apache.drill.exec.util.AssertionUtil;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -204,6 +205,19 @@ class MergeAdapter extends ClassVisitor {
         ClassNode generatedMerged = new ClassNode();
         generatedClass.accept(new ValueHolderReplacementVisitor(generatedMerged));
         generatedClass = generatedMerged;
+
+
+        if(AssertionUtil.isAssertionsEnabled()){
+          StringWriter sw = new StringWriter();
+          ClassWriter verifyWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+          generatedClass.accept(verifyWriter);
+          ClassReader ver = new ClassReader(verifyWriter.toByteArray());
+          CheckClassAdapter.verify(ver, false, new PrintWriter(sw));
+          String output = sw.toString();
+          if(!output.isEmpty()){
+            throw new IOException("Failure while merging bytecode.\n" +  output);
+          }
+        }
       }
       ClassVisitor remappingAdapter = new RemappingClassAdapter(writer, re);
       ClassVisitor visitor = remappingAdapter;
