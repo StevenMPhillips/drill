@@ -17,7 +17,9 @@
  */
 package org.apache.drill.exec.compile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +36,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceClassVisitor;
 
 public class ClassTransformer {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ClassTransformer.class);
@@ -197,6 +201,7 @@ public class ClassTransformer {
       long totalBytecodeSize = 0;
       Map<String, ClassNode> classesToMerge = Maps.newHashMap();
       for (byte[] clazz : implementationClasses) {
+        logger.debug("Pre merge: \n" + textify(clazz));
         totalBytecodeSize += clazz.length;
         ClassNode node = getClassNodeFromByteCode(clazz);
         classesToMerge.put(node.name, node);
@@ -217,6 +222,8 @@ public class ClassTransformer {
         ClassNode generatedNode = classesToMerge.get(nextGenerated.slash);
         MergedClassResult result = MergeAdapter.getMergedClass(nextSet, precompiledBytes, generatedNode, scalarReplace);
 
+        logger.debug("Post merge:\n" + textify(result.bytes));
+
         for (String s : result.innerClasses) {
           s = s.replace(FileUtils.separatorChar, '.');
           names.add(nextSet.getChild(s));
@@ -236,6 +243,15 @@ public class ClassTransformer {
       throw new ClassTransformationException(String.format("Failure generating transformation classes for value: \n %s", entireClass), e);
     }
 
+  }
+
+  public static String textify(byte[] bytes) {
+
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    ClassReader cr = new ClassReader(bytes);
+    TraceClassVisitor tcv = new TraceClassVisitor(null, new Textifier(), new PrintWriter(bos));
+    cr.accept(tcv, 0);
+    return bos.toString();
   }
 
 }
