@@ -377,8 +377,8 @@ public class ParquetRecordReader extends AbstractRecordReader {
         firstColumnStatus = columnStatuses.iterator().next();
       }
       else{
-        if (varLengthReader.columns.size() > 0) {
-          firstColumnStatus = varLengthReader.columns.iterator().next();
+        if (varLengthReader.columns.length > 0) {
+          firstColumnStatus = varLengthReader.columns[0];
         }
         else{
           firstColumnStatus = null;
@@ -442,7 +442,7 @@ public class ParquetRecordReader extends AbstractRecordReader {
     for (VarLengthColumn r : varLengthReader.columns) {
       r.clear();
     }
-    varLengthReader.columns.clear();
+
   }
 
 }
