@@ -27,7 +27,8 @@ public class VarLenBinaryReader {
 
   public VarLenBinaryReader(ParquetRecordReader parentReader, List<VarLengthColumn> columns) {
     this.parentReader = parentReader;
-    this.columns = (VarLengthColumn[]) columns.toArray();
+    VarLengthColumn[] columnArray = new VarLengthColumn[columns.size()];
+    this.columns = columns.toArray(columnArray);
   }
 
   /**
@@ -51,7 +52,7 @@ public class VarLenBinaryReader {
 
     do {
       lengthVarFieldsInCurrentRecord = 0;
-      for (VarLengthColumn columnReader : columns) {
+      for (VarLengthColumn columnReader : columns) { // fix
         if ( !exitLengthDeterminingLoop ) {
           exitLengthDeterminingLoop = columnReader.determineSize(recordsReadInCurrentPass, lengthVarFieldsInCurrentRecord);
         } else {
@@ -63,7 +64,7 @@ public class VarLenBinaryReader {
           + lengthVarFieldsInCurrentRecord > parentReader.getBatchSize()) {
         break;
       }
-      for (VarLengthColumn columnReader : columns ) {
+      for (VarLengthColumn columnReader : columns ) { //fix
         columnReader.updateReadyToReadPosition();
         columnReader.currDefLevel = -1;
       }
