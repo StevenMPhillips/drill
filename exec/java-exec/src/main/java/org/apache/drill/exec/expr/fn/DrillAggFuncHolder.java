@@ -139,7 +139,7 @@ class DrillAggFuncHolder extends DrillFuncHolder{
     g.getEvalBlock().add(sub);
     JVar internalOutput = sub.decl(JMod.FINAL, g.getHolderType(returnValue.type), returnValue.name, JExpr._new(g.getHolderType(returnValue.type)));
     addProtectedBlock(g, sub, output, null, workspaceJVars, false);
-    sub.assign(out.getHolder(), internalOutput);
+//    sub.assign(out.getHolder(), internalOutput); //TODO deal with this SMP
         //hash aggregate uses workspace vectors. Initialization is done in "setup" and does not require "reset" block.
         if (!g.getMappingSet().isHashAggMapping()) {
           generateBody(g, BlockType.RESET, reset, null, workspaceJVars, false);
@@ -205,7 +205,7 @@ class DrillAggFuncHolder extends DrillFuncHolder{
       for(int i =0; i < inputVariables.length; i++){
         ValueReference parameter = parameters[i];
         HoldingContainer inputVariable = inputVariables[i];
-        sub.decl(inputVariable.getHolder().type(), parameter.name, inputVariable.getHolder());
+//        sub.decl(inputVariable.getHolder().type(), parameter.name, inputVariable.getHolder()); // TODO deal with this SMP
       }
     }
 

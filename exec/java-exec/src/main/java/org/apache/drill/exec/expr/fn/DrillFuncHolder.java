@@ -169,9 +169,13 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
           JType singularReaderClass = g.getModel()._ref(TypeHelper.getHolderReaderImpl(inputVariable.getMajorType().getMinorType(),
               inputVariable.getMajorType().getMode()));
           JType fieldReadClass = g.getModel()._ref(FieldReader.class);
-          sub.decl(fieldReadClass, parameter.name, JExpr._new(singularReaderClass).arg(inputVariable.getHolder()));
+//          sub.decl(fieldReadClass, parameter.name, JExpr._new(singularReaderClass).arg(inputVariable.getHolder())); TODO deal with this SMP
         } else {
-          sub.decl(inputVariable.getHolder().type(), parameter.name, inputVariable.getHolder());
+//          sub.decl(inputVariable.getHolder().type(), parameter.name, inputVariable.getHolder());
+          for (String name : inputVariable.getHolder().keySet()) {
+            JVar var = inputVariable.getHolder().get(name);
+            sub.decl(var.type(), parameter.name + "_" + name, inputVariable.getHolder().get(name));
+          }
         }
       }
     }

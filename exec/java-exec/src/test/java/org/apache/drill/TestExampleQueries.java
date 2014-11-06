@@ -26,6 +26,11 @@ public class TestExampleQueries extends BaseTestQuery{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
   @Test
+  public void testQ() throws Exception {
+    test("select n_nationkey + n_regionkey from cp.`tpch/nation.parquet`");
+  }
+
+  @Test
   public void testParquetComplex() throws Exception {
     test("select recipe from cp.`parquet/complex.parquet`");
     test("select * from cp.`parquet/complex.parquet`");

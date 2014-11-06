@@ -67,47 +67,48 @@ public class GetSetVectorHelper {
         return;
       case DECIMAL9:
       case DECIMAL18:
-        eval.assign(out.getHolder().ref("scale"), vector.invoke("getField").invoke("getScale"));
-        eval.assign(out.getHolder().ref("precision"), vector.invoke("getField").invoke("getPrecision"));
+        eval.assign(out.getHolder().get("scale"), vector.invoke("getField").invoke("getScale"));
+        eval.assign(out.getHolder().get("precision"), vector.invoke("getField").invoke("getPrecision"));
         eval.assign(out.getValue(), getValueAccessor.invoke("get").arg(indexVariable));
         return;
       case DECIMAL28DENSE:
       case DECIMAL28SPARSE:
       case DECIMAL38DENSE:
       case DECIMAL38SPARSE:
-        eval.assign(out.getHolder().ref("scale"), vector.invoke("getField").invoke("getScale"));
-        eval.assign(out.getHolder().ref("precision"), vector.invoke("getField").invoke("getPrecision"));
-        eval.assign(out.getHolder().ref("start"), JExpr.lit(TypeHelper.getSize(type)).mul(indexVariable));
-        eval.assign(out.getHolder().ref("buffer"), vector.invoke("getData"));
+        eval.assign(out.getHolder().get("scale"), vector.invoke("getField").invoke("getScale"));
+        eval.assign(out.getHolder().get("precision"), vector.invoke("getField").invoke("getPrecision"));
+        eval.assign(out.getHolder().get("start"), JExpr.lit(TypeHelper.getSize(type)).mul(indexVariable));
+        eval.assign(out.getHolder().get("buffer"), vector.invoke("getData"));
         return;
       case INTERVAL:{
         JVar start = eval.decl(model.INT, "start", JExpr.lit(TypeHelper.getSize(type)).mul(indexVariable));
         JVar data = eval.decl(model.ref(DrillBuf.class), "data", vector.invoke("getData"));
-        eval.assign(out.getHolder().ref("months"), data.invoke("getInt").arg(start));
-        eval.assign(out.getHolder().ref("days"), data.invoke("getInt").arg(start.plus(JExpr.lit(4))));
-        eval.assign(out.getHolder().ref("milliseconds"), data.invoke("getInt").arg(start.plus(JExpr.lit(8))));
+        eval.assign(out.getHolder().get("months"), data.invoke("getInt").arg(start));
+        eval.assign(out.getHolder().get("days"), data.invoke("getInt").arg(start.plus(JExpr.lit(4))));
+        eval.assign(out.getHolder().get("milliseconds"), data.invoke("getInt").arg(start.plus(JExpr.lit(8))));
         return;
       }
       case INTERVALDAY: {
         JVar start = eval.decl(model.INT, "start", JExpr.lit(TypeHelper.getSize(type)).mul(indexVariable));
-        eval.assign(out.getHolder().ref("days"), vector.invoke("getData").invoke("getInt").arg(start));
-        eval.assign(out.getHolder().ref("milliseconds"), vector.invoke("getData").invoke("getInt").arg(start.plus(JExpr.lit(4))));
+        eval.assign(out.getHolder().get("days"), vector.invoke("getData").invoke("getInt").arg(start));
+        eval.assign(out.getHolder().get("milliseconds"), vector.invoke("getData").invoke("getInt").arg(start.plus(JExpr.lit(4))));
         return;
       }
       case VAR16CHAR:
       case VARBINARY:
       case VARCHAR:
-         eval.assign(out.getHolder().ref("buffer"), vector.invoke("getData"));
+         eval.assign(out.getHolder().get("buffer"), vector.invoke("getData"));
          JVar se = eval.decl(model.LONG, "startEnd", getValueAccessor.invoke("getStartEnd").arg(indexVariable));
-         eval.assign(out.getHolder().ref("start"), JExpr.cast(model._ref(int.class), se));
-         eval.assign(out.getHolder().ref("end"), JExpr.cast(model._ref(int.class), se.shr(JExpr.lit(32))));
+         eval.assign(out.getHolder().get("start"), JExpr.cast(model._ref(int.class), se));
+         eval.assign(out.getHolder().get("end"), JExpr.cast(model._ref(int.class), se.shr(JExpr.lit(32))));
         return;
 
       }
     }
 
     // fallback.
-    eval.add(getValueAccessor.invoke("get").arg(indexVariable).arg(out.getHolder()));
+//    eval.add(getValueAccessor.invoke("get").arg(indexVariable).arg(out.getHolder()));
+    throw new UnsupportedOperationException("Unsupported type");
   }
 
   public static JInvocation write(MajorType type, JVar vector, HoldingContainer in, JExpression indexVariable, String setMethodName) {
@@ -168,7 +169,8 @@ public class GetSetVectorHelper {
     }
 
 
-    return setMethod.arg(in.getHolder());
+//    return setMethod.arg(in.getHolder());
+    throw new UnsupportedOperationException("Unsupported type");
 
   }
 

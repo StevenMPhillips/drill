@@ -17,15 +17,19 @@
  */
 package org.apache.drill.exec.expr.fn;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Maps;
+import com.sun.codemodel.JType;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.types.TypeProtos.DataMode;
 import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.expr.ClassGenerator;
 import org.apache.drill.exec.expr.ClassGenerator.BlockType;
 import org.apache.drill.exec.expr.ClassGenerator.HoldingContainer;
+import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.FunctionCostCategory;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.FunctionScope;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.NullHandling;
@@ -136,19 +140,64 @@ public class DrillSimpleFuncHolder extends DrillFuncHolder{
     g.getEvalBlock().add(topSub);
 
 
-    JVar internalOutput = sub.decl(JMod.FINAL, g.getHolderType(returnValueType), returnValue.name, JExpr._new(g.getHolderType(returnValueType)));
-    addProtectedBlock(g, sub, body, inputVariables, workspaceJVars, false);
-    if (sub != topSub) {
-      sub.assign(internalOutput.ref("isSet"),JExpr.lit(1));// Assign null if NULL_IF_NULL mode
+//    JVar internalOutput = sub.decl(JMod.FINAL, g.getHolderType(returnValueType), returnValue.name, JExpr._new(g.getHolderType(returnValueType)));
+    Field[] fields;
+    try {
+      fields = TypeHelper.getHolderReaderImpl(returnValueType.getMinorType(), returnValueType.getMode()).getDeclaredField("holder").getType().getFields();
+    } catch (NoSuchFieldException e) {
+      throw new RuntimeException(e);
     }
-    sub.assign(out.getHolder(), internalOutput);
+    Map<String,JVar> outMap = Maps.newHashMap();
+    for (Field field : fields) {
+      JType type = JType.parse(g.getModel(), field.getType().getName());
+      JVar var = sub.decl(type, returnValue.name + "_" + field.getName());
+      outMap.put(field.getName(), var);
+    }
+    addProtectedBlock(g, sub, getNewBody(body), inputVariables, workspaceJVars, false);
     if (sub != topSub) {
-      sub.assign(internalOutput.ref("isSet"),JExpr.lit(1));// Assign null if NULL_IF_NULL mode
+      sub.assign(out.getHolder().get("isSet"),JExpr.lit(1));// Assign null if NULL_IF_NULL mode
+    }
+//    sub.assign(out.getHolder(), internalOutput);
+    for (String fieldName : out.getHolder().keySet()) {
+      JVar varOut = out.getHolder().get(fieldName);
+//      JVar varInternalOut = internalOutput.getHolder().get(fieldName);
+      sub.assign(varOut, outMap.get(fieldName));
+    }
+    if (sub != topSub) {
+      sub.assign(out.getHolder().get("isSet"),JExpr.lit(1));// Assign null if NULL_IF_NULL mode
     }
 
     g.getEvalBlock().directStatement(String.format("//---- end of eval portion of %s function. ----//", registeredNames[0]));
 
     return out;
+  }
+
+  private String getNewBody(String body) {
+    String newBody = body;
+    for (ValueReference parameter : parameters) {
+      String pName = parameter.getName();
+      Class holderClass = null;
+      try {
+        holderClass = TypeHelper.getHolderReaderImpl(parameter.getType().getMinorType(), parameter.getType().getMode()).getDeclaredField("holder").getType();
+      } catch (NoSuchFieldException e) {
+        throw new RuntimeException(e);
+      }
+      for (Field field : holderClass.getFields()) {
+        String fieldName = field.getName();
+        newBody = newBody.replace(String.format("%s.%s", pName, fieldName), String.format("%s_%s", pName, fieldName));
+      }
+    }
+    try {
+      String pName = returnValue.getName();
+      Class holderClass = TypeHelper.getHolderReaderImpl(returnValue.getType().getMinorType(), returnValue.getType().getMode()).getDeclaredField("holder").getType();
+      for (Field field : holderClass.getFields()) {
+        String fieldName = field.getName();
+        newBody = newBody.replace(String.format("%s.%s", pName, fieldName), String.format("%s_%s", pName, fieldName));
+      }
+    } catch (NoSuchFieldException e) {
+      throw new RuntimeException(e);
+    }
+    return newBody;
   }
 
   public String getSetupBody() {

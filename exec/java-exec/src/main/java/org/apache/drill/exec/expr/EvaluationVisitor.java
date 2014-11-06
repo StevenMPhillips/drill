@@ -174,10 +174,10 @@ public class EvaluationVisitor {
       if (thenExpr.isOptional()) {
         JConditional newCond = jc._then()._if(thenExpr.getIsSet().ne(JExpr.lit(0)));
         JBlock b = newCond._then();
-        b.assign(output.getHolder(), thenExpr.getHolder());
+//        b.assign(output.getHolder(), thenExpr.getHolder()); TODO deal with this SMP
         //b.assign(output.getIsSet(), thenExpr.getIsSet());
       } else {
-        jc._then().assign(output.getHolder(), thenExpr.getHolder());
+//        jc._then().assign(output.getHolder(), thenExpr.getHolder()); TODO deal with this SMP
       }
 
       generator.nestEvalBlock(jc._else());
@@ -189,10 +189,10 @@ public class EvaluationVisitor {
       if (elseExpr.isOptional()) {
         JConditional newCond = jc._else()._if(elseExpr.getIsSet().ne(JExpr.lit(0)));
         JBlock b = newCond._then();
-        b.assign(output.getHolder(), elseExpr.getHolder());
+//        b.assign(output.getHolder(), elseExpr.getHolder()); TODO deal with this SMP
         //b.assign(output.getIsSet(), elseExpr.getIsSet());
       } else {
-        jc._else().assign(output.getHolder(), elseExpr.getHolder());
+//        jc._else().assign(output.getHolder(), elseExpr.getHolder()); TODO deal with this SMP
       }
       local.add(conditionalBlock);
       return output;
@@ -304,7 +304,7 @@ public class EvaluationVisitor {
         generator.getEvalBlock().add(writer.invoke("resetState"));
         generator.getEvalBlock().add(writer.invoke("setPosition").arg(outIndex));
         String copyMethod = inputContainer.isSingularRepeated() ? "copyAsValueSingle" : "copyAsValue";
-        generator.getEvalBlock().add(inputContainer.getHolder().invoke(copyMethod).arg(writer));
+//        generator.getEvalBlock().add(inputContainer.getHolder().invoke(copyMethod).arg(writer)); TODO deal with this SMP
         if (e.isSafe()) {
           HoldingContainer outputContainer = generator.declare(Types.REQUIRED_BIT);
           JConditional ifOut = generator.getEvalBlock()._if(writer.invoke("ok"));
@@ -459,13 +459,14 @@ public class EvaluationVisitor {
             eval.assign(complexReader, expr);
           }
 
-          HoldingContainer hc = new HoldingContainer(e.getMajorType(), complexReader, null, null, false, true);
-          return hc;
+//          HoldingContainer hc = new HoldingContainer(e.getMajorType(), complexReader, null, null, false, true); // TODO deal with this SMP
+//          return hc;
+          return null;
         } else {
           if (seg != null) {
-            eval.add(expr.invoke("read").arg(JExpr.lit(seg.getArraySegment().getIndex())).arg(out.getHolder()));
+//            eval.add(expr.invoke("read").arg(JExpr.lit(seg.getArraySegment().getIndex())).arg(out.getHolder())); TODO deal with this SMP
           } else {
-            eval.add(expr.invoke("read").arg(out.getHolder()));
+//            eval.add(expr.invoke("read").arg(out.getHolder())); TODO deal with this SMP
           }
         }
 
@@ -518,7 +519,8 @@ public class EvaluationVisitor {
       JExpression buffer = generator.getMappingSet().getIncoming().invoke("getContext").invoke("getManagedBuffer");
       setup.assign(var,
           generator.getModel().ref(ValueHolderHelper.class).staticInvoke("getVarCharHolder").arg(buffer).arg(stringLiteral));
-      return new HoldingContainer(majorType, var, null, null);
+//      return new HoldingContainer(majorType, var, null, null); TODO deal with this SMP
+      return null;
     }
 
     @Override
@@ -534,7 +536,8 @@ public class EvaluationVisitor {
           var,
           generator.getModel().ref(ValueHolderHelper.class).staticInvoke("getIntervalDayHolder").arg(dayLiteral)
               .arg(millisLiteral));
-      return new HoldingContainer(majorType, var, null, null);
+//      return new HoldingContainer(majorType, var, null, null); TODO deal with this SMP
+      return null;
     }
 
     @Override
@@ -551,7 +554,8 @@ public class EvaluationVisitor {
           var,
           generator.getModel().ref(ValueHolderHelper.class).staticInvoke("getDecimal9Holder").arg(valueLiteral)
               .arg(scaleLiteral).arg(precisionLiteral));
-      return new HoldingContainer(majorType, var, null, null);
+//      return new HoldingContainer(majorType, var, null, null); TODO deal with this SMP
+      return null;
     }
 
     @Override
@@ -568,7 +572,8 @@ public class EvaluationVisitor {
           var,
           generator.getModel().ref(ValueHolderHelper.class).staticInvoke("getDecimal18Holder").arg(valueLiteral)
               .arg(scaleLiteral).arg(precisionLiteral));
-      return new HoldingContainer(majorType, var, null, null);
+//      return new HoldingContainer(majorType, var, null, null); TODO deal with this SMP
+      return null;
     }
 
     @Override
@@ -581,7 +586,8 @@ public class EvaluationVisitor {
       JExpression stringLiteral = JExpr.lit(e.getBigDecimal().toString());
       setup.assign(var,
           generator.getModel().ref(ValueHolderHelper.class).staticInvoke("getDecimal28Holder").arg(stringLiteral));
-      return new HoldingContainer(majorType, var, null, null);
+//      return new HoldingContainer(majorType, var, null, null); TODO deal with this SMP
+      return null;
     }
 
     @Override
@@ -594,7 +600,8 @@ public class EvaluationVisitor {
       JExpression stringLiteral = JExpr.lit(e.getBigDecimal().toString());
       setup.assign(var,
           generator.getModel().ref(ValueHolderHelper.class).staticInvoke("getVarCharHolder").arg(stringLiteral));
-      return new HoldingContainer(majorType, var, null, null);
+//      return new HoldingContainer(majorType, var, null, null); TODO deal with this SMP
+      return null;
     }
 
     @Override
@@ -1044,10 +1051,11 @@ public class EvaluationVisitor {
      */
     private HoldingContainer renderConstantExpression(ClassGenerator<?> generator, HoldingContainer input) {
       JVar fieldValue = generator.declareClassField("constant", generator.getHolderType(input.getMajorType()));
-      generator.getEvalBlock().assign(fieldValue, input.getHolder());
+//      generator.getEvalBlock().assign(fieldValue, input.getHolder()); TODO deal with this SMP
       generator.getMappingSet().exitConstant();
-      return new HoldingContainer(input.getMajorType(), fieldValue, fieldValue.ref("value"), fieldValue.ref("isSet"))
-          .setConstant(true);
+//      return new HoldingContainer(input.getMajorType(), fieldValue, fieldValue.ref("value"), fieldValue.ref("isSet")) TODO deal with this SMP
+//          .setConstant(true);
+      return null;
     }
   }
 

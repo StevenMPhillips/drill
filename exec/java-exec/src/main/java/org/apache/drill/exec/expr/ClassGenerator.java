@@ -19,6 +19,7 @@ package org.apache.drill.exec.expr;
 
 import static org.apache.drill.exec.compile.sig.GeneratorMapping.GM;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,6 +36,7 @@ import org.apache.drill.exec.compile.sig.MappingSet;
 import org.apache.drill.exec.compile.sig.SignatureHolder;
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.expr.fn.DrillFuncHolder.WorkspaceReference;
+import org.apache.drill.exec.expr.holders.ValueHolder;
 import org.apache.drill.exec.record.TypedFieldId;
 
 import com.google.common.base.Preconditions;
@@ -306,18 +308,28 @@ public class ClassGenerator<T>{
 
   public HoldingContainer declare(MajorType t, boolean includeNewInstance) {
     JType holderType = getHolderType(t);
-    JVar var;
-    if (includeNewInstance) {
-      var = getEvalBlock().decl(holderType, "out" + index, JExpr._new(holderType));
-    } else {
-      var = getEvalBlock().decl(holderType, "out" + index);
+    Map<String,JVar> vars= Maps.newHashMap();
+//    if (includeNewInstance) {
+//      var = getEvalBlock().decl(holderType, "out" + index, JExpr._new(holderType));
+//    } else {
+//      var = getEvalBlock().decl(holderType, "out" + index);
+//    }
+    Class holderClass = getHolderClass(t);
+    String holderName = "out" + index;
+    for (Field field : holderClass.getFields()) {
+      if (Modifier.isStatic(field.getModifiers())) {
+        continue;
+      }
+      String name = field.getName();
+      JVar var = getEvalBlock().decl(JType.parse(model, field.getType().getName()), holderName + "_" + name);
+      vars.put(name, var);
     }
-    JFieldRef outputSet = null;
+    JVar outputSet = null;
     if (t.getMode() == DataMode.OPTIONAL) {
-      outputSet = var.ref("isSet");
+      outputSet = vars.get("isSet");
     }
     index++;
-    return new HoldingContainer(t, var, var.ref("value"), outputSet);
+    return new HoldingContainer(holderName, t, vars, vars.get("value"), outputSet);
   }
 
   public List<TypedFieldId> getWorkspaceTypes() {
@@ -379,19 +391,21 @@ public class ClassGenerator<T>{
   }
 
   public static class HoldingContainer{
-    private final JVar holder;
-    private final JFieldRef value;
-    private final JFieldRef isSet;
+    private final String name;
+    private final Map<String,JVar> holder;
+    private final JVar value;
+    private final JVar isSet;
     private final MajorType type;
     private boolean isConstant;
     private final boolean singularRepeated;
     private final boolean isReader;
 
-    public HoldingContainer(MajorType t, JVar holder, JFieldRef value, JFieldRef isSet) {
-      this(t, holder, value, isSet, false, false);
+    public HoldingContainer(String name, MajorType t, Map<String,JVar> holder, JVar value, JVar isSet) {
+      this(name, t, holder, value, isSet, false, false);
     }
 
-    public HoldingContainer(MajorType t, JVar holder, JFieldRef value, JFieldRef isSet, boolean singularRepeated, boolean isReader) {
+    public HoldingContainer(String name, MajorType t, Map<String,JVar> holder, JVar value, JVar isSet, boolean singularRepeated, boolean isReader) {
+      this.name = name;
       this.holder = holder;
       this.value = value;
       this.isSet = isSet;
@@ -414,19 +428,19 @@ public class ClassGenerator<T>{
       return this;
     }
 
-    public JFieldRef f(String name) {
-      return holder.ref(name);
+    public JVar f(String name) {
+      return holder.get(name);
     }
 
     public boolean isConstant() {
       return this.isConstant;
     }
 
-    public JVar getHolder() {
+    public Map<String,JVar> getHolder() {
       return holder;
     }
 
-    public JFieldRef getValue() {
+    public JVar getValue() {
       return value;
     }
 
@@ -434,7 +448,7 @@ public class ClassGenerator<T>{
       return type;
     }
 
-    public JFieldRef getIsSet() {
+    public JVar getIsSet() {
       Preconditions.checkNotNull(isSet, "You cannot access the isSet variable when operating on a non-nullable output value.");
       return isSet;
     }
@@ -454,6 +468,17 @@ public class ClassGenerator<T>{
 
   public JType getHolderType(MajorType t) {
     return TypeHelper.getHolderType(model, t.getMinorType(), t.getMode());
+  }
+
+  public Class<?> getHolderClass(MajorType t) {
+    Class holderReaderImpl = TypeHelper.getHolderReaderImpl(t.getMinorType(), t.getMode());
+    try {
+      holderReaderImpl.getDeclaredField("holder").setAccessible(true);
+      Class<?> holderClass = holderReaderImpl.getDeclaredField("holder").getType();
+      return holderClass;
+    } catch (NoSuchFieldException e) {
+      throw new RuntimeException(e);
+    }
   }
 
 }
