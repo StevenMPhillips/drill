@@ -23,11 +23,11 @@ import java.util.List;
 public class VarLenBinaryReader {
 
   ParquetRecordReader parentReader;
-  final List<VarLengthColumn> columns;
+  final VarLengthColumn[] columns;
 
   public VarLenBinaryReader(ParquetRecordReader parentReader, List<VarLengthColumn> columns) {
     this.parentReader = parentReader;
-    this.columns = columns;
+    this.columns = (VarLengthColumn[]) columns.toArray();
   }
 
   /**
