@@ -208,15 +208,9 @@ class MergeAdapter extends ClassVisitor {
 
 
         if(AssertionUtil.isAssertionsEnabled()){
-          StringWriter sw = new StringWriter();
           ClassWriter verifyWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
           generatedClass.accept(verifyWriter);
-          ClassReader ver = new ClassReader(verifyWriter.toByteArray());
-          CheckClassAdapter.verify(ver, false, new PrintWriter(sw));
-          String output = sw.toString();
-          if(!output.isEmpty()){
-            throw new IOException("Failure while merging bytecode.\n" +  output);
-          }
+          logger.debug("After S.R.\n" + new String(ClassTransformer.textify(verifyWriter.toByteArray())));
         }
       }
       ClassVisitor remappingAdapter = new RemappingClassAdapter(writer, re);
@@ -227,6 +221,16 @@ class MergeAdapter extends ClassVisitor {
       ClassReader tReader = new ClassReader(precompiledClass);
       tReader.accept(visitor, ClassReader.SKIP_FRAMES);
       byte[] outputClass = writer.toByteArray();
+
+      if (AssertionUtil.isAssertionsEnabled()) {
+        StringWriter sw = new StringWriter();
+        ClassReader ver = new ClassReader(outputClass);
+        CheckClassAdapter.verify(ver, false, new PrintWriter(sw));
+        String output = ver.toString();
+        if (!output.isEmpty()) {
+          throw new IOException("Failure while merging bytecode.\n" + output);
+        }
+      }
 
       // enable when you want all the generated merged class files to also be written to disk.
 //      Files.write(outputClass, new File(String.format("/src/scratch/drill-generated-classes/%s-output.class", set.generated.dot)));
