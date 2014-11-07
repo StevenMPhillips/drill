@@ -137,9 +137,12 @@ class DrillAggFuncHolder extends DrillFuncHolder{
     HoldingContainer out = g.declare(returnValue.type, false);
     JBlock sub = new JBlock();
     g.getEvalBlock().add(sub);
-    JVar internalOutput = sub.decl(JMod.FINAL, g.getHolderType(returnValue.type), returnValue.name, JExpr._new(g.getHolderType(returnValue.type)));
+//    JVar internalOutput = sub.decl(JMod.FINAL, g.getHolderType(returnValue.type), returnValue.name, JExpr._new(g.getHolderType(returnValue.type)));
+    HoldingContainer internalOutput = g.declare(returnValue.getType(), false, false, returnValue.name, sub, false);
     addProtectedBlock(g, sub, output, null, workspaceJVars, false);
-//    sub.assign(out.getHolder(), internalOutput); //TODO deal with this SMP
+    for (String field : out.getFields()) {
+      sub.assign(out.getHolder().get(field), internalOutput.getHolder().get(field));
+    }
         //hash aggregate uses workspace vectors. Initialization is done in "setup" and does not require "reset" block.
         if (!g.getMappingSet().isHashAggMapping()) {
           generateBody(g, BlockType.RESET, reset, null, workspaceJVars, false);
@@ -190,10 +193,10 @@ class DrillAggFuncHolder extends DrillFuncHolder{
   @Override
   protected void addProtectedBlock(ClassGenerator<?> g, JBlock sub, String body, HoldingContainer[] inputVariables, JVar[] workspaceJVars, boolean decConstantInputOnly){
     if (!g.getMappingSet().isHashAggMapping()) {
-      super.addProtectedBlock(g, sub, body, inputVariables, workspaceJVars, decConstantInputOnly);
+      super.addProtectedBlock(g, sub, getNewBody(body), inputVariables, workspaceJVars, decConstantInputOnly);
     } else {
       JExpression indexVariable = g.getMappingSet().getWorkspaceIndex();
-      addProtectedBlockHA(g, sub, body, inputVariables, workspaceJVars, indexVariable);
+      addProtectedBlockHA(g, sub, getNewBody(body), inputVariables, workspaceJVars, indexVariable);
     }
   }
 
@@ -206,6 +209,10 @@ class DrillAggFuncHolder extends DrillFuncHolder{
         ValueReference parameter = parameters[i];
         HoldingContainer inputVariable = inputVariables[i];
 //        sub.decl(inputVariable.getHolder().type(), parameter.name, inputVariable.getHolder()); // TODO deal with this SMP
+        HoldingContainer c = g.declare(inputVariable.getMajorType(), false, false, parameter.name, sub, false);
+        for (String field : c.getFields()) {
+          sub.assign(c.getHolder().get(field), inputVariable.getHolder().get(field));
+        }
       }
     }
 
@@ -228,7 +235,7 @@ class DrillAggFuncHolder extends DrillFuncHolder{
     }
 
     Preconditions.checkNotNull(body);
-    sub.directStatement(body);
+    sub.directStatement(getNewBody(body));
     JVar successVar = sub.decl(JType.parse(g.getModel(), "boolean"), "success", JExpr.lit(false));
 
     // reassign workspace variables back.

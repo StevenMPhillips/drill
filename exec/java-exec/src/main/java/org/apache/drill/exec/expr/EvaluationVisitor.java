@@ -174,10 +174,14 @@ public class EvaluationVisitor {
       if (thenExpr.isOptional()) {
         JConditional newCond = jc._then()._if(thenExpr.getIsSet().ne(JExpr.lit(0)));
         JBlock b = newCond._then();
-//        b.assign(output.getHolder(), thenExpr.getHolder()); TODO deal with this SMP
+        for (String field : output.getFields()) {
+          b.assign(output.getHolder().get(field), thenExpr.getHolder().get(field));
+        }
         //b.assign(output.getIsSet(), thenExpr.getIsSet());
       } else {
-//        jc._then().assign(output.getHolder(), thenExpr.getHolder()); TODO deal with this SMP
+        for (String field : output.getFields()) {
+          jc._else().assign(output.getHolder().get(field), thenExpr.getHolder().get(field));
+        }
       }
 
       generator.nestEvalBlock(jc._else());
@@ -189,10 +193,14 @@ public class EvaluationVisitor {
       if (elseExpr.isOptional()) {
         JConditional newCond = jc._else()._if(elseExpr.getIsSet().ne(JExpr.lit(0)));
         JBlock b = newCond._then();
-//        b.assign(output.getHolder(), elseExpr.getHolder()); TODO deal with this SMP
+        for (String field : output.getFields()) {
+          b.assign(output.getHolder().get(field), elseExpr.getHolder().get(field));
+        }
         //b.assign(output.getIsSet(), elseExpr.getIsSet());
       } else {
-//        jc._else().assign(output.getHolder(), elseExpr.getHolder()); TODO deal with this SMP
+        for (String field : output.getFields()) {
+          jc._else().assign(output.getHolder().get(field), elseExpr.getHolder().get(field));
+        }
       }
       local.add(conditionalBlock);
       return output;
@@ -512,15 +520,16 @@ public class EvaluationVisitor {
     public HoldingContainer visitQuotedStringConstant(QuotedString e, ClassGenerator<?> generator)
         throws RuntimeException {
       MajorType majorType = Types.required(MinorType.VARCHAR);
-      JBlock setup = generator.getBlock(BlockType.SETUP);
-      JType holderType = generator.getHolderType(majorType);
-      JVar var = generator.declareClassField("string", holderType);
+      HoldingContainer c = generator.declareClassFields("string", majorType);
       JExpression stringLiteral = JExpr.lit(e.value);
       JExpression buffer = generator.getMappingSet().getIncoming().invoke("getContext").invoke("getManagedBuffer");
-      setup.assign(var,
-          generator.getModel().ref(ValueHolderHelper.class).staticInvoke("getVarCharHolder").arg(buffer).arg(stringLiteral));
-//      return new HoldingContainer(majorType, var, null, null); TODO deal with this SMP
-      return null;
+      JBlock setup = generator.getBlock(BlockType.SETUP);
+      JVar tempHolder = setup.decl(generator.getHolderType(majorType), c.getName() + "temp");
+      setup.assign(tempHolder, generator.getModel().ref(ValueHolderHelper.class).staticInvoke("getVarCharHolder").arg(buffer).arg(stringLiteral));
+      setup.assign(c.getHolder().get("start"), tempHolder.ref("start"));
+      setup.assign(c.getHolder().get("end"), tempHolder.ref("end"));
+      setup.assign(c.getHolder().get("buffer"), tempHolder.ref("buffer"));
+      return c;
     }
 
     @Override
@@ -1050,12 +1059,12 @@ public class EvaluationVisitor {
      * HoldingContainder will indicate it's for a constant expression.
      */
     private HoldingContainer renderConstantExpression(ClassGenerator<?> generator, HoldingContainer input) {
-      JVar fieldValue = generator.declareClassField("constant", generator.getHolderType(input.getMajorType()));
-//      generator.getEvalBlock().assign(fieldValue, input.getHolder()); TODO deal with this SMP
+      HoldingContainer fields = generator.declareClassFields("constant", input.getMajorType());
+      for (String fieldName : fields.getFields()) {
+        generator.getEvalBlock().assign(fields.getHolder().get(fieldName), input.getHolder().get(fieldName));
+      }
       generator.getMappingSet().exitConstant();
-//      return new HoldingContainer(input.getMajorType(), fieldValue, fieldValue.ref("value"), fieldValue.ref("isSet")) TODO deal with this SMP
-//          .setConstant(true);
-      return null;
+      return fields;
     }
   }
 

@@ -24,6 +24,7 @@ import java.lang.reflect.Modifier;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.types.TypeProtos;
@@ -298,31 +299,54 @@ public class ClassGenerator<T>{
     return clazz.field(JMod.NONE, t, prefix + index++);
   }
 
+  public HoldingContainer declareClassFields(String prefix, MajorType t) {
+    return declare(t, false, true, prefix, null, true);
+  }
+
   public JVar declareClassField(String prefix, JType t, JExpression init) {
     return clazz.field(JMod.NONE, t, prefix + index++, init);
   }
 
   public HoldingContainer declare(MajorType t) {
-    return declare(t, true);
+    return declare(t, true, false, null, null, true);
   }
 
   public HoldingContainer declare(MajorType t, boolean includeNewInstance) {
-    JType holderType = getHolderType(t);
+    return declare(t, includeNewInstance, false, null, null, true);
+  }
+
+  public HoldingContainer declare(MajorType t, boolean includeNewInstance, boolean classField, String prefix, JBlock block, boolean useIndex) {
     Map<String,JVar> vars= Maps.newHashMap();
-//    if (includeNewInstance) {
-//      var = getEvalBlock().decl(holderType, "out" + index, JExpr._new(holderType));
-//    } else {
-//      var = getEvalBlock().decl(holderType, "out" + index);
-//    }
     Class holderClass = getHolderClass(t);
-    String holderName = "out" + index;
-    for (Field field : holderClass.getFields()) {
-      if (Modifier.isStatic(field.getModifiers())) {
-        continue;
+    String holderName;
+    if (prefix != null) {
+      holderName = prefix + (useIndex ? index : "");
+    } else {
+      holderName = "out" + index;
+    }
+    try {
+      for (Field field : holderClass.getFields()) {
+        if (Modifier.isStatic(field.getModifiers())) {
+          continue;
+        }
+        String name = field.getName();
+        JVar var;
+        if (classField) {
+//          var = clazz.field(JMod.NONE, JType.parse(model, field.getType().getName()), holderName + "_" + name);
+            var = clazz.field(JMod.NONE, model.parseType(field.getType().getName()), holderName + "_" + name, getLiteral(field.getType()));
+        } else {
+          if (block == null) {
+//            var = getEvalBlock().decl(JType.parse(model, field.getType().getName()), holderName + "_" + name);
+            var = getEvalBlock().decl(model.parseType(field.getType().getName()), holderName + "_" + name, getLiteral(field.getType()));
+          } else {
+//            var = block.decl(JType.parse(model, field.getType().getName()), holderName + "_" + name);
+            var = block.decl(model.parseType(field.getType().getName()), holderName + "_" + name, getLiteral(field.getType()));
+          }
+        }
+        vars.put(name, var);
       }
-      String name = field.getName();
-      JVar var = getEvalBlock().decl(JType.parse(model, field.getType().getName()), holderName + "_" + name);
-      vars.put(name, var);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
     }
     JVar outputSet = null;
     if (t.getMode() == DataMode.OPTIONAL) {
@@ -330,6 +354,18 @@ public class ClassGenerator<T>{
     }
     index++;
     return new HoldingContainer(holderName, t, vars, vars.get("value"), outputSet);
+  }
+
+  private JExpression getLiteral(Class<?> type) {
+    if (type.equals(double.class)) {
+      return JExpr.lit(0D);
+    } else if (type.equals(int.class)) {
+      return JExpr.lit((int) 0);
+    } else if (type.equals(long.class)) {
+      return JExpr.lit((long) 0);
+    } else {
+      return JExpr._null();
+    }
   }
 
   public List<TypedFieldId> getWorkspaceTypes() {
@@ -391,6 +427,7 @@ public class ClassGenerator<T>{
   }
 
   public static class HoldingContainer{
+
     private final String name;
     private final Map<String,JVar> holder;
     private final JVar value;
@@ -415,6 +452,10 @@ public class ClassGenerator<T>{
       this.isReader = isReader;
     }
 
+    public String getName() {
+      return name;
+    }
+
     public boolean isReader() {
       return this.isReader;
     }
@@ -426,6 +467,10 @@ public class ClassGenerator<T>{
     public HoldingContainer setConstant(boolean isConstant) {
       this.isConstant = isConstant;
       return this;
+    }
+
+    public Set<String> getFields() {
+      return holder.keySet();
     }
 
     public JVar f(String name) {

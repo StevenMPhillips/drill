@@ -18,6 +18,7 @@
 package org.apache.drill.exec.expr.fn;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
 
@@ -140,28 +141,14 @@ public class DrillSimpleFuncHolder extends DrillFuncHolder{
     g.getEvalBlock().add(topSub);
 
 
-//    JVar internalOutput = sub.decl(JMod.FINAL, g.getHolderType(returnValueType), returnValue.name, JExpr._new(g.getHolderType(returnValueType)));
-    Field[] fields;
-    try {
-      fields = TypeHelper.getHolderReaderImpl(returnValueType.getMinorType(), returnValueType.getMode()).getDeclaredField("holder").getType().getFields();
-    } catch (NoSuchFieldException e) {
-      throw new RuntimeException(e);
-    }
-    Map<String,JVar> outMap = Maps.newHashMap();
-    for (Field field : fields) {
-      JType type = JType.parse(g.getModel(), field.getType().getName());
-      JVar var = sub.decl(type, returnValue.name + "_" + field.getName());
-      outMap.put(field.getName(), var);
-    }
+    HoldingContainer internalOutput = g.declare(returnValueType, false, false, returnValue.name, sub, false);
     addProtectedBlock(g, sub, getNewBody(body), inputVariables, workspaceJVars, false);
     if (sub != topSub) {
       sub.assign(out.getHolder().get("isSet"),JExpr.lit(1));// Assign null if NULL_IF_NULL mode
     }
-//    sub.assign(out.getHolder(), internalOutput);
     for (String fieldName : out.getHolder().keySet()) {
       JVar varOut = out.getHolder().get(fieldName);
-//      JVar varInternalOut = internalOutput.getHolder().get(fieldName);
-      sub.assign(varOut, outMap.get(fieldName));
+      sub.assign(varOut, internalOutput.getHolder().get(fieldName));
     }
     if (sub != topSub) {
       sub.assign(out.getHolder().get("isSet"),JExpr.lit(1));// Assign null if NULL_IF_NULL mode
@@ -172,6 +159,7 @@ public class DrillSimpleFuncHolder extends DrillFuncHolder{
     return out;
   }
 
+  /*
   private String getNewBody(String body) {
     String newBody = body;
     for (ValueReference parameter : parameters) {
@@ -199,6 +187,7 @@ public class DrillSimpleFuncHolder extends DrillFuncHolder{
     }
     return newBody;
   }
+  */
 
   public String getSetupBody() {
     return setupBody;

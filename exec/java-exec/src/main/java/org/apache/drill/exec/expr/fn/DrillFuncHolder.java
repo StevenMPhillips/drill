@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.expr.fn;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -387,4 +388,31 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
     return returnValue;
   }
 
+  protected String getNewBody(String body) {
+    String newBody = body;
+    for (ValueReference parameter : parameters) {
+      String pName = parameter.getName();
+      Class holderClass = null;
+      try {
+        holderClass = TypeHelper.getHolderReaderImpl(parameter.getType().getMinorType(), parameter.getType().getMode()).getDeclaredField("holder").getType();
+      } catch (NoSuchFieldException e) {
+        throw new RuntimeException(e);
+      }
+      for (Field field : holderClass.getFields()) {
+        String fieldName = field.getName();
+        newBody = newBody.replace(String.format("%s.%s", pName, fieldName), String.format("%s_%s", pName, fieldName));
+      }
+    }
+    try {
+      String pName = returnValue.getName();
+      Class holderClass = TypeHelper.getHolderReaderImpl(returnValue.getType().getMinorType(), returnValue.getType().getMode()).getDeclaredField("holder").getType();
+      for (Field field : holderClass.getFields()) {
+        String fieldName = field.getName();
+        newBody = newBody.replace(String.format("%s.%s", pName, fieldName), String.format("%s_%s", pName, fieldName));
+      }
+    } catch (NoSuchFieldException e) {
+      throw new RuntimeException(e);
+    }
+    return newBody;
+  }
 }
