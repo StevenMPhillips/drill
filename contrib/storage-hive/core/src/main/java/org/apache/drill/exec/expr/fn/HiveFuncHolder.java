@@ -245,12 +245,12 @@ public class HiveFuncHolder extends AbstractFuncHolder {
         JBlock conditionalBlock = new JBlock(false, false);
         JConditional jc = conditionalBlock._if(inputVariables[i].getIsSet().ne(JExpr.lit(0)));
         jc._then().assign(workspaceJVars[3].component(JExpr.lit(i)), workspaceJVars[2].component(JExpr.lit(i)));
-        jc._then().assign(JExpr.ref(workspaceJVars[3].component(JExpr.lit(i)), "valueHolder"), inputVariables[i].getHolder());
+//        jc._then().assign(JExpr.ref(workspaceJVars[3].component(JExpr.lit(i)), "valueHolder"), inputVariables[i].getHolder()); // TODO deal with this SMP
         jc._else().assign(workspaceJVars[3].component(JExpr.lit(i)), JExpr._null());
         sub.add(conditionalBlock);
       } else {
         sub.assign(workspaceJVars[3].component(JExpr.lit(i)), workspaceJVars[2].component(JExpr.lit(i)));
-        sub.assign(JExpr.ref(workspaceJVars[3].component(JExpr.lit(i)), "valueHolder"), inputVariables[i].getHolder());
+//        sub.assign(JExpr.ref(workspaceJVars[3].component(JExpr.lit(i)), "valueHolder"), inputVariables[i].getHolder());// TODO deal with this SMP
       }
     }
 
@@ -270,7 +270,7 @@ public class HiveFuncHolder extends AbstractFuncHolder {
 
     // get the ValueHolder from retVal and return ObjectInspector
     sub.add(ObjectInspectorHelper.getDrillObject(m, returnOI, workspaceJVars[0], workspaceJVars[4], retVal));
-    sub.assign(out.getHolder(), workspaceJVars[4]);
+//    sub.assign(out.getHolder(), workspaceJVars[4]); // TODO deal with this SMP
 
     // now add it to the doEval block in Generated class
     JBlock setup = g.getBlock(ClassGenerator.BlockType.EVAL);
