@@ -136,23 +136,30 @@ public class CodeGenerator<T> {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     CodeGenerator other = (CodeGenerator) obj;
     if (definition == null) {
-      if (other.definition != null)
+      if (other.definition != null) {
         return false;
-    } else if (!definition.equals(other.definition))
+      }
+    } else if (!definition.equals(other.definition)) {
       return false;
+    }
     if (generifiedCode == null) {
-      if (other.generifiedCode != null)
+      if (other.generifiedCode != null) {
         return false;
-    } else if (!generifiedCode.equals(other.generifiedCode))
+      }
+    } else if (!generifiedCode.equals(other.generifiedCode)) {
       return false;
+    }
     return true;
   }
 
