@@ -161,11 +161,9 @@ public class ParquetScanBatchCreator implements BatchCreator<ParquetRowGroupScan
         return true;
       }
     }
+    ColumnDescriptor desc;
     for (ColumnDescriptor col : schema.getColumns()) {
       if (col.getMaxRepetitionLevel() > 0) {
-        return true;
-      }
-      if (col.getMaxDefinitionLevel() > 1 || (col.getPath().length > 1) ) {
         return true;
       }
     }
