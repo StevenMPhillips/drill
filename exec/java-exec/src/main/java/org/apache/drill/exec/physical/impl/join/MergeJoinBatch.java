@@ -112,6 +112,7 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
   private JoinWorker worker;
   public MergeJoinBatchBuilder batchBuilder;
   private boolean done = false;
+  private boolean schemaBuilt = false;
 
   protected MergeJoinBatch(MergeJoinPOP popConfig, FragmentContext context, RecordBatch left, RecordBatch right) throws OutOfMemoryException {
     super(popConfig, context);
@@ -136,23 +137,25 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
     return status.getOutPosition();
   }
 
-  @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    left.buildSchema();
-    right.buildSchema();
-    try {
-      allocateBatch(true);
-      worker = generateNewWorker();
-    } catch (IOException | ClassTransformationException e) {
-      throw new SchemaChangeException(e);
-    }
-    return IterOutcome.OK_NEW_SCHEMA;
+  public boolean buildSchema() throws SchemaChangeException {
+    status.ensureInitial();
+    allocateBatch(true);
+    return true;
   }
 
   @Override
   public IterOutcome innerNext() {
     if (done) {
       return IterOutcome.NONE;
+    }
+    if (!schemaBuilt) {
+      try {
+        schemaBuilt = true;
+        buildSchema();
+        return IterOutcome.OK_NEW_SCHEMA;
+      } catch (SchemaChangeException e) {
+        throw new RuntimeException(e);
+      }
     }
     // we do this in the here instead of the constructor because don't necessary want to start consuming on construction.
     status.ensureInitial();
@@ -437,35 +440,37 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
     // allocate new batch space.
     container.zeroVectors();
 
-    //estimation of joinBatchSize : max of left/right size, expanded by a factor of 16, which is then bounded by MAX_BATCH_SIZE.
-    int leftCount = worker == null ? left.getRecordCount() : (status.isLeftPositionAllowed() ? left.getRecordCount() : 0);
-    int rightCount = worker == null ? left.getRecordCount() : (status.isRightPositionAllowed() ? right.getRecordCount() : 0);
-    int joinBatchSize = Math.min(Math.max(leftCount, rightCount) * 16, MAX_BATCH_SIZE);
+    boolean leftAllowed = status.getLastLeft() != IterOutcome.NONE;
+    boolean rightAllowed = status.getLastRight() != IterOutcome.NONE;
 
     if (newSchema) {
     // add fields from both batches
-      for (VectorWrapper<?> w : left) {
-        MajorType inputType = w.getField().getType();
-        MajorType outputType;
-        if (joinType == JoinRelType.RIGHT && inputType.getMode() == DataMode.REQUIRED) {
-          outputType = Types.overrideMode(inputType, DataMode.OPTIONAL);
-        } else {
-          outputType = inputType;
+      if (leftAllowed) {
+        for (VectorWrapper<?> w : left) {
+          MajorType inputType = w.getField().getType();
+          MajorType outputType;
+          if (joinType == JoinRelType.RIGHT && inputType.getMode() == DataMode.REQUIRED) {
+            outputType = Types.overrideMode(inputType, DataMode.OPTIONAL);
+          } else {
+            outputType = inputType;
+          }
+          MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
+          container.addOrGet(newField);
         }
-        MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
-       container.addOrGet(newField);
       }
 
-      for (VectorWrapper<?> w : right) {
-        MajorType inputType = w.getField().getType();
-        MajorType outputType;
-        if (joinType == JoinRelType.LEFT && inputType.getMode() == DataMode.REQUIRED) {
-          outputType = Types.overrideMode(inputType, DataMode.OPTIONAL);
-        } else {
-          outputType = inputType;
+      if (rightAllowed) {
+        for (VectorWrapper<?> w : right) {
+          MajorType inputType = w.getField().getType();
+          MajorType outputType;
+          if (joinType == JoinRelType.LEFT && inputType.getMode() == DataMode.REQUIRED) {
+            outputType = Types.overrideMode(inputType, DataMode.OPTIONAL);
+          } else {
+            outputType = inputType;
+          }
+          MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
+          container.addOrGet(newField);
         }
-        MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
-        container.addOrGet(newField);
       }
     }
 
@@ -489,7 +494,7 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
 
         // materialize value vector readers from join expression
         LogicalExpression materializedLeftExpr;
-        if (worker == null || status.isLeftPositionAllowed()) {
+        if (status.isLeftPositionAllowed()) {
           materializedLeftExpr = ExpressionTreeMaterializer.materialize(leftFieldExpr, left, collector, context.getFunctionRegistry());
         } else {
           materializedLeftExpr = new TypedNullConstant(Types.optional(MinorType.INT));
@@ -500,7 +505,7 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
         }
 
         LogicalExpression materializedRightExpr;
-        if (worker == null || status.isRightPositionAllowed()) {
+        if (status.isRightPositionAllowed()) {
           materializedRightExpr = ExpressionTreeMaterializer.materialize(rightFieldExpr, right, collector, context.getFunctionRegistry());
         } else {
           materializedRightExpr = new TypedNullConstant(Types.optional(MinorType.INT));

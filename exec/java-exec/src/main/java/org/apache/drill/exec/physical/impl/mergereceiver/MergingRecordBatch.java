@@ -108,6 +108,8 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   private PriorityQueue <Node> pqueue;
   private RawFragmentBatch emptyBatch = null;
   private boolean done = false;
+  private RawFragmentBatch[] tempBatchHolder;
+  private boolean schemaBuilt = false;
 
   public static enum Metric implements MetricDef{
     BYTES_RECEIVED,
@@ -154,6 +156,13 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
     if (done) {
       return IterOutcome.NONE;
     }
+    if (!schemaBuilt) {
+      if (!buildSchema()) {
+        return IterOutcome.NONE;
+      }
+      schemaBuilt = true;
+      return IterOutcome.OK_NEW_SCHEMA;
+    }
     boolean schemaChanged = false;
 
     if (prevBatchWasFull) {
@@ -176,10 +185,17 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
       // set up each (non-empty) incoming record batch
       List<RawFragmentBatch> rawBatches = Lists.newArrayList();
       boolean firstBatch = true;
+      int p = 0;
       for (RawFragmentBatchProvider provider : fragProviders) {
         RawFragmentBatch rawBatch = null;
         try {
-          rawBatch = getNext(provider);
+          if (tempBatchHolder[p] != null) {
+            rawBatch = tempBatchHolder[p];
+            tempBatchHolder[p] = null;
+          } else {
+            rawBatch = getNext(provider);
+          }
+          p++;
           if (rawBatch == null && context.isCancelled()) {
             return IterOutcome.STOP;
           }
@@ -190,7 +206,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
         if (rawBatch.getHeader().getDef().getRecordCount() != 0) {
           rawBatches.add(rawBatch);
         } else {
-          if (emptyBatch == null) {
+          if (emptyBatch == null && rawBatch.getHeader().getDef().getFieldCount() != 0) {
             emptyBatch = rawBatch;
           }
           try {
@@ -429,22 +445,31 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
     return outgoingContainer.getSchema();
   }
 
-  @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    stats.startProcessing();
+  public boolean buildSchema() {
+    tempBatchHolder = new RawFragmentBatch[fragProviders.length];
+    int i = 0;
     try {
-      RawFragmentBatch batch = getNext(fragProviders[0]);
-      for (SerializedField field : batch.getHeader().getDef().getFieldList()) {
-        outgoingContainer.addOrGet(MaterializedField.create(field));
+      while (true) {
+        if (i >= fragProviders.length) {
+          return false;
+        }
+        RawFragmentBatch batch = getNext(fragProviders[i]);
+        if (batch.getHeader().getDef().getFieldCount() == 0) {
+          i++;
+          continue;
+        }
+        tempBatchHolder[i] = batch;
+        for (SerializedField field : batch.getHeader().getDef().getFieldList()) {
+          outgoingContainer.addOrGet(MaterializedField.create(field));
+        }
+        break;
       }
     } catch (IOException e) {
-      throw new SchemaChangeException(e);
-    } finally {
-      stats.stopProcessing();
+      throw new RuntimeException(e);
     }
     outgoingContainer = VectorContainer.canonicalize(outgoingContainer);
     outgoingContainer.buildSchema(SelectionVectorMode.NONE);
-    return IterOutcome.OK_NEW_SCHEMA;
+    return true;
   }
 
   @Override

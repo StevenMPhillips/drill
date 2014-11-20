@@ -116,9 +116,8 @@ public abstract class AbstractRecordBatch<T extends PhysicalOperator> implements
     return container.getSchema();
   }
 
-  @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    throw new UnsupportedOperationException("buildSchema() not yet implemented");
+  protected boolean buildSchema() throws SchemaChangeException {
+    return true;
   }
 
   @Override
