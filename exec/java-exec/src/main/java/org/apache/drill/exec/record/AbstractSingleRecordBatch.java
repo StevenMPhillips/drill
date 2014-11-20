@@ -105,13 +105,6 @@ public abstract class AbstractSingleRecordBatch<T extends PhysicalOperator> exte
   }
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    incoming.buildSchema();
-    setupNewSchema();
-    return IterOutcome.OK_NEW_SCHEMA;
-  }
-
-  @Override
   public void cleanup() {
 //    logger.debug("Cleaning up.");
     super.cleanup();

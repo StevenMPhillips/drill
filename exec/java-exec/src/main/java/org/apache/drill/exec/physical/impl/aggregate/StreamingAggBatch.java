@@ -77,20 +77,20 @@ public class StreamingAggBatch extends AbstractRecordBatch<StreamingAggregate> {
   }
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
+  public boolean buildSchema() throws SchemaChangeException {
     stats.startProcessing();
     try {
       stats.stopProcessing();
       try {
-        incoming.buildSchema();
+//        incoming.buildSchema();
       } finally {
         stats.startProcessing();
       }
       if (!createAggregator()) {
         done = true;
-        return IterOutcome.STOP;
+        return false;
       }
-      return IterOutcome.OK_NEW_SCHEMA;
+      return true;
     } finally {
       stats.stopProcessing();
     }

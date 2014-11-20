@@ -60,13 +60,6 @@ public class RemovingRecordBatch extends AbstractSingleRecordBatch<SelectionVect
   }
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    incoming.buildSchema();
-    setupNewSchema();
-    return IterOutcome.OK_NEW_SCHEMA;
-  }
-
-  @Override
   protected boolean setupNewSchema() throws SchemaChangeException {
     container.zeroVectors();
     switch(incoming.getSchema().getSelectionVectorMode()){
@@ -103,6 +96,9 @@ public class RemovingRecordBatch extends AbstractSingleRecordBatch<SelectionVect
   @Override
   protected IterOutcome doWork() {
     int incomingRecordCount = incoming.getRecordCount();
+    if (incomingRecordCount == 0) {
+      return IterOutcome.OK;
+    }
     int copiedRecords = copier.copyRecords(0, incomingRecordCount);
 
     if (copiedRecords < incomingRecordCount) {

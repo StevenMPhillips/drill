@@ -121,22 +121,6 @@ public class ScanBatch implements RecordBatch {
   }
 
   @Override
-  public IterOutcome buildSchema() {
-    IterOutcome outcome = next();
-    if (outcome == IterOutcome.NONE) {
-      container.buildSchema(SelectionVectorMode.NONE);
-      schema = container.getSchema();
-      done = true;
-    }
-    first = true;
-    tempContainer = VectorContainer.getTransferClone(container);
-    for (VectorWrapper w : container) {
-      w.getValueVector().allocateNew();
-    }
-    return IterOutcome.OK_NEW_SCHEMA;
-  }
-
-  @Override
   public int getRecordCount() {
     return recordCount;
   }

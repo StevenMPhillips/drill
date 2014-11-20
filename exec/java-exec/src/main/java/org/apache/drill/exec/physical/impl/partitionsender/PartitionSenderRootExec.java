@@ -111,22 +111,6 @@ public class PartitionSenderRootExec extends BaseRootExec {
   }
 
   @Override
-  public void buildSchema() throws SchemaChangeException {
-    incoming.buildSchema();
-    stats.startProcessing();
-    try {
-      createPartitioner();
-      try {
-        partitioner.flushOutgoingBatches(false, true);
-      } catch (IOException e) {
-        throw new SchemaChangeException(e);
-      }
-    } finally {
-      stats.stopProcessing();
-    }
-  }
-
-  @Override
   public boolean innerNext() {
     boolean newSchema = false;
 

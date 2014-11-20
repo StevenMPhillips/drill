@@ -119,11 +119,15 @@ public class LimitRecordBatch extends AbstractSingleRecordBatch<Limit> {
 
   @Override
   protected IterOutcome doWork() {
+    skipBatch = false;
+    int recordCount = incoming.getRecordCount();
+    if (recordCount == 0) {
+      skipBatch = true;
+      return IterOutcome.OK;
+    }
     for(TransferPair tp : transfers) {
       tp.transfer();
     }
-    skipBatch = false;
-    int recordCount = incoming.getRecordCount();
     if(recordCount <= recordsToSkip) {
       recordsToSkip -= recordCount;
       skipBatch = true;

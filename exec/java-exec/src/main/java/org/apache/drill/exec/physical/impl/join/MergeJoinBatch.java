@@ -112,6 +112,7 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
   private JoinWorker worker;
   public MergeJoinBatchBuilder batchBuilder;
   private boolean done = false;
+  private boolean schemaBuilt = false;
 
   protected MergeJoinBatch(MergeJoinPOP popConfig, FragmentContext context, RecordBatch left, RecordBatch right) throws OutOfMemoryException {
     super(popConfig, context);
@@ -137,22 +138,31 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
   }
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    left.buildSchema();
-    right.buildSchema();
+  public boolean buildSchema() throws SchemaChangeException {
+    next(left);
+    next(right);
     try {
       allocateBatch(true);
       worker = generateNewWorker();
     } catch (IOException | ClassTransformationException e) {
       throw new SchemaChangeException(e);
     }
-    return IterOutcome.OK_NEW_SCHEMA;
+    return true;
   }
 
   @Override
   public IterOutcome innerNext() {
     if (done) {
       return IterOutcome.NONE;
+    }
+    if (!schemaBuilt) {
+      try {
+        schemaBuilt = true;
+        buildSchema();
+        return IterOutcome.OK_NEW_SCHEMA;
+      } catch (SchemaChangeException e) {
+        throw new RuntimeException(e);
+      }
     }
     // we do this in the here instead of the constructor because don't necessary want to start consuming on construction.
     status.ensureInitial();

@@ -105,6 +105,8 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
 
     private boolean first = true;
 
+    private boolean schemaBuilt = false;
+
     private boolean done = false;
 
     // Generator mapping for the build side
@@ -143,10 +145,11 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
     boolean firstOutputBatch = true;
 
     IterOutcome leftUpstream = IterOutcome.NONE;
+    IterOutcome rightUpstream = IterOutcome.NONE;
 
     private final HashTableStats htStats = new HashTableStats();
 
-    public enum Metric implements MetricDef {
+  public enum Metric implements MetricDef {
 
       NUM_BUCKETS,
       NUM_ENTRIES,
@@ -169,9 +172,7 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
 
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    leftUpstream = left.buildSchema();
-    right.buildSchema();
+  protected boolean buildSchema() throws SchemaChangeException {
     // Initialize the hash join helper context
     hjHelper = new HashJoinHelper(context, oContext.getAllocator());
     try {
@@ -193,11 +194,23 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
     } catch (IOException | ClassTransformationException e) {
       throw new SchemaChangeException(e);
     }
-    return IterOutcome.OK_NEW_SCHEMA;
+    return true;
   }
 
     @Override
     public IterOutcome innerNext() {
+        if (!schemaBuilt) {
+          try {
+            leftUpstream = next(left);
+            rightUpstream = next(right);
+            schemaBuilt = true;
+            if (buildSchema()) {
+              return IterOutcome.OK_NEW_SCHEMA;
+            }
+          } catch (SchemaChangeException e) {
+            throw new RuntimeException(e);
+          }
+        }
         if (done) {
           return IterOutcome.NONE;
         }
@@ -210,7 +223,7 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
                 // Build the hash table, using the build side record batches.
                 executeBuildPhase();
 //                IterOutcome next = next(HashJoinHelper.LEFT_INPUT, left);
-                hashJoinProbe.setupHashJoinProbe(context, hyperContainer, left, 0, this, hashTable, hjHelper, joinType);
+                hashJoinProbe.setupHashJoinProbe(context, hyperContainer, left, left.getRecordCount(), this, hashTable, hjHelper, joinType);
 
                 // Update the hash table related stats for the operator
                 updateStats(this.hashTable);
@@ -308,10 +321,10 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
     public void executeBuildPhase() throws SchemaChangeException, ClassTransformationException, IOException {
 
         //Setup the underlying hash table
-        IterOutcome rightUpstream = next(HashJoinHelper.RIGHT_INPUT, right);
-      if (hashTable == null) {
-        rightUpstream = IterOutcome.OK_NEW_SCHEMA;
-      }
+//        IterOutcome rightUpstream = next(HashJoinHelper.RIGHT_INPUT, right);
+//      if (hashTable == null) {
+//        rightUpstream = IterOutcome.OK_NEW_SCHEMA;
+//      }
 
         boolean moreData = true;
 

@@ -58,12 +58,12 @@ public class ProducerConsumerBatch extends AbstractRecordBatch {
   }
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
+  public boolean buildSchema() throws SchemaChangeException {
     stats.startProcessing();
     try {
       stats.stopProcessing();
       try {
-        incoming.buildSchema();
+//        incoming.buildSchema();
       } finally {
         stats.startProcessing();
       }
@@ -79,7 +79,7 @@ public class ProducerConsumerBatch extends AbstractRecordBatch {
       stats.stopProcessing();
     }
     container.buildSchema(incoming.getSchema().getSelectionVectorMode());
-    return IterOutcome.OK_NEW_SCHEMA;
+    return true;
   }
 
   @Override

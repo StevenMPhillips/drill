@@ -109,6 +109,7 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
   private long totalSizeInMemory = 0;
   private long highWaterMark = Long.MAX_VALUE;
   private int targetRecordCount;
+  private boolean schemaBuilt = false;
 
   public ExternalSortBatch(ExternalSort popConfig, FragmentContext context, RecordBatch incoming) throws OutOfMemoryException {
     super(popConfig, context);
@@ -194,28 +195,27 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
   }
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    stats.startProcessing();
-    try {
-      stats.stopProcessing();
-      try {
-        incoming.buildSchema();
-      } finally {
-        stats.startProcessing();
-      }
+  public boolean buildSchema() throws SchemaChangeException {
+    next(incoming);
       for (VectorWrapper w : incoming) {
         container.addOrGet(w.getField());
       }
       container.buildSchema(SelectionVectorMode.NONE);
       container.setRecordCount(0);
-      return IterOutcome.OK_NEW_SCHEMA;
-    } finally {
-      stats.stopProcessing();
-    }
+      return true;
   }
 
   @Override
   public IterOutcome innerNext() {
+    if (!schemaBuilt) {
+      try {
+        schemaBuilt = true;
+        buildSchema();
+        return IterOutcome.OK_NEW_SCHEMA;
+      } catch (SchemaChangeException e) {
+        throw new RuntimeException(e);
+      }
+    }
     if (schema != null) {
       if (spillCount == 0) {
         if (schema != null) {
@@ -249,7 +249,12 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
       outer: while (true) {
         Stopwatch watch = new Stopwatch();
         watch.start();
-        IterOutcome upstream = incoming.next();
+        IterOutcome upstream;
+        if (first) {
+          upstream = IterOutcome.OK_NEW_SCHEMA;
+        } else {
+          upstream = next(incoming);
+        }
         if (upstream == IterOutcome.OK && sorter == null) {
           upstream = IterOutcome.OK_NEW_SCHEMA;
         }
@@ -275,14 +280,14 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
           }
           // fall through.
         case OK:
-          if (!first && incoming.getRecordCount() == 0) {
+          if (first) {
+            first = false;
+          }
+          if (incoming.getRecordCount() == 0) {
             for (VectorWrapper w : incoming) {
               w.clear();
             }
             break;
-          }
-          if (first) {
-            first = false;
           }
           totalSizeInMemory += getBufferSize(incoming);
           SelectionVector2 sv2;

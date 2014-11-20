@@ -430,7 +430,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   }
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
+  public boolean buildSchema() throws SchemaChangeException {
     stats.startProcessing();
     try {
       RawFragmentBatch batch = getNext(fragProviders[0]);
@@ -444,7 +444,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
     }
     outgoingContainer = VectorContainer.canonicalize(outgoingContainer);
     outgoingContainer.buildSchema(SelectionVectorMode.NONE);
-    return IterOutcome.OK_NEW_SCHEMA;
+    return true;
   }
 
   @Override

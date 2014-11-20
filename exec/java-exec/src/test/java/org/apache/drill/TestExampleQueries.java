@@ -20,12 +20,20 @@ package org.apache.drill;
 import static org.junit.Assert.assertEquals;
 
 import org.apache.drill.common.util.FileUtils;
+import org.apache.drill.exec.planner.physical.PlannerSettings;
 import org.apache.drill.exec.rpc.RpcException;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestExampleQueries extends BaseTestQuery{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
+
+  @Test
+  public void testQ() throws Exception {
+    test("alter session set `planner.enable_hashjoin` = false");
+    test("select n.n_name, n.n_nationkey + 1 from cp.`tpch/nation.parquet` n join cp.`tpch/region.parquet` r on n.n_regionkey = r.r_regionkey where r.r_name = 'ASIA' order by n_name limit 1");
+//    test("select * from cp.`tpch/region.parquet` where r_name = 'ASIA'");
+  }
 
   @Test
   public void testParquetComplex() throws Exception {

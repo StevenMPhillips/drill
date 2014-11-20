@@ -79,10 +79,10 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
   }
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    incoming.get(0).buildSchema();
+  public boolean buildSchema() throws SchemaChangeException {
+//    incoming.get(0).buildSchema();
     setupSchema();
-    return IterOutcome.OK_NEW_SCHEMA;
+    return true;
   }
 
   @Override
@@ -103,11 +103,11 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
         return IterOutcome.NONE;
       }
       current = incomingIterator.next();
-      try {
-        current.buildSchema();
-      } catch (SchemaChangeException e) {
-        throw new RuntimeException(e);
-      }
+//      try {
+//        current.buildSchema();
+//      } catch (SchemaChangeException e) {
+//        throw new RuntimeException(e);
+//      }
       upstream = current.next();
       if (upstream == IterOutcome.OK) {
         upstream = IterOutcome.OK_NEW_SCHEMA;

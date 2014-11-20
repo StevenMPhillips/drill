@@ -86,6 +86,9 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
   private long countSincePurge;
   private int batchCount;
   private Copier copier;
+  private boolean schemaBuilt = false;
+  private boolean first = true;
+  private int recordCount = 0;
 
   public TopNBatch(TopN popConfig, FragmentContext context, RecordBatch incoming) throws OutOfMemoryException {
     super(popConfig, context);
@@ -96,7 +99,7 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
 
   @Override
   public int getRecordCount() {
-    return sv4.getCount();
+    return recordCount;
   }
 
   @Override
@@ -122,16 +125,9 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
   }
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
+  public boolean buildSchema() throws SchemaChangeException {
     VectorContainer c = new VectorContainer(oContext);
-    stats.startProcessing();
-    try {
-      stats.stopProcessing();
-      try {
-        incoming.buildSchema();
-      } finally {
-        stats.startProcessing();
-      }
+    next(incoming);
       for (VectorWrapper w : incoming) {
         c.addOrGet(w.getField());
       }
@@ -141,18 +137,26 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
       }
       container.buildSchema(SelectionVectorMode.NONE);
       container.setRecordCount(0);
-      return IterOutcome.OK_NEW_SCHEMA;
-    } finally {
-      stats.stopProcessing();
-    }
+      return true;
   }
 
   @Override
   public IterOutcome innerNext() {
+    if (!schemaBuilt) {
+      try {
+        schemaBuilt = true;
+        buildSchema();
+        return IterOutcome.OK_NEW_SCHEMA;
+      } catch (SchemaChangeException e) {
+        throw new RuntimeException(e);
+      }
+    }
     if (schema != null) {
       if (getSelectionVector4().next()) {
+        recordCount = sv4.getCount();
         return IterOutcome.OK;
       } else {
+        recordCount = 0;
         return IterOutcome.NONE;
       }
     }
@@ -162,7 +166,13 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
       outer: while (true) {
         Stopwatch watch = new Stopwatch();
         watch.start();
-        IterOutcome upstream = incoming.next();
+        IterOutcome upstream;
+        if (first) {
+          upstream = IterOutcome.OK_NEW_SCHEMA;
+          first = false;
+        } else {
+          upstream = next(incoming);
+        }
         if (upstream == IterOutcome.OK && schema == null) {
           upstream = IterOutcome.OK_NEW_SCHEMA;
           container.clear();
@@ -185,6 +195,12 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
           }
           // fall through.
         case OK:
+          if (incoming.getRecordCount() == 0) {
+            for (VectorWrapper w : incoming) {
+              w.clear();
+            }
+            break;
+          }
           countSincePurge += incoming.getRecordCount();
           batchCount++;
           RecordBatchData batch = new RecordBatchData(incoming);
@@ -218,6 +234,7 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
       }
       container.buildSchema(BatchSchema.SelectionVectorMode.FOUR_BYTE);
 
+      recordCount = sv4.getCount();
       return IterOutcome.OK_NEW_SCHEMA;
 
     } catch(SchemaChangeException | ClassTransformationException | IOException ex) {
@@ -342,11 +359,6 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
     @Override
     public BatchSchema getSchema() {
       return container.getSchema();
-    }
-
-    @Override
-    public IterOutcome buildSchema() throws SchemaChangeException {
-      return null;
     }
 
     @Override

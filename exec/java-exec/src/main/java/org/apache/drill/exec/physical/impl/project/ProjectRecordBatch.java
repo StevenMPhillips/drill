@@ -139,6 +139,10 @@ public class ProjectRecordBatch extends AbstractSingleRecordBatch<Project> {
 //    VectorUtil.showVectorAccessibleContent(incoming, ",");
     int incomingRecordCount = incoming.getRecordCount();
 
+    if (incomingRecordCount == 0) {
+      return IterOutcome.OK_NEW_SCHEMA;
+    }
+
     container.zeroVectors();
 
     if (!doAlloc()) {
@@ -262,13 +266,6 @@ public class ProjectRecordBatch extends AbstractSingleRecordBatch<Project> {
     NameSegment expr = ((SchemaPath)ex.getExpr()).getRootSegment();
     NameSegment ref = ex.getRef().getRootSegment();
     return ref.getPath().equals("*") && expr.getPath().equals("*");
-  }
-
-  @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    incoming.buildSchema();
-    setupNewSchema();
-    return IterOutcome.OK_NEW_SCHEMA;
   }
 
   @Override
