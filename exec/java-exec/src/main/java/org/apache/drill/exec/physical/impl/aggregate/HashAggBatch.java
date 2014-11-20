@@ -73,6 +73,7 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
                             "resetValues" /* reset */, "cleanup" /* cleanup */) ;
 
   private final MappingSet UpdateAggrValuesMapping = new MappingSet("incomingRowIdx" /* read index */, "outRowIdx" /* write index */, "htRowIdx" /* workspace index */, "incoming" /* read container */, "outgoing" /* write container */, "aggrValuesContainer" /* workspace container */, UPDATE_AGGR_INSIDE, UPDATE_AGGR_OUTSIDE, UPDATE_AGGR_INSIDE);
+  private boolean schemaBuilt = false;
 
 
   public HashAggBatch(HashAggregate popConfig, RecordBatch incoming, FragmentContext context) throws ExecutionSetupException {
@@ -89,37 +90,44 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
   }
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    stats.startProcessing();
-    try {
-      stats.stopProcessing();
-      try {
-        incoming.buildSchema();
-      } finally {
-        stats.startProcessing();
-      }
-      if (!createAggregator()) {
-        done = true;
-        return IterOutcome.STOP;
-      }
-      return IterOutcome.OK_NEW_SCHEMA;
-    } finally {
-      stats.stopProcessing();
+  public boolean buildSchema() throws SchemaChangeException {
+    next(incoming);
+    if (!createAggregator()) {
+      done = true;
+      return false;
     }
+    return true;
   }
 
   @Override
   public IterOutcome innerNext() {
+    if (!schemaBuilt) {
+      try {
+        schemaBuilt = true;
+        if (!buildSchema()) {
+          return IterOutcome.STOP;
+        } else {
+          return IterOutcome.OK_NEW_SCHEMA;
+        }
+      } catch (SchemaChangeException e) {
+        throw new RuntimeException(e);
+      }
+    }
     if (done) {
       return IterOutcome.NONE;
     }
     // this is only called on the first batch. Beyond this, the aggregator manages batches.
     if (aggregator == null || first) {
-      first = false;
       if (aggregator != null) {
         aggregator.cleanup();
       }
-      IterOutcome outcome = next(incoming);
+      IterOutcome outcome;
+      if (first) {
+        first = false;
+        outcome = IterOutcome.OK;
+      } else {
+        outcome = next(incoming);
+      }
       if (outcome == IterOutcome.OK) {
         outcome = IterOutcome.OK_NEW_SCHEMA;
       }

@@ -21,6 +21,7 @@ import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.memory.OutOfMemoryException;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
+import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.exec.vector.SchemaChangeCallBack;
 
 public abstract class AbstractSingleRecordBatch<T extends PhysicalOperator> extends AbstractRecordBatch<T> {
@@ -64,6 +65,9 @@ public abstract class AbstractSingleRecordBatch<T extends PhysicalOperator> exte
     case NONE:
     case NOT_YET:
     case STOP:
+      if (first) {
+        container.buildSchema(SelectionVectorMode.NONE);
+      }
       return upstream;
     case OUT_OF_MEMORY:
       return upstream;
@@ -86,7 +90,11 @@ public abstract class AbstractSingleRecordBatch<T extends PhysicalOperator> exte
     case OK:
       assert !first : "First batch should be OK_NEW_SCHEMA";
       container.zeroVectors();
-      doWork();
+      IterOutcome out = doWork();
+
+      if (out != IterOutcome.OK && out != IterOutcome.OK_NEW_SCHEMA) {
+        upstream = out;
+      }
 
       if (outOfMemory) {
         outOfMemory = false;
@@ -102,13 +110,6 @@ public abstract class AbstractSingleRecordBatch<T extends PhysicalOperator> exte
     default:
       throw new UnsupportedOperationException();
     }
-  }
-
-  @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    incoming.buildSchema();
-    setupNewSchema();
-    return IterOutcome.OK_NEW_SCHEMA;
   }
 
   @Override

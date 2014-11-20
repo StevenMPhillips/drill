@@ -32,6 +32,7 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
 
   private final LinkedBlockingDeque<RawFragmentBatch> buffer;
   private volatile boolean finished = false;
+  private volatile boolean killed = false;
   private final int softlimit;
   private final int startlimit;
   private final AtomicBoolean overlimit = new AtomicBoolean(false);
@@ -54,6 +55,9 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
 
   @Override
   public void enqueue(RawFragmentBatch batch) {
+    if (killed) {
+      batch.release();
+    }
     if (finished) {
       throw new RuntimeException("Attempted to enqueue batch after finished");
     }
@@ -106,9 +110,12 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
 
   @Override
   public void kill(FragmentContext context) {
+    killed = finished = true;
     while (!buffer.isEmpty()) {
       RawFragmentBatch batch = buffer.poll();
-      batch.getBody().release();
+      if (batch.getBody() != null) {
+        batch.getBody().release();
+      }
     }
   }
 

@@ -59,6 +59,7 @@ public class StreamingAggBatch extends AbstractRecordBatch<StreamingAggregate> {
   private final RecordBatch incoming;
   private boolean done = false;
   private boolean first = true;
+  private boolean schemaBuilt = false;
 
   public StreamingAggBatch(StreamingAggregate popConfig, RecordBatch incoming, FragmentContext context) throws OutOfMemoryException {
     super(popConfig, context);
@@ -77,34 +78,42 @@ public class StreamingAggBatch extends AbstractRecordBatch<StreamingAggregate> {
   }
 
   @Override
-  public IterOutcome buildSchema() throws SchemaChangeException {
-    stats.startProcessing();
-    try {
-      stats.stopProcessing();
-      try {
-        incoming.buildSchema();
-      } finally {
-        stats.startProcessing();
-      }
-      if (!createAggregator()) {
-        done = true;
-        return IterOutcome.STOP;
-      }
-      return IterOutcome.OK_NEW_SCHEMA;
-    } finally {
-      stats.stopProcessing();
+  public boolean buildSchema() throws SchemaChangeException {
+    next(incoming);
+    if (!createAggregator()) {
+      done = true;
+      return false;
     }
+    return true;
   }
+
   @Override
   public IterOutcome innerNext() {
+    if (!schemaBuilt) {
+      try {
+        schemaBuilt = true;
+        if (!buildSchema()) {
+          return IterOutcome.STOP;
+        } else {
+          return IterOutcome.OK_NEW_SCHEMA;
+        }
+      } catch (SchemaChangeException e) {
+        throw new RuntimeException(e);
+      }
+    }
     if (done) {
       container.zeroVectors();
       return IterOutcome.NONE;
     }
       // this is only called on the first batch. Beyond this, the aggregator manages batches.
     if (aggregator == null || first) {
-      first = false;
-      IterOutcome outcome = next(incoming);
+      IterOutcome outcome;
+      if (first && incoming.getRecordCount() > 0) {
+        first = false;
+        outcome = IterOutcome.OK_NEW_SCHEMA;
+      } else {
+        outcome = next(incoming);
+      }
       logger.debug("Next outcome of {}", outcome);
       switch (outcome) {
       case NONE:
