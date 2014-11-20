@@ -76,8 +76,12 @@ public final class JoinStatus {
 
   public final void ensureInitial() {
     if(!initialSet) {
-      this.lastLeft = nextLeft();
-      this.lastRight = nextRight();
+      if (left.getRecordCount() == 0) {
+        this.lastLeft = nextLeft();
+      }
+      if (right.getRecordCount() == 0) {
+        this.lastRight = nextRight();
+      }
       initialSet = true;
     }
   }

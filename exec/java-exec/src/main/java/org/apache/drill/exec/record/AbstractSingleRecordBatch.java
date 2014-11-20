@@ -86,7 +86,11 @@ public abstract class AbstractSingleRecordBatch<T extends PhysicalOperator> exte
     case OK:
       assert !first : "First batch should be OK_NEW_SCHEMA";
       container.zeroVectors();
-      doWork();
+      IterOutcome out = doWork();
+
+      if (out != IterOutcome.OK && out != IterOutcome.OK_NEW_SCHEMA) {
+        upstream = out;
+      }
 
       if (outOfMemory) {
         outOfMemory = false;

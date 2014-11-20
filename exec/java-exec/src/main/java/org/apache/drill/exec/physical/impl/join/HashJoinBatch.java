@@ -326,6 +326,13 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
 //        rightUpstream = IterOutcome.OK_NEW_SCHEMA;
 //      }
 
+        if (right.getRecordCount() == 0) {
+          for (VectorWrapper w : right) {
+            w.clear();
+          }
+          rightUpstream = next(right);
+        }
+
         boolean moreData = true;
 
         while (moreData) {

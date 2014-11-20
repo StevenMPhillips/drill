@@ -341,6 +341,9 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
         }
       }
 
+      if (totalcount == 0) {
+        return IterOutcome.NONE;
+      }
       if (spillCount == 0) {
         Stopwatch watch = new Stopwatch();
         watch.start();

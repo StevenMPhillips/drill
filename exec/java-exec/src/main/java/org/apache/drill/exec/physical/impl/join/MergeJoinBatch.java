@@ -141,12 +141,7 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
   public boolean buildSchema() throws SchemaChangeException {
     next(left);
     next(right);
-    try {
-      allocateBatch(true);
-      worker = generateNewWorker();
-    } catch (IOException | ClassTransformationException e) {
-      throw new SchemaChangeException(e);
-    }
+    allocateBatch(true);
     return true;
   }
 
