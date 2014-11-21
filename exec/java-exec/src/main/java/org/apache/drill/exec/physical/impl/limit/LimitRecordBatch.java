@@ -43,6 +43,7 @@ public class LimitRecordBatch extends AbstractSingleRecordBatch<Limit> {
   private boolean noEndLimit;
   private boolean skipBatch;
   private boolean done = false;
+  private boolean first = true;
   List<TransferPair> transfers = Lists.newArrayList();
 
   public LimitRecordBatch(Limit popConfig, FragmentContext context, RecordBatch incoming) throws OutOfMemoryException {
@@ -93,7 +94,7 @@ public class LimitRecordBatch extends AbstractSingleRecordBatch<Limit> {
       return IterOutcome.NONE;
     }
 
-    if(!noEndLimit && recordsLeft <= 0) {
+    if(!first && !noEndLimit && recordsLeft <= 0) {
       incoming.kill(true);
 
       IterOutcome upStream = incoming.next();
@@ -108,6 +109,9 @@ public class LimitRecordBatch extends AbstractSingleRecordBatch<Limit> {
       }
 
       return IterOutcome.NONE;
+    }
+    if (first) {
+      first = false;
     }
     return super.innerNext();
   }

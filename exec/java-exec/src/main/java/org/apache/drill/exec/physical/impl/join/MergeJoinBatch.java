@@ -139,8 +139,7 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
 
   @Override
   public boolean buildSchema() throws SchemaChangeException {
-    next(left);
-    next(right);
+    status.ensureInitial();
     allocateBatch(true);
     return true;
   }
@@ -443,34 +442,38 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
     container.zeroVectors();
 
     //estimation of joinBatchSize : max of left/right size, expanded by a factor of 16, which is then bounded by MAX_BATCH_SIZE.
-    int leftCount = worker == null ? left.getRecordCount() : (status.isLeftPositionAllowed() ? left.getRecordCount() : 0);
-    int rightCount = worker == null ? left.getRecordCount() : (status.isRightPositionAllowed() ? right.getRecordCount() : 0);
+    int leftCount = /*worker == null ? left.getRecordCount() :*/ (status.isLeftPositionAllowed() ? left.getRecordCount() : 0);
+    int rightCount = /*worker == null ? right.getRecordCount() :*/ (status.isRightPositionAllowed() ? right.getRecordCount() : 0);
     int joinBatchSize = Math.min(Math.max(leftCount, rightCount) * 16, MAX_BATCH_SIZE);
 
     if (newSchema) {
     // add fields from both batches
-      for (VectorWrapper<?> w : left) {
-        MajorType inputType = w.getField().getType();
-        MajorType outputType;
-        if (joinType == JoinRelType.RIGHT && inputType.getMode() == DataMode.REQUIRED) {
-          outputType = Types.overrideMode(inputType, DataMode.OPTIONAL);
-        } else {
-          outputType = inputType;
+      if (status.isLeftPositionAllowed()) {
+        for (VectorWrapper<?> w : left) {
+          MajorType inputType = w.getField().getType();
+          MajorType outputType;
+          if (joinType == JoinRelType.RIGHT && inputType.getMode() == DataMode.REQUIRED) {
+            outputType = Types.overrideMode(inputType, DataMode.OPTIONAL);
+          } else {
+            outputType = inputType;
+          }
+          MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
+          container.addOrGet(newField);
         }
-        MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
-       container.addOrGet(newField);
       }
 
-      for (VectorWrapper<?> w : right) {
-        MajorType inputType = w.getField().getType();
-        MajorType outputType;
-        if (joinType == JoinRelType.LEFT && inputType.getMode() == DataMode.REQUIRED) {
-          outputType = Types.overrideMode(inputType, DataMode.OPTIONAL);
-        } else {
-          outputType = inputType;
+      if (status.isRightPositionAllowed()) {
+        for (VectorWrapper<?> w : right) {
+          MajorType inputType = w.getField().getType();
+          MajorType outputType;
+          if (joinType == JoinRelType.LEFT && inputType.getMode() == DataMode.REQUIRED) {
+            outputType = Types.overrideMode(inputType, DataMode.OPTIONAL);
+          } else {
+            outputType = inputType;
+          }
+          MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
+          container.addOrGet(newField);
         }
-        MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
-        container.addOrGet(newField);
       }
     }
 
@@ -494,7 +497,7 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
 
         // materialize value vector readers from join expression
         LogicalExpression materializedLeftExpr;
-        if (worker == null || status.isLeftPositionAllowed()) {
+        if (status.isLeftPositionAllowed()) {
           materializedLeftExpr = ExpressionTreeMaterializer.materialize(leftFieldExpr, left, collector, context.getFunctionRegistry());
         } else {
           materializedLeftExpr = new TypedNullConstant(Types.optional(MinorType.INT));
@@ -505,7 +508,7 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
         }
 
         LogicalExpression materializedRightExpr;
-        if (worker == null || status.isRightPositionAllowed()) {
+        if (status.isRightPositionAllowed()) {
           materializedRightExpr = ExpressionTreeMaterializer.materialize(rightFieldExpr, right, collector, context.getFunctionRegistry());
         } else {
           materializedRightExpr = new TypedNullConstant(Types.optional(MinorType.INT));

@@ -103,11 +103,6 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
         return IterOutcome.NONE;
       }
       current = incomingIterator.next();
-//      try {
-//        current.buildSchema();
-//      } catch (SchemaChangeException e) {
-//        throw new RuntimeException(e);
-//      }
       upstream = current.next();
       if (upstream == IterOutcome.OK) {
         upstream = IterOutcome.OK_NEW_SCHEMA;
@@ -132,6 +127,9 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
 
   private void doTransfer() {
     outRecordCount = current.getRecordCount();
+    if (outRecordCount == 0) {
+      return;
+    }
     if (container.getSchema().getSelectionVectorMode() == BatchSchema.SelectionVectorMode.TWO_BYTE) {
       this.sv = current.getSelectionVector2();
     }

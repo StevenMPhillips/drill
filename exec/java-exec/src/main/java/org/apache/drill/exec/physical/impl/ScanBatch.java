@@ -80,7 +80,7 @@ public class ScanBatch implements RecordBatch {
   private List<ValueVector> partitionVectors;
   private List<Integer> selectedPartitionColumns;
   private String partitionColumnDesignator;
-  private boolean first = false;
+  private boolean first = true;
   private boolean done = false;
   private SchemaChangeCallBack callBack = new SchemaChangeCallBack();
 
@@ -142,23 +142,10 @@ public class ScanBatch implements RecordBatch {
     container.zeroVectors();
   }
 
-  private void transfer() {
-    container.zeroVectors();
-    for (VectorWrapper w : tempContainer) {
-      MaterializedField field = w.getField();
-      w.getValueVector().makeTransferPair(container.addOrGet(field)).transfer();
-    }
-  }
-
   @Override
   public IterOutcome next() {
     if (done) {
       return IterOutcome.NONE;
-    }
-    if (first) {
-      first = false;
-      transfer();
-      return IterOutcome.OK;
     }
     long t1 = System.nanoTime();
     oContext.getStats().startProcessing();
@@ -177,6 +164,12 @@ public class ScanBatch implements RecordBatch {
           if (!readers.hasNext()) {
             currentReader.cleanup();
             releaseAssets();
+            done = true;
+//            if (!first) {
+//              return IterOutcome.NONE;
+//            } else {
+//              break;
+//            }
             return IterOutcome.NONE;
           }
           oContext.getStats().startSetup();
@@ -210,14 +203,8 @@ public class ScanBatch implements RecordBatch {
       if (mutator.isNewSchema()) {
         container.buildSchema(SelectionVectorMode.NONE);
         schema = container.getSchema();
-        long t2 = System.nanoTime();
-//        System.out.println((t2 - t1) / recordCount);
-//        BatchPrinter.printBatch(this, "\t");
         return IterOutcome.OK_NEW_SCHEMA;
       } else {
-        long t2 = System.nanoTime();
-//        System.out.println((t2 - t1) / recordCount);
-//        BatchPrinter.printBatch(this, "\t");
         return IterOutcome.OK;
       }
     } catch (Exception ex) {

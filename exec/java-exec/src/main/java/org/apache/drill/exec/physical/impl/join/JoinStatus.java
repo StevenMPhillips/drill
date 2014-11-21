@@ -55,7 +55,7 @@ public final class JoinStatus {
   private final JoinRelType joinType;
 
   public boolean ok = true;
-  private boolean initialSet = false;
+  private int initialSet = 0;
   private boolean leftRepeating = false;
 
   public JoinStatus(RecordBatch left, RecordBatch right, MergeJoinBatch output) {
@@ -75,15 +75,24 @@ public final class JoinStatus {
   }
 
   public final void ensureInitial() {
-    if(!initialSet) {
-      if (left.getRecordCount() == 0) {
+    switch(initialSet) {
+      case 0:
         this.lastLeft = nextLeft();
-      }
-      if (right.getRecordCount() == 0) {
         this.lastRight = nextRight();
-      }
-      initialSet = true;
+        break;
+      case 1:
+        if (lastLeft != IterOutcome.NONE && left.getRecordCount() == 0) {
+          this.lastLeft = nextLeft();
+        }
+        if (lastRight != IterOutcome.NONE && right.getRecordCount() == 0) {
+          this.lastRight = nextRight();
+        }
+        // fall through
+      case 2:
+      default:
+        break;
     }
+    initialSet++;
   }
 
   public final void advanceLeft() {

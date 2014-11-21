@@ -30,11 +30,11 @@ public class TestExampleQueries extends BaseTestQuery{
 
   @Test
   public void testQ() throws Exception {
-//    test("alter session set `planner.enable_hashjoin` = false");
-    test("alter session set `planner.enable_hashagg` = false");
-//    test("select n.n_name, n.n_nationkey + 1 from cp.`tpch/nation.parquet` n join cp.`tpch/region.parquet` r on n.n_regionkey = r.r_regionkey where r.r_name = 'ASIA' order by n_name limit 1");
+    test("alter session set `planner.enable_hashjoin` = false");
+//    test("alter session set `planner.enable_hashagg` = false");
+    test("select n.n_name, n.n_nationkey + 1 from cp.`tpch/nation.parquet` n join cp.`tpch/region.parquet` r on n.n_regionkey = r.r_regionkey where r.r_name = 'ASIA' order by n_name limit 10");
 //    test("select * from cp.`tpch/region.parquet` where r_name = 'ASIA'");
-    test ("select n_regionkey, sum(n_nationkey) as sm from cp.`tpch/nation.parquet` group by n_regionkey order by n_regionkey desc");
+//    test ("select n_regionkey, sum(n_nationkey) as sm from cp.`tpch/nation.parquet` group by n_regionkey order by n_regionkey desc");
   }
 
   @Test
@@ -318,12 +318,12 @@ public class TestExampleQueries extends BaseTestQuery{
 
   @Test  // tests with LIMIT 0
   public void testLimit0_1() throws Exception {
-    test("select n_nationkey, n_name from cp.`tpch/nation.parquet` limit 0");
-    test("select n_nationkey, n_name from cp.`tpch/nation.parquet` limit 0 offset 5");
+//    test("select n_nationkey, n_name from cp.`tpch/nation.parquet` limit 0");
+//    test("select n_nationkey, n_name from cp.`tpch/nation.parquet` limit 0 offset 5");
     test("select n_nationkey, n_name from cp.`tpch/nation.parquet` order by n_nationkey limit 0");
-    test("select * from cp.`tpch/nation.parquet` limit 0");
-    test("select n.n_nationkey from cp.`tpch/nation.parquet` n, cp.`tpch/region.parquet` r where n.n_regionkey = r.r_regionkey limit 0");
-    test("select n_regionkey, count(*) from cp.`tpch/nation.parquet` group by n_regionkey limit 0");
+//    test("select * from cp.`tpch/nation.parquet` limit 0");
+//    test("select n.n_nationkey from cp.`tpch/nation.parquet` n, cp.`tpch/region.parquet` r where n.n_regionkey = r.r_regionkey limit 0");
+//    test("select n_regionkey, count(*) from cp.`tpch/nation.parquet` group by n_regionkey limit 0");
   }
 
   @Test
