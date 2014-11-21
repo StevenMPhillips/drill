@@ -97,6 +97,7 @@ public class LimitRecordBatch extends AbstractSingleRecordBatch<Limit> {
     if(!first && !noEndLimit && recordsLeft <= 0) {
       incoming.kill(true);
 
+      /*
       IterOutcome upStream = incoming.next();
 
       while (upStream == IterOutcome.OK || upStream == IterOutcome.OK_NEW_SCHEMA) {
@@ -107,11 +108,9 @@ public class LimitRecordBatch extends AbstractSingleRecordBatch<Limit> {
         }
         upStream = incoming.next();
       }
+      */
 
       return IterOutcome.NONE;
-    }
-    if (first) {
-      first = false;
     }
     return super.innerNext();
   }
@@ -123,6 +122,9 @@ public class LimitRecordBatch extends AbstractSingleRecordBatch<Limit> {
 
   @Override
   protected IterOutcome doWork() {
+    if (first) {
+      first = false;
+    }
     skipBatch = false;
     int recordCount = incoming.getRecordCount();
     if (recordCount == 0) {
