@@ -55,11 +55,11 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
 
   @Override
   public void enqueue(RawFragmentBatch batch) {
-    if (finished) {
-      throw new RuntimeException("Attempted to enqueue batch after finished");
-    }
     if (killed) {
       batch.release();
+    }
+    if (finished) {
+      throw new RuntimeException("Attempted to enqueue batch after finished");
     }
     if (batch.getHeader().getIsOutOfMemory()) {
       logger.debug("Setting autoread false");
@@ -110,10 +110,12 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
 
   @Override
   public void kill(FragmentContext context) {
-    killed = true;
+    killed = finished = true;
     while (!buffer.isEmpty()) {
       RawFragmentBatch batch = buffer.poll();
-      batch.getBody().release();
+      if (batch.getBody() != null) {
+        batch.getBody().release();
+      }
     }
   }
 

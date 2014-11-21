@@ -103,9 +103,8 @@ public class UnorderedReceiverBatch implements RecordBatch {
   public void kill(boolean sendUpstream) {
     if (sendUpstream) {
       informSenders();
-    } else {
-      fragProvider.kill(context);
     }
+    fragProvider.kill(context);
   }
 
   @Override
