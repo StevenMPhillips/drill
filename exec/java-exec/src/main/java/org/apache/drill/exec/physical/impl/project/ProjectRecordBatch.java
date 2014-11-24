@@ -17,7 +17,9 @@
  */
 package org.apache.drill.exec.physical.impl.project;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.List;
 
@@ -61,6 +63,7 @@ import org.apache.drill.exec.record.TransferPair;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.record.VectorWrapper;
+import org.apache.drill.exec.util.BatchPrinter;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.writer.BaseWriter.ComplexWriter;
 
@@ -187,6 +190,13 @@ public class ProjectRecordBatch extends AbstractSingleRecordBatch<Project> {
       container.buildSchema(SelectionVectorMode.NONE);
     }
 
+    if (context.getHandle().getMajorFragmentId() == 2 && popConfig.getOperatorId() == 3) {
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      PrintStream stream = new PrintStream(bos);
+      BatchPrinter.printBatch(this, stream);
+      stream.flush();
+      logger.debug(new String(bos.toByteArray()));
+    }
     return IterOutcome.OK;
   }
 

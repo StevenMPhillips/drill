@@ -110,6 +110,7 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
   private long highWaterMark = Long.MAX_VALUE;
   private int targetRecordCount;
   private boolean schemaBuilt = false;
+  private boolean stop = false;
 
   public ExternalSortBatch(ExternalSort popConfig, FragmentContext context, RecordBatch incoming) throws OutOfMemoryException {
     super(popConfig, context);
@@ -196,13 +197,22 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
 
   @Override
   public boolean buildSchema() throws SchemaChangeException {
-    next(incoming);
-      for (VectorWrapper w : incoming) {
-        container.addOrGet(w.getField());
-      }
-      container.buildSchema(SelectionVectorMode.NONE);
-      container.setRecordCount(0);
-      return true;
+    IterOutcome outcome = next(incoming);
+    switch (outcome) {
+      case OK:
+      case OK_NEW_SCHEMA:
+        for (VectorWrapper w : incoming) {
+          container.addOrGet(w.getField());
+        }
+        container.buildSchema(SelectionVectorMode.NONE);
+        container.setRecordCount(0);
+        return true;
+      case STOP:
+        stop = true;
+      case NONE:
+      default:
+        return false;
+    }
   }
 
   @Override
@@ -210,8 +220,15 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
     if (!schemaBuilt) {
       try {
         schemaBuilt = true;
-        buildSchema();
-        return IterOutcome.OK_NEW_SCHEMA;
+        if (buildSchema()) {
+          return IterOutcome.OK_NEW_SCHEMA;
+        } else {
+          if (stop) {
+            return IterOutcome.STOP;
+          } else {
+            return IterOutcome.NONE;
+          }
+        }
       } catch (SchemaChangeException e) {
         throw new RuntimeException(e);
       }

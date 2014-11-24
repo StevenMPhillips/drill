@@ -17,7 +17,9 @@
  */
 package org.apache.drill.exec.physical.impl.svremover;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.List;
 
 import org.apache.drill.exec.exception.ClassTransformationException;
@@ -34,6 +36,7 @@ import org.apache.drill.exec.record.TransferPair;
 import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.WritableBatch;
+import org.apache.drill.exec.util.BatchPrinter;
 import org.apache.drill.exec.vector.CopyUtil;
 import org.apache.drill.exec.vector.ValueVector;
 
@@ -131,6 +134,11 @@ public class RemovingRecordBatch extends AbstractSingleRecordBatch<SelectionVect
         incomingRecordCount,
         incomingRecordCount - remainderIndex,
         incoming.getSchema());
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    PrintStream stream = new PrintStream(bos);
+    BatchPrinter.printBatch(this, stream);
+    stream.flush();
+    logger.debug(new String(bos.toByteArray()));
     return IterOutcome.OK;
   }
 

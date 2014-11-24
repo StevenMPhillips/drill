@@ -89,6 +89,7 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
   private boolean schemaBuilt = false;
   private boolean first = true;
   private int recordCount = 0;
+  private boolean stop;
 
   public TopNBatch(TopN popConfig, FragmentContext context, RecordBatch incoming) throws OutOfMemoryException {
     super(popConfig, context);
@@ -127,17 +128,26 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
   @Override
   public boolean buildSchema() throws SchemaChangeException {
     VectorContainer c = new VectorContainer(oContext);
-    next(incoming);
-      for (VectorWrapper w : incoming) {
-        c.addOrGet(w.getField());
-      }
-      c = VectorContainer.canonicalize(c);
-      for (VectorWrapper w : c) {
-        container.add(w.getValueVector());
-      }
-      container.buildSchema(SelectionVectorMode.NONE);
-      container.setRecordCount(0);
-      return true;
+    IterOutcome outcome = next(incoming);
+    switch (outcome) {
+      case OK:
+      case OK_NEW_SCHEMA:
+        for (VectorWrapper w : incoming) {
+          c.addOrGet(w.getField());
+        }
+        c = VectorContainer.canonicalize(c);
+        for (VectorWrapper w : c) {
+          container.add(w.getValueVector());
+        }
+        container.buildSchema(SelectionVectorMode.NONE);
+        container.setRecordCount(0);
+        return true;
+      case STOP:
+        stop = true;
+      case NONE:
+      default:
+        return false;
+    }
   }
 
   @Override
@@ -145,8 +155,15 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
     if (!schemaBuilt) {
       try {
         schemaBuilt = true;
-        buildSchema();
-        return IterOutcome.OK_NEW_SCHEMA;
+        if (buildSchema()) {
+          return IterOutcome.OK_NEW_SCHEMA;
+        } else {
+          if (stop) {
+            return IterOutcome.STOP;
+          } else {
+            return IterOutcome.NONE;
+          }
+        }
       } catch (SchemaChangeException e) {
         throw new RuntimeException(e);
       }

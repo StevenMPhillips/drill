@@ -17,6 +17,8 @@
  */
 package org.apache.drill.exec.util;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
@@ -31,7 +33,10 @@ import com.google.common.collect.Lists;
  * This is a tool for printing the content of record batches to screen. Used for debugging.
  */
 public class BatchPrinter {
-  public static void printHyperBatch(VectorAccessible batch, SelectionVector4 sv4) {
+  public static void printHyperBatch(VectorAccessible batch, SelectionVector4 sv4, PrintStream stream) {
+    if (stream == null) {
+      stream = System.out;
+    }
     List<String> columns = Lists.newArrayList();
     List<ValueVector> vectors = Lists.newArrayList();
     int numBatches = 0;
@@ -45,17 +50,20 @@ public class BatchPrinter {
             Object o = vw.getValueVectors()[sv4.get(j) >>> 16].getAccessor().getObject(j & 65535);
             if (o instanceof byte[]) {
               String value = new String((byte[]) o);
-              System.out.printf("| %-15s",value.length() <= 15 ? value : value.substring(0, 14));
+              stream.printf("| %-15s",value.length() <= 15 ? value : value.substring(0, 14));
             } else {
               String value = o.toString();
-              System.out.printf("| %-15s",value.length() <= 15 ? value : value.substring(0,14));
+              stream.printf("| %-15s",value.length() <= 15 ? value : value.substring(0,14));
             }
           }
-          System.out.printf("|\n");
+          stream.printf("|\n");
         }
-      System.out.printf("|\n");
+      stream.printf("|\n");
   }
-  public static void printBatch(VectorAccessible batch) {
+  public static void printBatch(VectorAccessible batch, PrintStream stream) {
+    if (stream == null) {
+      stream = System.out;
+    }
     List<String> columns = Lists.newArrayList();
     List<ValueVector> vectors = Lists.newArrayList();
     for (VectorWrapper vw : batch) {
@@ -66,24 +74,24 @@ public class BatchPrinter {
     int rows = vectors.get(0).getMetadata().getValueCount();
     for (int row = 0; row < rows; row++) {
       if (row%50 == 0) {
-        System.out.println(StringUtils.repeat("-", width * 17 + 1));
+        stream.println(StringUtils.repeat("-", width * 17 + 1));
         for (String column : columns) {
-          System.out.printf("| %-15s", width <= 15 ? column : column.substring(0, 14));
+          stream.printf("| %-15s", width <= 15 ? column : column.substring(0, 14));
         }
-        System.out.printf("|\n");
-        System.out.println(StringUtils.repeat("-", width*17 + 1));
+        stream.printf("|\n");
+        stream.println(StringUtils.repeat("-", width*17 + 1));
       }
       for (ValueVector vv : vectors) {
         Object o = vv.getAccessor().getObject(row);
         if (o instanceof byte[]) {
           String value = new String((byte[]) o);
-          System.out.printf("| %-15s",value.length() <= 15 ? value : value.substring(0, 14));
+          stream.printf("| %-15s",value.length() <= 15 ? value : value.substring(0, 14));
         } else {
           String value = o.toString();
-          System.out.printf("| %-15s",value.length() <= 15 ? value : value.substring(0,14));
+          stream.printf("| %-15s",value.length() <= 15 ? value : value.substring(0,14));
         }
       }
-      System.out.printf("|\n");
+      stream.printf("|\n");
     }
   }
 }

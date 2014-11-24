@@ -25,7 +25,8 @@ public class TestTpchDistributed extends BaseTestQuery{
 
   private void testDistributed(String fileName) throws Exception{
     String query = getFile(fileName);
-    test("alter session set `planner.slice_target` = 10; alter session set `planner.width.max_per_node` = 1; alter session set `planner.enable_hashagg` = false; alter session set `planner.enable_hashjoin` = false;" + query);
+//    test("alter session set `planner.slice_target` = 10; alter session set `planner.enable_hashagg` = false; alter session set `planner.enable_hashjoin` = false;" + query);
+    test("alter session set `planner.slice_target` = 10;" + query);
   }
 
   @Test

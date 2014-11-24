@@ -110,9 +110,17 @@ public class PartitionSenderRootExec extends BaseRootExec {
     return true;
   }
 
+  private void buildSchema() throws SchemaChangeException {
+    createPartitioner();
+    try {
+      partitioner.flushOutgoingBatches(false, true);
+    } catch (IOException e) {
+      throw new SchemaChangeException(e);
+    }
+  }
+
   @Override
   public boolean innerNext() {
-    boolean newSchema = false;
 
     if (!ok) {
       stop();
@@ -130,7 +138,6 @@ public class PartitionSenderRootExec extends BaseRootExec {
 
     logger.debug("Partitioner.next(): got next record batch with status {}", out);
     if (first && out == IterOutcome.OK) {
-      first = false;
       out = IterOutcome.OK_NEW_SCHEMA;
     }
     switch(out){
@@ -163,6 +170,9 @@ public class PartitionSenderRootExec extends BaseRootExec {
             partitioner.clear();
           }
           createPartitioner();
+          if (first) {
+            partitioner.flushOutgoingBatches(false, true);
+          }
         } catch (IOException e) {
           incoming.kill(false);
           logger.error("Error while flushing outgoing batches", e);

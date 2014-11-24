@@ -441,14 +441,18 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
     // allocate new batch space.
     container.zeroVectors();
 
+    boolean leftAllowed = status.getLastLeft() != IterOutcome.NONE;
+    boolean rightAllowed = status.getLastRight() != IterOutcome.NONE;
     //estimation of joinBatchSize : max of left/right size, expanded by a factor of 16, which is then bounded by MAX_BATCH_SIZE.
-    int leftCount = /*worker == null ? left.getRecordCount() :*/ (status.isLeftPositionAllowed() ? left.getRecordCount() : 0);
-    int rightCount = /*worker == null ? right.getRecordCount() :*/ (status.isRightPositionAllowed() ? right.getRecordCount() : 0);
+//    int leftCount = /*worker == null ? left.getRecordCount() :*/ (status.isLeftPositionAllowed() ? left.getRecordCount() : 0);
+    int leftCount = leftAllowed ? left.getRecordCount() : 0;
+//    int rightCount = /*worker == null ? right.getRecordCount() :*/ (status.isRightPositionAllowed() ? right.getRecordCount() : 0);
+    int rightCount = rightAllowed ? left.getRecordCount() : 0;
     int joinBatchSize = Math.min(Math.max(leftCount, rightCount) * 16, MAX_BATCH_SIZE);
 
     if (newSchema) {
     // add fields from both batches
-      if (status.isLeftPositionAllowed()) {
+      if (leftAllowed) {
         for (VectorWrapper<?> w : left) {
           MajorType inputType = w.getField().getType();
           MajorType outputType;
@@ -462,7 +466,7 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
         }
       }
 
-      if (status.isRightPositionAllowed()) {
+      if (rightAllowed) {
         for (VectorWrapper<?> w : right) {
           MajorType inputType = w.getField().getType();
           MajorType outputType;

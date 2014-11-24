@@ -33,4 +33,34 @@ public class TestFastComplexSchema extends BaseTestQuery {
             "                     FROM   cp.`tpch/region.parquet`)) t1 \n" +
             "         ON t1.f = r.r_regionkey");
   }
+
+  @Test
+  public void test2() throws Exception {
+    test("alter session set `planner.enable_hashjoin` = false");
+    test("alter session set `planner.slice_target` = 1");
+    test("SELECT r.r_name, \n" +
+            "       t1.f \n" +
+            "FROM   cp.`tpch/region.parquet` r \n" +
+            "       JOIN (SELECT Flatten(x) AS f \n" +
+            "             FROM   (SELECT Convert_from('[0, 1]', 'json') AS x \n" +
+            "                     FROM   cp.`tpch/region.parquet`)) t1 \n" +
+            "         ON t1.f = cast(r.r_regionkey as bigint) \n" +
+            "ORDER  BY r.r_name");
+    test("alter session set `planner.enable_hashjoin` = true");
+    test("alter session set `planner.slice_target` = 1000000");
+  }
+
+  @Test
+  public void test3() throws Exception {
+    test("alter session set `planner.enable_hashjoin` = false");
+    test("alter session set `planner.slice_target` = 1");
+    test("select f from\n" +
+            "(select convert_from(nation, 'json') as f from\n" +
+            "(select concat('{\"name\": \"', n.n_name, '\", ', '\"regionkey\": ', r.r_regionkey, '}') as nation\n" +
+            "       from cp.`tpch/nation.parquet` n,\n" +
+            "            cp.`tpch/region.parquet` r\n" +
+            "        where \n" +
+            "        n.n_regionkey = r.r_regionkey)) t\n" +
+            "order by t.f.name");
+  }
 }
