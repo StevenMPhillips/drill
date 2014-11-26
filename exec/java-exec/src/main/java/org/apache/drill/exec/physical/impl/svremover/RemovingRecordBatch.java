@@ -134,11 +134,11 @@ public class RemovingRecordBatch extends AbstractSingleRecordBatch<SelectionVect
         incomingRecordCount,
         incomingRecordCount - remainderIndex,
         incoming.getSchema());
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    PrintStream stream = new PrintStream(bos);
-    BatchPrinter.printBatch(this, stream);
-    stream.flush();
-    logger.debug(new String(bos.toByteArray()));
+//    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//    PrintStream stream = new PrintStream(bos);
+//    BatchPrinter.printBatch(this, stream);
+//    stream.flush();
+//    logger.debug(new String(bos.toByteArray()));
     return IterOutcome.OK;
   }
 
