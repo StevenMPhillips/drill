@@ -69,6 +69,11 @@ public class Wrapper {
     return stats;
   }
 
+  public List<DrillbitEndpoint> getAssignedEndpoints() {
+    assert endpointsAssigned;
+    return endpoints;
+  }
+
   public void resetAllocation() {
     initialAllocation = 0;
     maxAllocation = 0;
@@ -99,6 +104,12 @@ public class Wrapper {
 
   public int getWidth() {
     return width;
+  }
+
+  public void resetAssignment() {
+    endpointsAssigned = false;
+    width = -1;
+    endpoints = Lists.newArrayList();
   }
 
   public void setWidth(int width) {

@@ -18,7 +18,9 @@
 package org.apache.drill.exec.physical.config;
 
 import java.util.List;
+import java.util.Map;
 
+import com.google.common.collect.Maps;
 import org.apache.drill.exec.physical.PhysicalOperatorSetupException;
 import org.apache.drill.exec.physical.base.AbstractExchange;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
@@ -34,8 +36,8 @@ public class UnionExchange extends AbstractExchange{
 
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UnionExchange.class);
 
-  private List<DrillbitEndpoint> senderLocations;
   private DrillbitEndpoint destinationLocation;
+  private Map<Integer, DrillbitEndpoint> senderFragmentsAndLocations;
 
   public UnionExchange(@JsonProperty("child") PhysicalOperator child) {
     super(child);
@@ -43,7 +45,10 @@ public class UnionExchange extends AbstractExchange{
 
   @Override
   public void setupSenders(List<DrillbitEndpoint> senderLocations) {
-    this.senderLocations = senderLocations;
+    this.senderFragmentsAndLocations = Maps.newHashMap();
+    for(int i=0; i<senderLocations.size(); i++) {
+      senderFragmentsAndLocations.put(i, senderLocations.get(i));
+    }
   }
 
   @Override
@@ -61,7 +66,7 @@ public class UnionExchange extends AbstractExchange{
 
   @Override
   public Receiver getReceiver(int minorFragmentId) {
-    return new UnorderedReceiver(this.senderMajorFragmentId, senderLocations);
+    return new UnorderedReceiver(this.senderMajorFragmentId, senderFragmentsAndLocations);
   }
 
   @Override

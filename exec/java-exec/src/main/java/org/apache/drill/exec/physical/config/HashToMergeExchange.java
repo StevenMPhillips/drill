@@ -18,7 +18,9 @@
 package org.apache.drill.exec.physical.config;
 
 import java.util.List;
+import java.util.Map;
 
+import com.google.common.collect.Maps;
 import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.logical.data.Order.Ordering;
 import org.apache.drill.exec.physical.base.AbstractExchange;
@@ -40,8 +42,8 @@ public class HashToMergeExchange extends AbstractExchange{
   private final List<Ordering> orderExprs;
 
   //ephemeral for setup tasks.
-  private List<DrillbitEndpoint> senderLocations;
   private List<DrillbitEndpoint> receiverLocations;
+  private Map<Integer, DrillbitEndpoint> senderFragmentsAndLocations;
 
   @JsonCreator
   public HashToMergeExchange(@JsonProperty("child") PhysicalOperator child,
@@ -60,7 +62,10 @@ public class HashToMergeExchange extends AbstractExchange{
 
   @Override
   protected void setupSenders(List<DrillbitEndpoint> senderLocations) {
-    this.senderLocations = senderLocations;
+    this.senderFragmentsAndLocations = Maps.newHashMap();
+    for(int i=0; i<senderLocations.size(); i++) {
+      senderFragmentsAndLocations.put(i, senderLocations.get(i));
+    }
   }
 
   @Override
@@ -75,7 +80,7 @@ public class HashToMergeExchange extends AbstractExchange{
 
   @Override
   public Receiver getReceiver(int minorFragmentId) {
-    return new MergingReceiverPOP(senderMajorFragmentId, senderLocations, orderExprs);
+    return new MergingReceiverPOP(senderMajorFragmentId, senderFragmentsAndLocations, orderExprs);
   }
 
   @Override

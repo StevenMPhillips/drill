@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.PriorityQueue;
 
 import org.apache.drill.common.exceptions.DrillRuntimeException;
@@ -48,6 +50,7 @@ import org.apache.drill.exec.ops.MetricDef;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.physical.config.MergingReceiverPOP;
 import org.apache.drill.exec.proto.BitControl.FinishedReceiver;
+import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
 import org.apache.drill.exec.proto.ExecProtos.FragmentHandle;
 import org.apache.drill.exec.proto.GeneralRPCProtos.Ack;
 import org.apache.drill.exec.proto.UserBitShared;
@@ -136,7 +139,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   private RawFragmentBatch getNext(RawFragmentBatchProvider provider) throws IOException{
     stats.startWait();
     try {
-      RawFragmentBatch b = provider.getNext();
+      RawFragmentBatch b = provider.getNext(null);
       if (b != null) {
         stats.addLongStat(Metric.BYTES_RECEIVED, b.getByteCount());
         stats.batchReceived(0, b.getHeader().getDef().getRecordCount(), false);
@@ -484,15 +487,16 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
             .setMajorFragmentId(config.getOppositeMajorFragmentId())
             .setQueryId(context.getHandle().getQueryId())
             .build();
-    for (int i = 0; i < config.getNumSenders(); i++) {
-      FragmentHandle sender = FragmentHandle.newBuilder(handlePrototype)
-              .setMinorFragmentId(i)
+
+    for(Entry<Integer, DrillbitEndpoint> sender : config.getProvidingEndpoints().entrySet()) {
+      FragmentHandle senderHandle = FragmentHandle.newBuilder(handlePrototype)
+              .setMinorFragmentId(sender.getKey())
               .build();
       FinishedReceiver finishedReceiver = FinishedReceiver.newBuilder()
               .setReceiver(context.getHandle())
-              .setSender(sender)
+              .setSender(senderHandle)
               .build();
-      context.getControlTunnel(config.getProvidingEndpoints().get(i)).informReceiverFinished(new OutcomeListener(), finishedReceiver);
+      context.getControlTunnel(sender.getValue()).informReceiverFinished(new OutcomeListener(), finishedReceiver);
     }
   }
 

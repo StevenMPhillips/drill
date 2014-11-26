@@ -470,6 +470,10 @@ public final class UserBitShared {
      * <code>WINDOW = 34;</code>
      */
     WINDOW(34, 34),
+    /**
+     * <code>LOCAL_SINGLE_SENDER = 35;</code>
+     */
+    LOCAL_SINGLE_SENDER(35, 35),
     ;
 
     /**
@@ -612,6 +616,10 @@ public final class UserBitShared {
      * <code>WINDOW = 34;</code>
      */
     public static final int WINDOW_VALUE = 34;
+    /**
+     * <code>LOCAL_SINGLE_SENDER = 35;</code>
+     */
+    public static final int LOCAL_SINGLE_SENDER_VALUE = 35;
 
 
     public final int getNumber() { return value; }
@@ -653,6 +661,7 @@ public final class UserBitShared {
         case 32: return PRODUCER_CONSUMER;
         case 33: return HBASE_SUB_SCAN;
         case 34: return WINDOW;
+        case 35: return LOCAL_SINGLE_SENDER;
         default: return null;
       }
     }
@@ -19893,7 +19902,7 @@ public final class UserBitShared {
       "\002\022\014\n\010PHYSICAL\020\003*k\n\rFragmentState\022\013\n\007SEND" +
       "ING\020\000\022\027\n\023AWAITING_ALLOCATION\020\001\022\013\n\007RUNNIN" +
       "G\020\002\022\014\n\010FINISHED\020\003\022\r\n\tCANCELLED\020\004\022\n\n\006FAIL" +
-      "ED\020\005*\264\005\n\020CoreOperatorType\022\021\n\rSINGLE_SEND" +
+      "ED\020\005*\315\005\n\020CoreOperatorType\022\021\n\rSINGLE_SEND" +
       "ER\020\000\022\024\n\020BROADCAST_SENDER\020\001\022\n\n\006FILTER\020\002\022\022" +
       "\n\016HASH_AGGREGATE\020\003\022\r\n\tHASH_JOIN\020\004\022\016\n\nMER" +
       "GE_JOIN\020\005\022\031\n\025HASH_PARTITION_SENDER\020\006\022\t\n\005" +
@@ -19910,8 +19919,9 @@ public final class UserBitShared {
       "\021\n\rTEXT_SUB_SCAN\020\034\022\021\n\rJSON_SUB_SCAN\020\035\022\030\n" +
       "\024INFO_SCHEMA_SUB_SCAN\020\036\022\023\n\017COMPLEX_TO_JS",
       "ON\020\037\022\025\n\021PRODUCER_CONSUMER\020 \022\022\n\016HBASE_SUB" +
-      "_SCAN\020!\022\n\n\006WINDOW\020\"B.\n\033org.apache.drill." +
-      "exec.protoB\rUserBitSharedH\001"
+      "_SCAN\020!\022\n\n\006WINDOW\020\"\022\027\n\023LOCAL_SINGLE_SEND" +
+      "ER\020#B.\n\033org.apache.drill.exec.protoB\rUse" +
+      "rBitSharedH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

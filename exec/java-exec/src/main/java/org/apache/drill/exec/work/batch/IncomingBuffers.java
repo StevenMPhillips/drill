@@ -19,6 +19,7 @@ package org.apache.drill.exec.work.batch;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -94,7 +95,7 @@ public class IncomingBuffers implements AutoCloseable {
   }
 
   public RawBatchBuffer[] getBuffers(int senderMajorFragmentId) {
-    return fragCounts.get(senderMajorFragmentId).getBuffers();
+    return fragCounts.get(senderMajorFragmentId).getBuffers().values().toArray(new RawBatchBuffer[0]);
   }
 
 

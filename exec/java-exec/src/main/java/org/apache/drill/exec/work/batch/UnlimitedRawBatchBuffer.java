@@ -49,9 +49,9 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
   private FragmentContext context;
 
   public UnlimitedRawBatchBuffer(FragmentContext context, int fragmentCount) {
-    int bufferSizePerSocket = context.getConfig().getInt(ExecConstants.INCOMING_BUFFER_SIZE);
+    int bufferSizePerForAllSenders = context.getConfig().getInt(ExecConstants.INCOMING_BUFFER_SIZE);
 
-    this.softlimit = bufferSizePerSocket * fragmentCount;
+    this.softlimit = bufferSizePerForAllSenders;
     this.startlimit = Math.max(softlimit/2, 1);
     this.buffer = Queues.newLinkedBlockingDeque();
     this.fragmentCount = fragmentCount;
@@ -140,7 +140,7 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
   }
 
   @Override
-  public RawFragmentBatch getNext() {
+  public RawFragmentBatch getNext(AtomicBoolean waiting) {
 
     if (outOfMemory.get() && buffer.size() < 10) {
       logger.debug("Setting autoread true");
@@ -155,6 +155,9 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
     // if we didn't get a buffer, block on waiting for buffer.
     if (b == null && (!isFinished() || !buffer.isEmpty())) {
       try {
+        if (waiting != null) {
+          waiting.set(true);
+        }
         b = buffer.take();
       } catch (InterruptedException e) {
         return null;

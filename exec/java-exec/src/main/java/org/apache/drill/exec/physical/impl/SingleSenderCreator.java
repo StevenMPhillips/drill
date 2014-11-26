@@ -50,7 +50,7 @@ public class SingleSenderCreator implements RootCreator<SingleSender>{
 
 
 
-  private static class SingleSenderRootExec extends BaseRootExec {
+  public static class SingleSenderRootExec extends BaseRootExec {
     static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SingleSenderRootExec.class);
     private RecordBatch incoming;
     private DataTunnel tunnel;
@@ -61,6 +61,7 @@ public class SingleSenderCreator implements RootCreator<SingleSender>{
     private volatile boolean ok = true;
     private volatile boolean done = false;
     private final SendingAccountor sendCount = new SendingAccountor();
+    FragmentHandle oppositeHandle;
 
     public enum Metric implements MetricDef {
       BYTES_SENT;
@@ -71,17 +72,24 @@ public class SingleSenderCreator implements RootCreator<SingleSender>{
       }
     }
 
-    public SingleSenderRootExec(FragmentContext context, RecordBatch batch, SingleSender config) throws OutOfMemoryException {
+    public SingleSenderRootExec(FragmentContext context, RecordBatch batch, SingleSender config,
+        int oppositeMinorFragmentId) throws OutOfMemoryException {
       super(context, new OperatorContext(config, context, null, false), config);
-      //super(context, config);
       this.incoming = batch;
       assert(incoming != null);
       this.handle = context.getHandle();
       this.config = config;
       this.recMajor = config.getOppositeMajorFragmentId();
-      FragmentHandle opposite = handle.toBuilder().setMajorFragmentId(config.getOppositeMajorFragmentId()).setMinorFragmentId(0).build();
-      this.tunnel = context.getDataTunnel(config.getDestination(), opposite);
+      oppositeHandle = handle.toBuilder()
+          .setMajorFragmentId(config.getOppositeMajorFragmentId())
+          .setMinorFragmentId(oppositeMinorFragmentId)
+          .build();
+      this.tunnel = context.getDataTunnel(config.getDestination(), oppositeHandle);
       this.context = context;
+    }
+
+    public SingleSenderRootExec(FragmentContext context, RecordBatch batch, SingleSender config) throws OutOfMemoryException {
+      this(context, batch, config, 0);
     }
 
     @Override
@@ -103,8 +111,9 @@ public class SingleSenderCreator implements RootCreator<SingleSender>{
       switch (out) {
       case STOP:
       case NONE:
-        FragmentWritableBatch b2 = FragmentWritableBatch.getEmptyLastWithSchema(handle.getQueryId(), handle.getMajorFragmentId(),
-                handle.getMinorFragmentId(), recMajor, 0, incoming.getSchema());
+        FragmentWritableBatch b2 = FragmentWritableBatch.getEmptyLastWithSchema(handle.getQueryId(),
+            handle.getMajorFragmentId(), handle.getMinorFragmentId(), recMajor, oppositeHandle.getMinorFragmentId(),
+            incoming.getSchema());
         sendCount.increment();
         stats.startWait();
         try {
@@ -117,7 +126,7 @@ public class SingleSenderCreator implements RootCreator<SingleSender>{
       case OK_NEW_SCHEMA:
       case OK:
         FragmentWritableBatch batch = new FragmentWritableBatch(false, handle.getQueryId(), handle.getMajorFragmentId(),
-                handle.getMinorFragmentId(), recMajor, 0, incoming.getWritableBatch());
+            handle.getMinorFragmentId(), recMajor, oppositeHandle.getMinorFragmentId(), incoming.getWritableBatch());
         updateStats(batch);
         sendCount.increment();
         stats.startWait();

@@ -47,6 +47,7 @@ import org.apache.drill.exec.planner.physical.explain.PrelSequencer;
 import org.apache.drill.exec.planner.physical.visitor.ComplexToJsonPrelVisitor;
 import org.apache.drill.exec.planner.physical.visitor.ExcessiveExchangeIdentifier;
 import org.apache.drill.exec.planner.physical.visitor.FinalColumnReorderer;
+import org.apache.drill.exec.planner.physical.visitor.InsertLocalExchangeVisitor;
 import org.apache.drill.exec.planner.physical.visitor.JoinPrelRenameVisitor;
 import org.apache.drill.exec.planner.physical.visitor.MemoryEstimationVisitor;
 import org.apache.drill.exec.planner.physical.visitor.RelUniqifier;
@@ -248,6 +249,16 @@ public class DefaultSqlHandler extends AbstractSqlHandler {
     }
 
     /* 7.)
+     * Insert local exchange to reduce the amount of memory allocated to HashPartitionSenders for each fragment
+     * running on same Drillbit.
+     */
+    if (queryOptions.getOption(PlannerSettings.INSERT_LOCAL_EXCHANGE.getOptionName()).bool_val) {
+      int multiplexingFactor = queryOptions.getOption(
+          PlannerSettings.LOCAL_EXCHANGES_PER_PARTITION_SENDER.getOptionName()).num_val.intValue();
+      phyRelNode = InsertLocalExchangeVisitor.insertLocalExchange(phyRelNode, multiplexingFactor);
+    }
+
+    /* 8.)
      * Finally, Make sure that the no rels are repeats.
      * This could happen in the case of querying the same table twice as Optiq may canonicalize these.
      */

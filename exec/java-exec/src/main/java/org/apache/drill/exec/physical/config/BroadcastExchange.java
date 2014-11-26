@@ -18,7 +18,9 @@
 package org.apache.drill.exec.physical.config;
 
 import java.util.List;
+import java.util.Map;
 
+import com.google.common.collect.Maps;
 import org.apache.drill.exec.physical.PhysicalOperatorSetupException;
 import org.apache.drill.exec.physical.base.AbstractExchange;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
@@ -34,8 +36,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 @JsonTypeName("broadcast-exchange")
 public class BroadcastExchange extends AbstractExchange {
 
-  private List<DrillbitEndpoint> senderLocations;
   private List<DrillbitEndpoint> receiverLocations;
+  private Map<Integer, DrillbitEndpoint> senderFragmentsAndLocations;
 
   @JsonCreator
   public BroadcastExchange(@JsonProperty("child") PhysicalOperator child) {
@@ -44,7 +46,10 @@ public class BroadcastExchange extends AbstractExchange {
 
   @Override
   protected void setupSenders(List<DrillbitEndpoint> senderLocations) throws PhysicalOperatorSetupException {
-    this.senderLocations = senderLocations;
+    this.senderFragmentsAndLocations = Maps.newHashMap();
+    for(int i=0; i<senderLocations.size(); i++) {
+      senderFragmentsAndLocations.put(i, senderLocations.get(i));
+    }
   }
 
   @Override
@@ -64,7 +69,7 @@ public class BroadcastExchange extends AbstractExchange {
 
   @Override
   public Receiver getReceiver(int minorFragmentId) {
-    return new UnorderedReceiver(senderMajorFragmentId, senderLocations);
+    return new UnorderedReceiver(senderMajorFragmentId, senderFragmentsAndLocations);
   }
 
   @Override

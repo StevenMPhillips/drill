@@ -141,7 +141,7 @@ public class SpoolingRawBatchBuffer implements RawBatchBuffer {
   }
 
   @Override
-  public RawFragmentBatch getNext() throws IOException {
+  public RawFragmentBatch getNext(AtomicBoolean waiting) throws IOException {
     if (outOfMemory && buffer.size() < 10) {
       outOfMemory = false;
       fragmentManager.setAutoRead(true);

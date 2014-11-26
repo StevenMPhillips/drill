@@ -18,12 +18,14 @@
 package org.apache.drill.exec.record;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.drill.exec.ops.FragmentContext;
 
 public interface RawFragmentBatchProvider {
 
-  public RawFragmentBatch getNext() throws IOException;
+  public RawFragmentBatch getNext(AtomicBoolean waiting) throws IOException;
   public void kill(FragmentContext context);
   public void cleanup();
 }

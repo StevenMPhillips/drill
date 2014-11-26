@@ -21,6 +21,8 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.exception.SchemaChangeException;
@@ -32,6 +34,7 @@ import org.apache.drill.exec.ops.OperatorStats;
 import org.apache.drill.exec.ops.OpProfileDef;
 import org.apache.drill.exec.physical.config.UnorderedReceiver;
 import org.apache.drill.exec.proto.BitControl.FinishedReceiver;
+import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
 import org.apache.drill.exec.proto.ExecProtos.FragmentHandle;
 import org.apache.drill.exec.proto.GeneralRPCProtos.Ack;
 import org.apache.drill.exec.proto.UserBitShared.RecordBatchDef;
@@ -63,7 +66,8 @@ public class UnorderedReceiverBatch implements RecordBatch {
 
   public enum Metric implements MetricDef {
     BYTES_RECEIVED,
-    NUM_SENDERS;
+    NUM_SENDERS,
+    NUM_BUFFER_EMPTIED;
 
     @Override
     public int metricId() {
@@ -81,6 +85,7 @@ public class UnorderedReceiverBatch implements RecordBatch {
 
     this.stats = context.getStats().getOperatorStats(new OpProfileDef(config.getOperatorId(), config.getOperatorType(), 1), null);
     this.stats.setLongStat(Metric.NUM_SENDERS, config.getNumSenders());
+    this.stats.addLongStat(Metric.NUM_BUFFER_EMPTIED, 0);
     this.config = config;
   }
 
@@ -139,11 +144,20 @@ public class UnorderedReceiverBatch implements RecordBatch {
       RawFragmentBatch batch;
       try {
         stats.startWait();
-        batch = fragProvider.getNext();
+        AtomicBoolean waiting = new AtomicBoolean(false);
+        batch = fragProvider.getNext(waiting);
+
+        if (waiting.get()) {
+          stats.addLongStat(Metric.NUM_BUFFER_EMPTIED, 1);
+        }
 
         // skip over empty batches. we do this since these are basically control messages.
         while (batch != null && !batch.getHeader().getIsOutOfMemory() && batch.getHeader().getDef().getRecordCount() == 0 && (!first || batch.getHeader().getDef().getFieldCount() == 0)) {
-          batch = fragProvider.getNext();
+          waiting.set(false);
+          batch = fragProvider.getNext(waiting);
+          if (waiting.get()) {
+            stats.addLongStat(Metric.NUM_BUFFER_EMPTIED, 1);
+          }
         }
       } finally {
         stats.stopWait();
@@ -209,15 +223,16 @@ public class UnorderedReceiverBatch implements RecordBatch {
             .setMajorFragmentId(config.getOppositeMajorFragmentId())
             .setQueryId(context.getHandle().getQueryId())
             .build();
-    for (int i = 0; i < config.getNumSenders(); i++) {
-      FragmentHandle sender = FragmentHandle.newBuilder(handlePrototype)
-              .setMinorFragmentId(i)
+
+    for(Entry<Integer, DrillbitEndpoint> sender : config.getProvidingEndpoints().entrySet()) {
+      FragmentHandle senderHandle = FragmentHandle.newBuilder(handlePrototype)
+              .setMinorFragmentId(sender.getKey())
               .build();
       FinishedReceiver finishedReceiver = FinishedReceiver.newBuilder()
               .setReceiver(context.getHandle())
-              .setSender(sender)
+              .setSender(senderHandle)
               .build();
-      context.getControlTunnel(config.getProvidingEndpoints().get(i)).informReceiverFinished(new OutcomeListener(), finishedReceiver);
+      context.getControlTunnel(sender.getValue()).informReceiverFinished(new OutcomeListener(), finishedReceiver);
     }
   }
 

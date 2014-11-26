@@ -68,8 +68,10 @@ public class FragmentWritableBatch{
                                                              int receiveMajorFragmentId, int receiveMinorFragmentId, BatchSchema schema){
 
     List<SerializedField> fields = Lists.newArrayList();
-    for (MaterializedField field : schema) {
-      fields.add(field.getAsBuilder().build());
+    if (schema != null) {
+      for (MaterializedField field : schema) {
+        fields.add(field.getAsBuilder().build());
+      }
     }
     RecordBatchDef def = RecordBatchDef.newBuilder().addAllField(fields).build();
     return new FragmentWritableBatch(true, queryId, sendMajorFragmentId, sendMinorFragmentId, receiveMajorFragmentId, receiveMinorFragmentId, def);

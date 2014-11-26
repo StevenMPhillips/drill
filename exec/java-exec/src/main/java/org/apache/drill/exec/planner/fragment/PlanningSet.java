@@ -70,6 +70,10 @@ public class PlanningSet implements Iterable<Wrapper> {
     return this.fragmentMap.values().iterator();
   }
 
+  public int getNumberOfFragments() {
+    return fragmentMap.size();
+  }
+
   @Override
   public String toString() {
     return "FragmentPlanningSet:\n" + fragmentMap.values() + "]";

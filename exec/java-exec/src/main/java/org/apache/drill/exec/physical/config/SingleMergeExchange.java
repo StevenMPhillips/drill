@@ -19,7 +19,9 @@
 package org.apache.drill.exec.physical.config;
 
 import java.util.List;
+import java.util.Map;
 
+import com.google.common.collect.Maps;
 import org.apache.drill.common.logical.data.Order.Ordering;
 import org.apache.drill.exec.physical.PhysicalOperatorSetupException;
 import org.apache.drill.exec.physical.base.AbstractExchange;
@@ -31,6 +33,7 @@ import org.apache.drill.exec.proto.CoordinationProtos;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
 
 @JsonTypeName("single-merge-exchange")
 public class SingleMergeExchange extends AbstractExchange {
@@ -39,8 +42,9 @@ public class SingleMergeExchange extends AbstractExchange {
   private final List<Ordering> orderExpr;
 
   // ephemeral for setup tasks
-  private List<CoordinationProtos.DrillbitEndpoint> senderLocations;
-  private CoordinationProtos.DrillbitEndpoint receiverLocation;
+  private DrillbitEndpoint receiverLocation;
+
+  private Map<Integer, DrillbitEndpoint> senderFragmentsAndLocations;
 
   @JsonCreator
   public SingleMergeExchange(@JsonProperty("child") PhysicalOperator child,
@@ -56,7 +60,10 @@ public class SingleMergeExchange extends AbstractExchange {
 
   @Override
   protected void setupSenders(List<CoordinationProtos.DrillbitEndpoint> senderLocations) {
-    this.senderLocations = senderLocations;
+    this.senderFragmentsAndLocations = Maps.newHashMap();
+    for(int i=0; i<senderLocations.size(); i++) {
+      senderFragmentsAndLocations.put(i, senderLocations.get(i));
+    }
   }
 
   @Override
@@ -77,7 +84,7 @@ public class SingleMergeExchange extends AbstractExchange {
 
   @Override
   public Receiver getReceiver(int minorFragmentId) {
-    return new MergingReceiverPOP(senderMajorFragmentId, senderLocations, orderExpr);
+    return new MergingReceiverPOP(senderMajorFragmentId, senderFragmentsAndLocations, orderExpr);
   }
 
   @Override

@@ -18,6 +18,7 @@
 package org.apache.drill.exec.physical.config;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.drill.exec.physical.base.AbstractReceiver;
 import org.apache.drill.exec.physical.base.PhysicalVisitor;
@@ -33,18 +34,18 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 public class UnorderedReceiver extends AbstractReceiver{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UnorderedReceiver.class);
 
-  private List<DrillbitEndpoint> senders;
+  private Map<Integer, DrillbitEndpoint> senders;
 
   @JsonCreator
   public UnorderedReceiver(@JsonProperty("sender-major-fragment") int oppositeMajorFragmentId,
-                        @JsonProperty("senders") List<DrillbitEndpoint> senders) {
+                        @JsonProperty("senders") Map<Integer, DrillbitEndpoint> senders) {
     super(oppositeMajorFragmentId);
     this.senders = senders;
   }
 
   @Override
   @JsonProperty("senders")
-  public List<DrillbitEndpoint> getProvidingEndpoints() {
+  public Map<Integer, DrillbitEndpoint> getProvidingEndpoints() {
     return senders;
   }
 

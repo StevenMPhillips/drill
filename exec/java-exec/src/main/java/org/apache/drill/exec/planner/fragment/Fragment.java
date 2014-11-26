@@ -32,7 +32,6 @@ public class Fragment implements Iterable<Fragment.ExchangeFragmentPair> {
   private PhysicalOperator root;
   private Exchange sendingExchange;
   private final List<ExchangeFragmentPair> receivingExchangePairs = Lists.newLinkedList();
-  private Stats stats = new Stats();
 
   public void addOperator(PhysicalOperator o) {
     if (root == null) {
@@ -67,14 +66,6 @@ public class Fragment implements Iterable<Fragment.ExchangeFragmentPair> {
 
   public Exchange getSendingExchange() {
     return sendingExchange;
-  }
-
-//  public <T, V> T accept(FragmentVisitor<T, V> visitor, V extra) {
-//    return visitor.visit(this, extra);
-//  }
-
-  public Stats getStats() {
-    return stats;
   }
 
   public class ExchangeFragmentPair {
@@ -118,7 +109,6 @@ public class Fragment implements Iterable<Fragment.ExchangeFragmentPair> {
     result = prime * result + ((receivingExchangePairs == null) ? 0 : receivingExchangePairs.hashCode());
     result = prime * result + ((root == null) ? 0 : root.hashCode());
     result = prime * result + ((sendingExchange == null) ? 0 : sendingExchange.hashCode());
-    result = prime * result + ((stats == null) ? 0 : stats.hashCode());
     return result;
   }
 
@@ -155,20 +145,13 @@ public class Fragment implements Iterable<Fragment.ExchangeFragmentPair> {
     } else if (!sendingExchange.equals(other.sendingExchange)) {
       return false;
     }
-    if (stats == null) {
-      if (other.stats != null) {
-        return false;
-      }
-    } else if (!stats.equals(other.stats)) {
-      return false;
-    }
     return true;
   }
 
   @Override
   public String toString() {
     return "FragmentNode [root=" + root + ", sendingExchange=" + sendingExchange + ", receivingExchangePairs="
-        + receivingExchangePairs + ", stats=" + stats + "]";
+        + receivingExchangePairs + "]";
   }
 
 }

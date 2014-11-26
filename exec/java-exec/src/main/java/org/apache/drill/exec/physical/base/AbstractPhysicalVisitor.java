@@ -26,6 +26,7 @@ import org.apache.drill.exec.physical.config.HashPartitionSender;
 import org.apache.drill.exec.physical.config.HashToRandomExchange;
 import org.apache.drill.exec.physical.config.IteratorValidator;
 import org.apache.drill.exec.physical.config.Limit;
+import org.apache.drill.exec.physical.config.LocalSingleSender;
 import org.apache.drill.exec.physical.config.MergeJoinPOP;
 import org.apache.drill.exec.physical.config.MergingReceiverPOP;
 import org.apache.drill.exec.physical.config.OrderedPartitionSender;
@@ -190,6 +191,11 @@ public abstract class AbstractPhysicalVisitor<T, X, E extends Throwable> impleme
 
   @Override
   public T visitSingleSender(SingleSender op, X value) throws E {
+    return visitSender(op, value);
+  }
+
+  @Override
+  public T visitLocalSingleSender(LocalSingleSender op, X value) throws E {
     return visitSender(op, value);
   }
 
