@@ -31,7 +31,7 @@ public class TestFastComplexSchema extends BaseTestQuery {
             "       JOIN (SELECT flatten(x) AS f \n" +
             "             FROM   (SELECT Convert_from('[0, 1]', 'json') AS x \n" +
             "                     FROM   cp.`tpch/region.parquet`)) t1 \n" +
-            "         ON t1.f = r.r_regionkey");
+            "         ON t1.f = cast(r.r_regionkey as bigint)");
   }
 
   @Test
@@ -62,5 +62,22 @@ public class TestFastComplexSchema extends BaseTestQuery {
             "        where \n" +
             "        n.n_regionkey = r.r_regionkey)) t\n" +
             "order by t.f.name");
+  }
+
+  @Test
+  public void test4() throws Exception {
+    test("alter session set `planner.enable_hashjoin` = false");
+    test("alter session set `planner.slice_target` = 1");
+    test("SELECT f \n" +
+            "FROM   (SELECT Convert_from(nation, 'json') AS f \n" +
+            "        FROM   (SELECT Concat('{\"name\": \"', n.n_name, '\", ', '\"regionkey\": ', \n" +
+            "                       r.r_regionkey, \n" +
+            "                               '}') AS \n" +
+            "                       nation \n" +
+            "                FROM   cp.`tpch/nation.parquet` n, \n" +
+            "                       cp.`tpch/region.parquet` r \n" +
+            "                WHERE  n.n_regionkey = r.r_regionkey \n" +
+            "                       AND r.r_regionkey = 4)) t \n" +
+            "ORDER  BY t.f.name");
   }
 }

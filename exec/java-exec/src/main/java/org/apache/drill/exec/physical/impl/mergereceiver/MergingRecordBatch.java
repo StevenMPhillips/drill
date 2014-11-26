@@ -190,7 +190,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
         if (rawBatch.getHeader().getDef().getRecordCount() != 0) {
           rawBatches.add(rawBatch);
         } else {
-          if (emptyBatch == null) {
+          if (emptyBatch == null && rawBatch.getHeader().getDef().getFieldCount() != 0) {
             emptyBatch = rawBatch;
           }
           try {

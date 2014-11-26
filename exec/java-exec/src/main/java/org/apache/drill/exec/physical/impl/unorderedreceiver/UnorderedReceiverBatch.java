@@ -142,7 +142,7 @@ public class UnorderedReceiverBatch implements RecordBatch {
         batch = fragProvider.getNext();
 
         // skip over empty batches. we do this since these are basically control messages.
-        while (batch != null && !batch.getHeader().getIsOutOfMemory() && batch.getHeader().getDef().getRecordCount() == 0 && !first) {
+        while (batch != null && !batch.getHeader().getIsOutOfMemory() && batch.getHeader().getDef().getRecordCount() == 0 && (!first || batch.getHeader().getDef().getFieldCount() == 0)) {
           batch = fragProvider.getNext();
         }
       } finally {
