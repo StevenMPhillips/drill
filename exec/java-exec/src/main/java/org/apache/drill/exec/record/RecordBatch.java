@@ -128,4 +128,6 @@ public interface RecordBatch extends VectorAccessible {
 
   public void cleanup();
 
+  public int getOperatorId();
+
 }

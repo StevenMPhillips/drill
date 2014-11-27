@@ -397,6 +397,11 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
     }
 
     @Override
+    public int getOperatorId() {
+      return -1;
+    }
+
+    @Override
     public Iterator<VectorWrapper<?>> iterator() {
       return container.iterator();
     }

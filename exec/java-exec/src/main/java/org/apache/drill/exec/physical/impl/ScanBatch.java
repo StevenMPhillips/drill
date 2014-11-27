@@ -80,6 +80,7 @@ public class ScanBatch implements RecordBatch {
   private String partitionColumnDesignator;
   private boolean first = false;
   private boolean done = false;
+  private int operatorId = -1;
 
   public ScanBatch(PhysicalOperator subScanConfig, FragmentContext context, Iterator<RecordReader> readers, List<String[]> partitionColumns, List<Integer> selectedPartitionColumns) throws ExecutionSetupException {
     this.context = context;
@@ -98,6 +99,7 @@ public class ScanBatch implements RecordBatch {
     DrillConfig config = context.getConfig();
     this.partitionColumnDesignator = config == null ? "dir" : config.getString(ExecConstants.FILESYSTEM_PARTITION_COLUMN_LABEL);
     addPartitionVectors();
+    operatorId = subScanConfig.getOperatorId();
   }
 
   public ScanBatch(PhysicalOperator subScanConfig, FragmentContext context, Iterator<RecordReader> readers) throws ExecutionSetupException {
@@ -379,6 +381,11 @@ public class ScanBatch implements RecordBatch {
     fieldVectorMap.clear();
     currentReader.cleanup();
     oContext.close();
+  }
+
+  @Override
+  public int getOperatorId() {
+    return operatorId;
   }
 
   @Override

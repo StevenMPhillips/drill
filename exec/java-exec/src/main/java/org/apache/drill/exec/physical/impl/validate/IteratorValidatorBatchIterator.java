@@ -17,12 +17,23 @@
  */
 package org.apache.drill.exec.physical.impl.validate;
 
+import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 
+import com.google.common.collect.Lists;
+import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
+import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.ops.FragmentContext;
+import org.apache.drill.exec.proto.SchemaUserBitShared.RecordBatchDef;
+import org.apache.drill.exec.proto.UserBitShared;
+import org.apache.drill.exec.proto.UserBitShared.SerializedField;
+import org.apache.drill.exec.proto.helper.QueryIdHelper;
 import org.apache.drill.exec.record.BatchSchema;
+import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
+import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorContainer;
@@ -30,19 +41,46 @@ import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.WritableBatch;
 import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
+import org.apache.drill.exec.store.sys.serialize.ProtoSerializer;
+import org.apache.drill.exec.util.Utilities;
 import org.apache.drill.exec.vector.VectorValidator;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 public class IteratorValidatorBatchIterator implements RecordBatch {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(IteratorValidatorBatchIterator.class);
 
   static final boolean VALIDATE_VECTORS = false;
+  static final boolean PRINT_BATCH_DATA = true;
+
+  static final ProtoSerializer protoSerializer = new ProtoSerializer(RecordBatchDef.WRITE, RecordBatchDef.MERGE);
 
   private IterOutcome state = IterOutcome.NOT_YET;
   private final RecordBatch incoming;
   private boolean first = true;
+  private FSDataOutputStream fos;
 
   public IteratorValidatorBatchIterator(RecordBatch incoming) {
     this.incoming = incoming;
+    if (PRINT_BATCH_DATA) {
+      String logLocation = getContext().getConfig().getString(ExecConstants.TRACE_DUMP_DIRECTORY);
+
+      String fileName = Utilities.getFileNameForQueryFragment(incoming.getContext(), logLocation, String.format("%d", incoming.getOperatorId()));
+
+    /* Create the log file we will dump to and initialize the file descriptors */
+      try {
+        Configuration conf = new Configuration();
+        conf.set(FileSystem.FS_DEFAULT_NAME_KEY, getContext().getConfig().getString(ExecConstants.TRACE_DUMP_FILESYSTEM));
+        FileSystem fs = FileSystem.get(conf);
+
+      /* create the file */
+        fos = fs.create(new Path(fileName));
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to create file: " + fileName + " check permissions or if directory exists", e);
+      }
+    }
   }
 
   private void validateReadState() {
@@ -56,6 +94,29 @@ public class IteratorValidatorBatchIterator implements RecordBatch {
               .format(
                   "You tried to do a batch data read operation when you were in a state of %s.  You can only do this type of operation when you are in a state of OK or OK_NEW_SCHEMA.",
                   state.name()));
+    }
+  }
+
+  private int batchNumber = 0;
+  private void printBatchInfo() {
+    List<SerializedField> metadata = Lists.newArrayList();
+    for (MaterializedField field : incoming.getSchema()) {
+      metadata.add(field.getAsBuilder().build());
+    }
+    UserBitShared.RecordBatchDef batchDef = UserBitShared.RecordBatchDef.newBuilder().addAllField(metadata).setRecordCount(incoming.getRecordCount())
+            .setCarriesTwoByteSelectionVector(incoming.getSchema().getSelectionVectorMode() == SelectionVectorMode.TWO_BYTE).build();
+    try {
+      byte[] bytes = protoSerializer.serialize(batchDef);
+      String batchDefString = new String(bytes);
+      String queryId = QueryIdHelper.getQueryId(getContext().getHandle().getQueryId());
+      int majorFragmentId = getContext().getHandle().getMajorFragmentId();
+      int minorFragmentId = getContext().getHandle().getMinorFragmentId();
+      String s = String.format("{\"queryId\":\"%s\",\"majorFragmentId\":%d,\"minorFragmentId\":%d,\"operatorId\":%d,\"batchNumber\":%d,\"batchDef\":%s}",
+              queryId, majorFragmentId, minorFragmentId, incoming.getOperatorId(), batchNumber++, batchDefString);
+      logger.debug(s);
+      fos.write(s.getBytes());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -135,6 +196,10 @@ public class IteratorValidatorBatchIterator implements RecordBatch {
         throw new IllegalStateException (String.format("Incoming batch of %s has size %d, which is beyond the limit of %d",  incoming.getClass().getName(), incoming.getRecordCount(), MAX_BATCH_SIZE));
       }
 
+      if (PRINT_BATCH_DATA) {
+        printBatchInfo();
+      }
+
       if (VALIDATE_VECTORS) {
         VectorValidator.validate(incoming);
       }
@@ -152,6 +217,18 @@ public class IteratorValidatorBatchIterator implements RecordBatch {
   @Override
   public void cleanup() {
     incoming.cleanup();
+    if (fos != null) {
+      try {
+        fos.close();
+      } catch (IOException e) {
+        logger.warn("Exception",e);
+      }
+    }
+  }
+
+  @Override
+  public int getOperatorId() {
+    return -1;
   }
 
   @Override

@@ -168,4 +168,9 @@ public abstract class AbstractRecordBatch<T extends PhysicalOperator> implements
     throw new UnsupportedOperationException(String.format(" You should not call getOutgoingContainer() for class %s", this.getClass().getCanonicalName()));
   }
 
+  @Override
+  public int getOperatorId() {
+    return popConfig.getOperatorId();
+  }
+
 }
