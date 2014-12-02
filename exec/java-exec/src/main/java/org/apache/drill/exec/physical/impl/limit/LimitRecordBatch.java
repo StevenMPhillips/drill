@@ -97,8 +97,7 @@ public class LimitRecordBatch extends AbstractSingleRecordBatch<Limit> {
     if(!first && !noEndLimit && recordsLeft <= 0) {
       incoming.kill(true);
 
-      /*
-      IterOutcome upStream = incoming.next();
+      IterOutcome upStream = next(incoming);
 
       while (upStream == IterOutcome.OK || upStream == IterOutcome.OK_NEW_SCHEMA) {
 
@@ -106,9 +105,8 @@ public class LimitRecordBatch extends AbstractSingleRecordBatch<Limit> {
         for (VectorWrapper<?> wrapper : incoming) {
           wrapper.getValueVector().clear();
         }
-        upStream = incoming.next();
+        upStream = next(incoming);
       }
-      */
 
       return IterOutcome.NONE;
     }
