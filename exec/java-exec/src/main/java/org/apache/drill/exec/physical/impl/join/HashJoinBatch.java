@@ -103,11 +103,7 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
     // Schema of the build side
     private BatchSchema rightSchema = null;
 
-    private boolean first = true;
 
-    private boolean schemaBuilt = false;
-
-    private boolean done = false;
 
     // Generator mapping for the build side
     // Generator mapping for the build side : scalar
@@ -172,7 +168,9 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
 
 
   @Override
-  protected boolean buildSchema() throws SchemaChangeException {
+  protected void buildSchema() throws SchemaChangeException {
+    leftUpstream = next(left);
+    rightUpstream = next(right);
     // Initialize the hash join helper context
     hjHelper = new HashJoinHelper(context, oContext.getAllocator());
     try {
@@ -194,32 +192,16 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
     } catch (IOException | ClassTransformationException e) {
       throw new SchemaChangeException(e);
     }
-    return true;
   }
 
     @Override
     public IterOutcome innerNext() {
-        if (!schemaBuilt) {
-          try {
-            leftUpstream = next(left);
-            rightUpstream = next(right);
-            schemaBuilt = true;
-            if (buildSchema()) {
-              return IterOutcome.OK_NEW_SCHEMA;
-            }
-          } catch (SchemaChangeException e) {
-            throw new RuntimeException(e);
-          }
-        }
-        if (done) {
-          return IterOutcome.NONE;
-        }
         try {
             /* If we are here for the first time, execute the build phase of the
              * hash join and setup the run time generated class for the probe side
              */
-            if (first) {
-                first = false;
+            if (state == BatchState.FIRST) {
+                state = BatchState.NOT_FIRST;
                 // Build the hash table, using the build side record batches.
                 executeBuildPhase();
 //                IterOutcome next = next(HashJoinHelper.LEFT_INPUT, left);
@@ -243,8 +225,10 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
                  * 2. We've filled up the outgoing batch to the maximum and we need to return upstream
                  * Either case build the output container's schema and return
                  */
-                if (outputRecords > 0 || first) {
-                  first = false;
+                if (outputRecords > 0 || state == BatchState.FIRST) {
+                  if (state == BatchState.FIRST) {
+                    state = BatchState.NOT_FIRST;
+                  }
 
 
                   for (VectorWrapper<?> v : container) {
@@ -271,10 +255,10 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
             }
 
             // No more output records, clean up and return
-            done = true;
-            if (first) {
-              return IterOutcome.OK_NEW_SCHEMA;
-            }
+            state = BatchState.DONE;
+//            if (first) {
+//              return IterOutcome.OK_NEW_SCHEMA;
+//            }
             return IterOutcome.NONE;
         } catch (ClassTransformationException | SchemaChangeException | IOException e) {
             context.fail(e);
@@ -495,7 +479,7 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
     }
 
     public HashJoinBatch(HashJoinPOP popConfig, FragmentContext context, RecordBatch left, RecordBatch right) throws OutOfMemoryException {
-        super(popConfig, context);
+        super(popConfig, context, true);
         this.left = left;
         this.right = right;
         this.joinType = popConfig.getJoinType();

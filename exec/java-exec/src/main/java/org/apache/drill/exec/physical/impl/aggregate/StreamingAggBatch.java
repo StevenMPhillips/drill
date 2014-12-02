@@ -78,33 +78,19 @@ public class StreamingAggBatch extends AbstractRecordBatch<StreamingAggregate> {
   }
 
   @Override
-  public boolean buildSchema() throws SchemaChangeException {
-    next(incoming);
-    if (!createAggregator()) {
-      done = true;
-      return false;
+  public void buildSchema() throws SchemaChangeException {
+    if (next(incoming) == IterOutcome.NONE) {
+      state = BatchState.DONE;
+      container.buildSchema(SelectionVectorMode.NONE);
+      return;
     }
-    return true;
+    if (!createAggregator()) {
+      state = BatchState.DONE;
+    }
   }
 
   @Override
   public IterOutcome innerNext() {
-    if (!schemaBuilt) {
-      try {
-        schemaBuilt = true;
-        if (!buildSchema()) {
-          return IterOutcome.STOP;
-        } else {
-          return IterOutcome.OK_NEW_SCHEMA;
-        }
-      } catch (SchemaChangeException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    if (done) {
-      container.zeroVectors();
-      return IterOutcome.NONE;
-    }
       // this is only called on the first batch. Beyond this, the aggregator manages batches.
     if (aggregator == null || first) {
       IterOutcome outcome;

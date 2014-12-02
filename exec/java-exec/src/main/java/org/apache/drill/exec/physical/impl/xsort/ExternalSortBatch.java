@@ -109,11 +109,10 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
   private long totalSizeInMemory = 0;
   private long highWaterMark = Long.MAX_VALUE;
   private int targetRecordCount;
-  private boolean schemaBuilt = false;
   private boolean stop = false;
 
   public ExternalSortBatch(ExternalSort popConfig, FragmentContext context, RecordBatch incoming) throws OutOfMemoryException {
-    super(popConfig, context);
+    super(popConfig, context, true);
     this.incoming = incoming;
     DrillConfig config = context.getConfig();
     Configuration conf = new Configuration();
@@ -195,7 +194,7 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
     incoming.cleanup();
   }
 
-  public boolean buildSchema() throws SchemaChangeException {
+  public void buildSchema() throws SchemaChangeException {
     IterOutcome outcome = next(incoming);
     switch (outcome) {
       case OK:
@@ -205,33 +204,17 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
         }
         container.buildSchema(SelectionVectorMode.NONE);
         container.setRecordCount(0);
-        return true;
+        return;
       case STOP:
         stop = true;
       case NONE:
       default:
-        return false;
+        return;
     }
   }
 
   @Override
   public IterOutcome innerNext() {
-    if (!schemaBuilt) {
-      try {
-        schemaBuilt = true;
-        if (buildSchema()) {
-          return IterOutcome.OK_NEW_SCHEMA;
-        } else {
-          if (stop) {
-            return IterOutcome.STOP;
-          } else {
-            return IterOutcome.NONE;
-          }
-        }
-      } catch (SchemaChangeException e) {
-        throw new RuntimeException(e);
-      }
-    }
     if (schema != null) {
       if (spillCount == 0) {
         if (schema != null) {

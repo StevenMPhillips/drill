@@ -78,9 +78,8 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
     }
   }
 
-  public boolean buildSchema() throws SchemaChangeException {
+  public void buildSchema() throws SchemaChangeException {
     setupSchema();
-    return true;
   }
 
   @Override

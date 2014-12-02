@@ -125,7 +125,7 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
     incoming.cleanup();
   }
 
-  public boolean buildSchema() throws SchemaChangeException {
+  public void buildSchema() throws SchemaChangeException {
     VectorContainer c = new VectorContainer(oContext);
     IterOutcome outcome = next(incoming);
     switch (outcome) {
@@ -140,33 +140,17 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
         }
         container.buildSchema(SelectionVectorMode.NONE);
         container.setRecordCount(0);
-        return true;
+        return;
       case STOP:
         stop = true;
       case NONE:
       default:
-        return false;
+        return;
     }
   }
 
   @Override
   public IterOutcome innerNext() {
-    if (!schemaBuilt) {
-      try {
-        schemaBuilt = true;
-        if (buildSchema()) {
-          return IterOutcome.OK_NEW_SCHEMA;
-        } else {
-          if (stop) {
-            return IterOutcome.STOP;
-          } else {
-            return IterOutcome.NONE;
-          }
-        }
-      } catch (SchemaChangeException e) {
-        throw new RuntimeException(e);
-      }
-    }
     if (schema != null) {
       if (getSelectionVector4().next()) {
         recordCount = sv4.getCount();

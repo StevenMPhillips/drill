@@ -58,11 +58,9 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
 
   private HashAggregator aggregator;
   private final RecordBatch incoming;
-  private boolean done = false;
   private LogicalExpression[] aggrExprs;
   private TypedFieldId[] groupByOutFieldIds ;
   private TypedFieldId[] aggrOutFieldIds ;      // field ids for the outgoing batch
-  private boolean first = true;
 
   private final GeneratorMapping UPDATE_AGGR_INSIDE =
     GeneratorMapping.create("setupInterior" /* setup method */, "updateAggrValuesInternal" /* eval method */,
@@ -73,7 +71,6 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
                             "resetValues" /* reset */, "cleanup" /* cleanup */) ;
 
   private final MappingSet UpdateAggrValuesMapping = new MappingSet("incomingRowIdx" /* read index */, "outRowIdx" /* write index */, "htRowIdx" /* workspace index */, "incoming" /* read container */, "outgoing" /* write container */, "aggrValuesContainer" /* workspace container */, UPDATE_AGGR_INSIDE, UPDATE_AGGR_OUTSIDE, UPDATE_AGGR_INSIDE);
-  private boolean schemaBuilt = false;
 
 
   public HashAggBatch(HashAggregate popConfig, RecordBatch incoming, FragmentContext context) throws ExecutionSetupException {
@@ -83,47 +80,34 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
 
   @Override
   public int getRecordCount() {
-    if (done) {
+    if (state == BatchState.DONE) {
       return 0;
     }
     return aggregator.getOutputCount();
   }
 
   @Override
-  public boolean buildSchema() throws SchemaChangeException {
-    next(incoming);
-    if (!createAggregator()) {
-      done = true;
-      return false;
+  public void buildSchema() throws SchemaChangeException {
+    if (next(incoming) == IterOutcome.NONE) {
+      state = BatchState.DONE;
+      container.buildSchema(SelectionVectorMode.NONE);
+      return;
     }
-    return true;
+    if (!createAggregator()) {
+      state = BatchState.DONE;
+    }
   }
 
   @Override
   public IterOutcome innerNext() {
-    if (!schemaBuilt) {
-      try {
-        schemaBuilt = true;
-        if (!buildSchema()) {
-          return IterOutcome.STOP;
-        } else {
-          return IterOutcome.OK_NEW_SCHEMA;
-        }
-      } catch (SchemaChangeException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    if (done) {
-      return IterOutcome.NONE;
-    }
     // this is only called on the first batch. Beyond this, the aggregator manages batches.
-    if (aggregator == null || first) {
+    if (aggregator == null || state == BatchState.FIRST) {
       if (aggregator != null) {
         aggregator.cleanup();
       }
       IterOutcome outcome;
-      if (first) {
-        first = false;
+      if (state == BatchState.FIRST) {
+        state = BatchState.NOT_FIRST;
         outcome = IterOutcome.OK;
       } else {
         outcome = next(incoming);
@@ -141,7 +125,7 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
         return outcome;
       case OK_NEW_SCHEMA:
         if (!createAggregator()) {
-          done = true;
+          state = BatchState.DONE;
           return IterOutcome.STOP;
         }
         break;
@@ -171,7 +155,7 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
       case CLEANUP_AND_RETURN:
         container.zeroVectors();
         aggregator.cleanup();
-        done = true;
+        state = BatchState.DONE;
         // fall through
       case RETURN_OUTCOME:
         IterOutcome outcome = aggregator.getOutcome();

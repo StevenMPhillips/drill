@@ -107,9 +107,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   private int[] batchOffsets;
   private PriorityQueue <Node> pqueue;
   private RawFragmentBatch emptyBatch = null;
-  private boolean done = false;
   private RawFragmentBatch[] tempBatchHolder;
-  private boolean schemaBuilt = false;
 
   public static enum Metric implements MetricDef{
     BYTES_RECEIVED,
@@ -125,7 +123,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   public MergingRecordBatch(FragmentContext context,
                             MergingReceiverPOP config,
                             RawFragmentBatchProvider[] fragProviders) throws OutOfMemoryException {
-    super(config, context, new OperatorContext(config, context, false));
+    super(config, context, true, new OperatorContext(config, context, false));
     //super(config, context);
     this.fragProviders = fragProviders;
     this.context = context;
@@ -153,16 +151,16 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
     if (fragProviders.length == 0) {
       return IterOutcome.NONE;
     }
-    if (done) {
-      return IterOutcome.NONE;
-    }
-    if (!schemaBuilt) {
-      if (!buildSchema()) {
-        return IterOutcome.NONE;
-      }
-      schemaBuilt = true;
-      return IterOutcome.OK_NEW_SCHEMA;
-    }
+//    if (done) {
+//      return IterOutcome.NONE;
+//    }
+//    if (!schemaBuilt) {
+//      if (!buildSchema()) {
+//        return IterOutcome.NONE;
+//      }
+//      schemaBuilt = true;
+//      return IterOutcome.OK_NEW_SCHEMA;
+//    }
     boolean schemaChanged = false;
 
     if (prevBatchWasFull) {
@@ -422,9 +420,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
     }
 
     if (pqueue.isEmpty()) {
-      if (!done) {
-        done = !done;
-      }
+      state = BatchState.DONE;
     }
 
     if (schemaChanged) {
@@ -445,13 +441,14 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
     return outgoingContainer.getSchema();
   }
 
-  public boolean buildSchema() {
+  public void buildSchema() {
     tempBatchHolder = new RawFragmentBatch[fragProviders.length];
     int i = 0;
     try {
       while (true) {
         if (i >= fragProviders.length) {
-          return false;
+          state = BatchState.DONE;
+          return;
         }
         RawFragmentBatch batch = getNext(fragProviders[i]);
         if (batch.getHeader().getDef().getFieldCount() == 0) {
@@ -469,7 +466,6 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
     }
     outgoingContainer = VectorContainer.canonicalize(outgoingContainer);
     outgoingContainer.buildSchema(SelectionVectorMode.NONE);
-    return true;
   }
 
   @Override

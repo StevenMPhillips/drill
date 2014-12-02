@@ -78,7 +78,7 @@ public class WriterRecordBatch extends AbstractRecordBatch<Writer> {
   }
 
   @Override
-  public boolean buildSchema() throws SchemaChangeException {
+  public void buildSchema() throws SchemaChangeException {
     try {
       stats.startProcessing();
       setupNewSchema();
@@ -87,7 +87,6 @@ public class WriterRecordBatch extends AbstractRecordBatch<Writer> {
     } finally {
       stats.stopProcessing();
     }
-    return true;
   }
 
   @Override
