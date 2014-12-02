@@ -208,6 +208,7 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
       case STOP:
         stop = true;
       case NONE:
+        state = BatchState.DONE;
       default:
         return;
     }
@@ -227,7 +228,6 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
       } else {
         Stopwatch w = new Stopwatch();
         w.start();
-//        int count = selector.next();
         int count = copier.next(targetRecordCount);
         if (count > 0) {
           long t = w.elapsed(TimeUnit.MICROSECONDS);

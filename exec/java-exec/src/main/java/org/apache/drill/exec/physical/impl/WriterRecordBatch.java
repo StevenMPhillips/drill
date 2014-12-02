@@ -54,7 +54,7 @@ public class WriterRecordBatch extends AbstractRecordBatch<Writer> {
   private BatchSchema schema;
 
   public WriterRecordBatch(Writer writer, RecordBatch incoming, FragmentContext context, RecordWriter recordWriter) throws OutOfMemoryException {
-    super(writer, context);
+    super(writer, context, false);
     this.incoming = incoming;
 
     FragmentHandle handle = context.getHandle();
@@ -79,14 +79,11 @@ public class WriterRecordBatch extends AbstractRecordBatch<Writer> {
 
   @Override
   public void buildSchema() throws SchemaChangeException {
-    try {
-      stats.startProcessing();
-      setupNewSchema();
-    } catch (Exception e) {
-      throw new SchemaChangeException(e);
-    } finally {
-      stats.stopProcessing();
-    }
+//    try {
+//      setupNewSchema();
+//    } catch (Exception e) {
+//      throw new SchemaChangeException(e);
+//    }
   }
 
   @Override

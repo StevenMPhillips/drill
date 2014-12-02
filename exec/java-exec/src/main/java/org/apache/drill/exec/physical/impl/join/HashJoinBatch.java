@@ -305,11 +305,8 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
     public void executeBuildPhase() throws SchemaChangeException, ClassTransformationException, IOException {
 
         //Setup the underlying hash table
-//        IterOutcome rightUpstream = next(HashJoinHelper.RIGHT_INPUT, right);
-//      if (hashTable == null) {
-//        rightUpstream = IterOutcome.OK_NEW_SCHEMA;
-//      }
 
+      // skip first batch if count is zero, as it may be an empty schema batch
         if (right.getRecordCount() == 0) {
           for (VectorWrapper w : right) {
             w.clear();

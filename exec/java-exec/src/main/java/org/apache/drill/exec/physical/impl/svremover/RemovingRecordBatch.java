@@ -99,6 +99,7 @@ public class RemovingRecordBatch extends AbstractSingleRecordBatch<SelectionVect
   @Override
   protected IterOutcome doWork() {
     int incomingRecordCount = incoming.getRecordCount();
+    // skip empty batches
     if (incomingRecordCount == 0) {
       return IterOutcome.OK;
     }
@@ -134,11 +135,6 @@ public class RemovingRecordBatch extends AbstractSingleRecordBatch<SelectionVect
         incomingRecordCount,
         incomingRecordCount - remainderIndex,
         incoming.getSchema());
-//    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-//    PrintStream stream = new PrintStream(bos);
-//    BatchPrinter.printBatch(this, stream);
-//    stream.flush();
-//    logger.debug(new String(bos.toByteArray()));
     return IterOutcome.OK;
   }
 

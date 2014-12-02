@@ -47,7 +47,7 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
   private int outRecordCount;
 
   public UnionAllRecordBatch(UnionAll config, List<RecordBatch> children, FragmentContext context) throws OutOfMemoryException {
-    super(config, context);
+    super(config, context, false);
     this.incoming = children;
     this.incomingIterator = incoming.iterator();
     current = incomingIterator.next();
@@ -124,6 +124,7 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
 
   private void doTransfer() {
     outRecordCount = current.getRecordCount();
+    // skip empty batches
     if (outRecordCount == 0) {
       return;
     }
@@ -133,12 +134,6 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
     for (TransferPair transfer : transfers) {
       transfer.transfer();
     }
-
-//    for (VectorWrapper<?> vw : this.container) {
-//      ValueVector.Mutator m = vw.getValueVector().getMutator();
-//      m.setValueCount(outRecordCount);
-//    }
-
   }
 
   private void setupSchema() {

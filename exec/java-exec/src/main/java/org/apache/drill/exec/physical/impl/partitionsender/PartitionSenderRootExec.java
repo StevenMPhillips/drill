@@ -170,6 +170,7 @@ public class PartitionSenderRootExec extends BaseRootExec {
             partitioner.clear();
           }
           createPartitioner();
+          // flush to send schema downstream
           if (first) {
             partitioner.flushOutgoingBatches(false, true);
           }

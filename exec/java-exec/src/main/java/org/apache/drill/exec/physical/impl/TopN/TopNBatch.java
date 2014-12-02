@@ -144,6 +144,7 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
       case STOP:
         stop = true;
       case NONE:
+        state = BatchState.DONE;
       default:
         return;
     }

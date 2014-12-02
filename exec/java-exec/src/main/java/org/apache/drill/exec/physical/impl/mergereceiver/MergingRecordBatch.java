@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.expression.ErrorCollector;
 import org.apache.drill.common.expression.ErrorCollectorImpl;
 import org.apache.drill.common.expression.LogicalExpression;
@@ -107,7 +108,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   private int[] batchOffsets;
   private PriorityQueue <Node> pqueue;
   private RawFragmentBatch emptyBatch = null;
-  private RawFragmentBatch[] tempBatchHolder;
+  private RawFragmentBatch[] tempBatchHolder; //
 
   public static enum Metric implements MetricDef{
     BYTES_RECEIVED,
@@ -151,16 +152,6 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
     if (fragProviders.length == 0) {
       return IterOutcome.NONE;
     }
-//    if (done) {
-//      return IterOutcome.NONE;
-//    }
-//    if (!schemaBuilt) {
-//      if (!buildSchema()) {
-//        return IterOutcome.NONE;
-//      }
-//      schemaBuilt = true;
-//      return IterOutcome.OK_NEW_SCHEMA;
-//    }
     boolean schemaChanged = false;
 
     if (prevBatchWasFull) {
@@ -182,11 +173,11 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
 
       // set up each (non-empty) incoming record batch
       List<RawFragmentBatch> rawBatches = Lists.newArrayList();
-      boolean firstBatch = true;
       int p = 0;
       for (RawFragmentBatchProvider provider : fragProviders) {
         RawFragmentBatch rawBatch = null;
         try {
+          // check if there is a batch in temp holder before calling getNext(), as it may have been used when building schema
           if (tempBatchHolder[p] != null) {
             rawBatch = tempBatchHolder[p];
             tempBatchHolder[p] = null;
@@ -204,6 +195,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
         if (rawBatch.getHeader().getDef().getRecordCount() != 0) {
           rawBatches.add(rawBatch);
         } else {
+          // save an empty batch to use for schema purposes. ignore batch if it contains no fields, and thus no schema
           if (emptyBatch == null && rawBatch.getHeader().getDef().getFieldCount() != 0) {
             emptyBatch = rawBatch;
           }
@@ -442,6 +434,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   }
 
   public void buildSchema() {
+    // find frag provider that has data to use to build schema, and put in tempBatchHolder for later use
     tempBatchHolder = new RawFragmentBatch[fragProviders.length];
     int i = 0;
     try {
@@ -462,7 +455,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
         break;
       }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new DrillRuntimeException(e);
     }
     outgoingContainer = VectorContainer.canonicalize(outgoingContainer);
     outgoingContainer.buildSchema(SelectionVectorMode.NONE);
