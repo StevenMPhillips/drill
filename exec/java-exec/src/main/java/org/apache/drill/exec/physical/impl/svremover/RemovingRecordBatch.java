@@ -99,10 +99,6 @@ public class RemovingRecordBatch extends AbstractSingleRecordBatch<SelectionVect
   @Override
   protected IterOutcome doWork() {
     int incomingRecordCount = incoming.getRecordCount();
-    // skip empty batches
-    if (incomingRecordCount == 0) {
-      return IterOutcome.OK;
-    }
     int copiedRecords = copier.copyRecords(0, incomingRecordCount);
 
     if (copiedRecords < incomingRecordCount) {

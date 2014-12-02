@@ -79,9 +79,6 @@ public class FilterRecordBatch extends AbstractSingleRecordBatch<Filter>{
   protected IterOutcome doWork() {
     container.zeroVectors();
     int recordCount = incoming.getRecordCount();
-    if (recordCount == 0) { // No need to do any work if there are no records
-      return IterOutcome.OK;
-    }
     filter.filterBatch(recordCount);
 
     return IterOutcome.OK;

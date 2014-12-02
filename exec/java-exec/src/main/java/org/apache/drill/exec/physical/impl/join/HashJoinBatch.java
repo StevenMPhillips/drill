@@ -187,6 +187,9 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
       setupHashTable();
       hashJoinProbe = setupHashJoinProbe();
       // Build the container schema and set the counts
+      for (VectorWrapper w : container) {
+        w.getValueVector().allocateNew();
+      }
       container.buildSchema(BatchSchema.SelectionVectorMode.NONE);
       container.setRecordCount(outputRecords);
     } catch (IOException | ClassTransformationException e) {
@@ -201,7 +204,6 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
              * hash join and setup the run time generated class for the probe side
              */
             if (state == BatchState.FIRST) {
-                state = BatchState.NOT_FIRST;
                 // Build the hash table, using the build side record batches.
                 executeBuildPhase();
 //                IterOutcome next = next(HashJoinHelper.LEFT_INPUT, left);

@@ -46,6 +46,7 @@ import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
+import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
 import org.apache.drill.exec.vector.ValueVector;
@@ -95,6 +96,9 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
     }
     if (!createAggregator()) {
       state = BatchState.DONE;
+    }
+    for (VectorWrapper w : container) {
+      w.getValueVector().allocateNew();
     }
   }
 

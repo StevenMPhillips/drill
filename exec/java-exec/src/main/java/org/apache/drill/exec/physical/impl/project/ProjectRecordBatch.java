@@ -142,9 +142,7 @@ public class ProjectRecordBatch extends AbstractSingleRecordBatch<Project> {
     int incomingRecordCount = incoming.getRecordCount();
 
     if (first && incomingRecordCount == 0) {
-      if (complexWriters == null) {
-        return IterOutcome.OK_NEW_SCHEMA;
-      } else {
+      if (complexWriters != null) {
         IterOutcome next = null;
         while (incomingRecordCount == 0) {
           next = next(incoming);

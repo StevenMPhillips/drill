@@ -136,7 +136,8 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
         }
         c = VectorContainer.canonicalize(c);
         for (VectorWrapper w : c) {
-          container.add(w.getValueVector());
+          ValueVector v = container.addOrGet(w.getField());
+          v.allocateNew();
         }
         container.buildSchema(SelectionVectorMode.NONE);
         container.setRecordCount(0);

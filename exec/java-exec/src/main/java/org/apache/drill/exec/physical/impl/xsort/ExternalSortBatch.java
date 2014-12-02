@@ -200,7 +200,8 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
       case OK:
       case OK_NEW_SCHEMA:
         for (VectorWrapper w : incoming) {
-          container.addOrGet(w.getField());
+          ValueVector v = container.addOrGet(w.getField());
+          v.allocateNew();
         }
         container.buildSchema(SelectionVectorMode.NONE);
         container.setRecordCount(0);
