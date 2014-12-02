@@ -450,7 +450,8 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
         }
         tempBatchHolder[i] = batch;
         for (SerializedField field : batch.getHeader().getDef().getFieldList()) {
-          outgoingContainer.addOrGet(MaterializedField.create(field));
+          ValueVector v = outgoingContainer.addOrGet(MaterializedField.create(field));
+          v.allocateNew();
         }
         break;
       }

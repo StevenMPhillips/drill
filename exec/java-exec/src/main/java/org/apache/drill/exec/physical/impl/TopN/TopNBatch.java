@@ -153,6 +153,9 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
 
   @Override
   public IterOutcome innerNext() {
+    if (state == BatchState.DONE) {
+      return IterOutcome.NONE;
+    }
     if (schema != null) {
       if (getSelectionVector4().next()) {
         recordCount = sv4.getCount();
@@ -224,6 +227,7 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
 
       if (schema == null) {
         // builder may be null at this point if the first incoming batch is empty
+        state = BatchState.DONE;
         return IterOutcome.NONE;
       }
 
