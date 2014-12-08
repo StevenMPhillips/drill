@@ -40,6 +40,7 @@ import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.MaterializedField.Key;
 import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.vector.AllocationHelper;
+import org.apache.drill.exec.vector.BaseValueVector;
 import org.apache.drill.exec.vector.NullableBitVector;
 import org.apache.drill.exec.vector.RepeatedFixedWidthVector;
 import org.apache.drill.exec.vector.ValueVector;
@@ -65,7 +66,7 @@ public class ParquetRecordReader extends AbstractRecordReader {
   private static final int NUMBER_OF_VECTORS = 1;
   private static final long DEFAULT_BATCH_LENGTH = 256 * 1024 * NUMBER_OF_VECTORS; // 256kb
   private static final long DEFAULT_BATCH_LENGTH_IN_BITS = DEFAULT_BATCH_LENGTH * 8; // 256kb
-  private static final char DEFAULT_RECORDS_TO_READ_IF_NOT_FIXED_WIDTH = 32*1024;
+  private static final int DEFAULT_RECORDS_TO_READ_IF_NOT_FIXED_WIDTH = BaseValueVector.INITIAL_VALUE_ALLOCATION;
 
   // TODO - should probably find a smarter way to set this, currently 1 megabyte
   private static final int VAR_LEN_FIELD_LENGTH = 1024 * 1024 * 1;

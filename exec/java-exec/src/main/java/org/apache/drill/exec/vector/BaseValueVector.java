@@ -33,7 +33,8 @@ public abstract class BaseValueVector implements ValueVector{
 
   protected final BufferAllocator allocator;
   protected final MaterializedField field;
-  public static final int INITIAL_VALUE_ALLOCATION = 4096;
+  public static final String INITIAL_VALUE_ALLOCATION_KEY = "initial.value.allocation";
+  public static final int INITIAL_VALUE_ALLOCATION = System.getProperty(INITIAL_VALUE_ALLOCATION_KEY) == null ? 4096 : Integer.parseInt(System.getProperty(INITIAL_VALUE_ALLOCATION_KEY));
 
   BaseValueVector(MaterializedField field, BufferAllocator allocator) {
     this.allocator = allocator;

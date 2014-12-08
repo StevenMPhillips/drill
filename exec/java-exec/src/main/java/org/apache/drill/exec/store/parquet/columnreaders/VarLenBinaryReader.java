@@ -59,8 +59,9 @@ public class VarLenBinaryReader {
         }
       }
       // check that the next record will fit in the batch
-      if (exitLengthDeterminingLoop || (recordsReadInCurrentPass + 1) * parentReader.getBitWidthAllFixedFields() + totalVariableLengthData
-          + lengthVarFieldsInCurrentRecord > parentReader.getBatchSize()) {
+//      if (exitLengthDeterminingLoop || (recordsReadInCurrentPass + 1) * parentReader.getBitWidthAllFixedFields() + totalVariableLengthData
+//          + lengthVarFieldsInCurrentRecord > parentReader.getBatchSize()) {
+      if (exitLengthDeterminingLoop) {
         break;
       }
       for (VarLengthColumn columnReader : columns ) {
