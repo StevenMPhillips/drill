@@ -52,6 +52,7 @@ import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.RecordBatch;
+import org.apache.drill.exec.record.TransferPair;
 import org.apache.drill.exec.record.VectorAccessible;
 import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.record.VectorWrapper;
@@ -201,6 +202,8 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
       case OK_NEW_SCHEMA:
         for (VectorWrapper w : incoming) {
           ValueVector v = container.addOrGet(w.getField());
+          TransferPair tp = w.getValueVector().makeTransferPair(v);
+          v.clear();
           v.allocateNew();
         }
         container.buildSchema(SelectionVectorMode.NONE);

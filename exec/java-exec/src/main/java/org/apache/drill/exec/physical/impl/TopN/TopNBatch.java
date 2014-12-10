@@ -50,6 +50,7 @@ import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.exec.record.ExpandableHyperContainer;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.RecordBatch;
+import org.apache.drill.exec.record.TransferPair;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorAccessible;
 import org.apache.drill.exec.record.VectorContainer;
@@ -132,11 +133,15 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
       case OK:
       case OK_NEW_SCHEMA:
         for (VectorWrapper w : incoming) {
-          c.addOrGet(w.getField());
+          ValueVector v = c.addOrGet(w.getField());
+          TransferPair tp = w.getValueVector().makeTransferPair(v);
+          v.clear();
         }
         c = VectorContainer.canonicalize(c);
         for (VectorWrapper w : c) {
           ValueVector v = container.addOrGet(w.getField());
+          TransferPair tp = w.getValueVector().makeTransferPair(v);
+          v.clear();
           v.allocateNew();
         }
         container.buildSchema(SelectionVectorMode.NONE);
