@@ -27,6 +27,14 @@ import org.junit.Test;
 public class TestExampleQueries extends BaseTestQuery{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
+  @Test
+  public void testQ() throws Exception {
+//    test("select n_nationkey + 1 as n from cp.`tpch/nation.parquet` where n_regionkey = 0 order by n limit 2");
+//    test("select n.n_name, r.r_name from cp.`tpch/nation.parquet` n, cp.`tpch/region.parquet` r where n.n_regionkey = r.r_regionkey");
+//    test("select n_regionkey, sum(n_nationkey) as s from cp.`tpch/nation.parquet` group by n_regionkey");
+    test("select sum(l_linenumber) from dfs.`/drill/SF1/lineitem` group by l_orderkey");
+  }
+
   @Test // see DRILL-1811
   public void testSelStarDifferentColumnOrder() throws Exception {
     test("select first_name, * from cp.`employee.json`;");
