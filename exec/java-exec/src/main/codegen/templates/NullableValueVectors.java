@@ -493,13 +493,9 @@ public final class ${className} extends BaseValueVector implements <#if type.maj
 
       boolean b1 = bits.getMutator().setSafe(index, 1);
       boolean b2 = values.getMutator().setSafe(index, value, start, length);
-      if(b1 && b2){
         setCount++;
         <#if type.major == "VarLen">lastSet = index;</#if>
         return true;
-      }else{
-        return false;
-      }
       </#if>
     }
 
@@ -563,13 +559,9 @@ public final class ${className} extends BaseValueVector implements <#if type.maj
       
       boolean b1 = bits.getMutator().setSafe(index, isSet);
       boolean b2 = values.getMutator().setSafe(index<#list fields as field><#if field.include!true >, ${field.name}Field</#if></#list>);
-      if(b1 && b2){
         setCount++;
         <#if type.major == "VarLen">lastSet = index;</#if>
         return true;
-      }else{
-        return false;
-      }
 
     }
 
@@ -581,13 +573,9 @@ public final class ${className} extends BaseValueVector implements <#if type.maj
       </#if>
       boolean b1 = bits.getMutator().setSafe(index, value.isSet);
       boolean b2 = values.getMutator().setSafe(index, value);
-      if(b1 && b2){
         setCount++;
         <#if type.major == "VarLen">lastSet = index;</#if>
         return true;
-      }else{
-        return false;
-      }
 
     }
 
@@ -598,13 +586,9 @@ public final class ${className} extends BaseValueVector implements <#if type.maj
       </#if>
       boolean b1 = bits.getMutator().setSafe(index, 1);
       boolean b2 = values.getMutator().setSafe(index, value);
-      if(b1 && b2){
         setCount++;
         <#if type.major == "VarLen">lastSet = index;</#if>
         return true;
-      }else{
-        return false;
-      }
 
     }
     
@@ -615,12 +599,8 @@ public final class ${className} extends BaseValueVector implements <#if type.maj
         </#if>
         boolean b1 = bits.getMutator().setSafe(index, 1);
         boolean b2 = values.getMutator().setSafe(index, value);
-        if(b1 && b2){
           setCount++;
           return true;
-        }else{
-          return false;
-        }
       }
 
     </#if>
