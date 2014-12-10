@@ -96,6 +96,17 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
     this.allocationValueCount = valueCount;
   }
 
+/**
+ * Allocate new buffer with double capacity, and copy data into the new buffer. Replace vector's buffer with new buffer, and release old one
+ */
+  public void reAlloc() {
+    allocationValueCount *= 2;
+    DrillBuf newBuf = allocator.buffer(allocationValueCount * ${type.width});
+    newBuf.setBytes(0, data, 0, data.capacity());
+    data.release();
+    data = newBuf;
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -204,8 +215,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
   
   public boolean copyFromSafe(int fromIndex, int thisIndex, ${minor.class}Vector from){
     if(thisIndex >= getValueCapacity()) {
-      decrementAllocationMonitor();
-      return false;
+        reAlloc();
     }
     copyFrom(fromIndex, thisIndex, from);
     return true;
@@ -553,8 +563,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
 
    public boolean setSafe(int index, <#if (type.width > 4)>${minor.javaType!type.javaType}<#else>int</#if> value) {
      if(index >= getValueCapacity()) {
-       decrementAllocationMonitor();
-       return false;
+       reAlloc();
      }
      data.setBytes(index * ${type.width}, value, 0, ${type.width});
      return true;
@@ -576,8 +585,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
 
    public boolean setSafe(int index, long timestamp, int tzindex){
      if(index >= getValueCapacity()) {
-       decrementAllocationMonitor();
-       return false;
+       reAlloc();
      }
      set(index, timestamp, tzindex);
      return true;
@@ -609,8 +617,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
 
    public boolean setSafe(int index, int months, int days, int milliseconds){
      if(index >= getValueCapacity()) {
-       decrementAllocationMonitor();
-       return false;
+       reAlloc();
      }
      set(index, months, days, milliseconds);
      return true;
@@ -640,8 +647,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
 
    public boolean setSafe(int index, int days, int milliseconds){
      if(index >= getValueCapacity()) {
-       decrementAllocationMonitor();
-       return false;
+       reAlloc();
      }
      set(index, days, milliseconds);
      return true;
@@ -674,8 +680,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
    
    public boolean setSafe(int index, int start, DrillBuf buffer){
      if(index >= getValueCapacity()) {
-       decrementAllocationMonitor();
-       return false;
+       reAlloc();
      }
      set(index, start, buffer);
      return true;
@@ -708,8 +713,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
    
    public boolean setSafe(int index, int start, DrillBuf buffer){     
      if(index >= getValueCapacity()) {
-       decrementAllocationMonitor();
-       return false;
+       reAlloc();
      }
      set(index, holder);
      return true;
@@ -742,8 +746,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
 
    public boolean setSafe(int index, <#if (type.width >= 4)>${minor.javaType!type.javaType}<#else>int</#if> value) {
      if(index >= getValueCapacity()) {
-       decrementAllocationMonitor();
-       return false;
+       reAlloc();
      }
      set(index, value);
      return true;
@@ -755,8 +758,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
 
    public boolean setSafe(int index, ${minor.class}Holder holder){
      if(index >= getValueCapacity()) {
-       decrementAllocationMonitor();
-       return false;
+       reAlloc();
      }
      set(index, holder);
      return true;
@@ -768,8 +770,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
 
    public boolean setSafe(int index, Nullable${minor.class}Holder holder){
      if(index >= getValueCapacity()) {
-       decrementAllocationMonitor();
-       return false;
+       reAlloc();
      }
      set(index, holder);
      return true;
