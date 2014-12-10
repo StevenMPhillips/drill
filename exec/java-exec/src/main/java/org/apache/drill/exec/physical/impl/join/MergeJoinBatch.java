@@ -440,7 +440,9 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
             outputType = inputType;
           }
           MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
-          container.addOrGet(newField);
+          ValueVector v = container.addOrGet(newField);
+          w.getValueVector().makeTransferPair(v);
+          v.clear();
         }
       }
 
@@ -454,7 +456,8 @@ public class MergeJoinBatch extends AbstractRecordBatch<MergeJoinPOP> {
             outputType = inputType;
           }
           MaterializedField newField = MaterializedField.create(w.getField().getPath(), outputType);
-          container.addOrGet(newField);
+          ValueVector v = container.addOrGet(newField);
+          w.getValueVector().makeTransferPair(v);
         }
       }
     }
