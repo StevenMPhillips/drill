@@ -59,6 +59,7 @@ public class ProtobufLengthDecoder extends ByteToMessageDecoder {
     for (int i = 0; i < buf.length; i++) {
       if (!in.isReadable()) {
         in.resetReaderIndex();
+        in.discardSomeReadBytes();
         return;
       }
 
@@ -76,6 +77,7 @@ public class ProtobufLengthDecoder extends ByteToMessageDecoder {
 
         if (in.readableBytes() < length) {
           in.resetReaderIndex();
+          in.discardSomeReadBytes();
           return;
         } else {
           // need to make buffer copy, otherwise netty will try to refill this buffer if we move the readerIndex forward...
