@@ -155,22 +155,12 @@ public abstract class HashAggTemplate implements HashAggregator {
       outNumRecordsHolder.value = 0;
       boolean status = true;
       for (int i = batchOutputCount; i <= maxOccupiedIdx; i++) {
-        if (outputRecordValues(i, batchOutputCount) ) {
-          if (EXTRA_DEBUG_2) {
-            logger.debug("Outputting values to output index: {}", batchOutputCount) ;
-          }
-          batchOutputCount++;
-          outNumRecordsHolder.value++;
-        } else {
-          status = false;
-          break;
+        outputRecordValues(i, batchOutputCount);
+        if (EXTRA_DEBUG_2) {
+          logger.debug("Outputting values to output index: {}", batchOutputCount) ;
         }
-      }
-      // It's not a failure if only some records were output (at least 1) .. since out-of-memory
-      // conditions may prevent all records from being output; the caller has the responsibility to
-      // allocate more memory and continue outputting more records
-      if (!status && outNumRecordsHolder.value > 0) {
-        status = true;
+        batchOutputCount++;
+        outNumRecordsHolder.value++;
       }
       return status;
     }
@@ -196,7 +186,7 @@ public abstract class HashAggTemplate implements HashAggregator {
     public void updateAggrValuesInternal(@Named("incomingRowIdx") int incomingRowIdx, @Named("htRowIdx") int htRowIdx) {}
 
     @RuntimeOverridden
-    public boolean outputRecordValues(@Named("htRowIdx") int htRowIdx, @Named("outRowIdx") int outRowIdx) {return true;}
+    public void outputRecordValues(@Named("htRowIdx") int htRowIdx, @Named("outRowIdx") int outRowIdx) {}
   }
 
 
@@ -279,8 +269,7 @@ public abstract class HashAggTemplate implements HashAggregator {
           if(EXTRA_DEBUG_2) {
             logger.debug("Doing loop with values underlying {}, current {}", underlyingIndex, currentIndex);
           }
-          boolean success = checkGroupAndAggrValues(currentIndex);
-          assert success : "HashAgg couldn't copy values.";
+          checkGroupAndAggrValues(currentIndex);
         }
 
         if (EXTRA_DEBUG_1) {
@@ -317,8 +306,7 @@ public abstract class HashAggTemplate implements HashAggregator {
               if (incoming.getRecordCount() == 0) {
                 continue;
               } else {
-                boolean success = checkGroupAndAggrValues(currentIndex);
-                assert success : "HashAgg couldn't copy values.";
+                checkGroupAndAggrValues(currentIndex);
                 incIndex();
 
                 if (EXTRA_DEBUG_1) {
@@ -461,62 +449,38 @@ public abstract class HashAggTemplate implements HashAggregator {
 
     allocateOutgoing();
 
-    boolean outputKeysStatus = true;
-    boolean outputValuesStatus = true;
-
-    outputValuesStatus = batchHolders.get(outBatchIndex).outputValues(outStartIdxHolder, outNumRecordsHolder);
+    batchHolders.get(outBatchIndex).outputValues(outStartIdxHolder, outNumRecordsHolder);
     int numOutputRecords = outNumRecordsHolder.value;
 
     if (EXTRA_DEBUG_1) {
       logger.debug("After output values: outStartIdx = {}, outNumRecords = {}", outStartIdxHolder.value, outNumRecordsHolder.value);
     }
-    if (outputValuesStatus) {
-      outputKeysStatus = this.htable.outputKeys(outBatchIndex, this.outContainer, outStartIdxHolder.value, outNumRecordsHolder.value) ;
-    }
-
-    if (outputKeysStatus && outputValuesStatus) {
+    this.htable.outputKeys(outBatchIndex, this.outContainer, outStartIdxHolder.value, outNumRecordsHolder.value) ;
 
       // set the value count for outgoing batch value vectors
-      for(VectorWrapper<?> v : outgoing) {
-        v.getValueVector().getMutator().setValueCount(numOutputRecords);
-      }
+    for(VectorWrapper<?> v : outgoing) {
+      v.getValueVector().getMutator().setValueCount(numOutputRecords);
+    }
 
-      outputCount += numOutputRecords;
+    outputCount += numOutputRecords;
 
-      if (first) {
-        this.outcome = IterOutcome.OK_NEW_SCHEMA;
-      } else {
-        this.outcome = IterOutcome.OK;
-      }
-
-      logger.debug("HashAggregate: Output current batch index {} with {} records.", outBatchIndex, numOutputRecords);
-
-      lastBatchOutputCount = numOutputRecords;
-      outBatchIndex++;
-      if (outBatchIndex == batchHolders.size()) {
-        allFlushed = true;
-
-        logger.debug("HashAggregate: All batches flushed.");
-
-        // cleanup my internal state since there is nothing more to return
-        this.cleanup();
-      }
+    if (first) {
+      this.outcome = IterOutcome.OK_NEW_SCHEMA;
     } else {
-      if (!outputKeysStatus) {
-        logger.debug("Failed to output keys for current batch index: {} ", outBatchIndex);
-        for (VectorWrapper<?> v : outContainer) {
-          logger.debug("At the time of failure, size of valuevector in outContainer = {}.", v.getValueVector().getValueCapacity());
-        }
-        context.fail(new Exception("Failed to output keys for current batch !"));
-      }
-      if (!outputValuesStatus) {
-        logger.debug("Failed to output values for current batch index: {} ", outBatchIndex);
-        for (VectorWrapper<?> v : outContainer) {
-          logger.debug("At the time of failure, size of valuevector in outContainer = {}.", v.getValueVector().getValueCapacity());
-        }
-        context.fail(new Exception("Failed to output values for current batch !"));
-      }
-      this.outcome = IterOutcome.STOP;
+      this.outcome = IterOutcome.OK;
+    }
+
+    logger.debug("HashAggregate: Output current batch index {} with {} records.", outBatchIndex, numOutputRecords);
+
+    lastBatchOutputCount = numOutputRecords;
+    outBatchIndex++;
+    if (outBatchIndex == batchHolders.size()) {
+      allFlushed = true;
+
+      logger.debug("HashAggregate: All batches flushed.");
+
+      // cleanup my internal state since there is nothing more to return
+      this.cleanup();
     }
 
     return this.outcome;
@@ -537,7 +501,7 @@ public abstract class HashAggTemplate implements HashAggregator {
   // Check if a group is present in the hash table; if not, insert it in the hash table.
   // The htIdxHolder contains the index of the group in the hash table container; this same
   // index is also used for the aggregation values maintained by the hash aggregate.
-  private boolean checkGroupAndAggrValues(int incomingRowIdx) {
+  private void checkGroupAndAggrValues(int incomingRowIdx) {
     if (incomingRowIdx < 0) {
       throw new IllegalArgumentException("Invalid incoming row index.");
     }
@@ -554,56 +518,29 @@ public abstract class HashAggTemplate implements HashAggregator {
     }
     */
 
-    HashTable.PutStatus putStatus = htable.put(incomingRowIdx, htIdxHolder, 1 /* retry count */) ;
+    /*HashTable.PutStatus putStatus = */htable.put(incomingRowIdx, htIdxHolder, 1 /* retry count */) ;
 
-    if (putStatus != HashTable.PutStatus.PUT_FAILED) {
-      int currentIdx = htIdxHolder.value;
+    int currentIdx = htIdxHolder.value;
 
-      // get the batch index and index within the batch
-      if (currentIdx >= batchHolders.size() * HashTable.BATCH_SIZE) {
-        addBatchHolder();
-      }
-      BatchHolder bh = batchHolders.get( (currentIdx >>> 16) & HashTable.BATCH_MASK);
-      int idxWithinBatch = currentIdx & HashTable.BATCH_MASK;
+    // get the batch index and index within the batch
+    if (currentIdx >= batchHolders.size() * HashTable.BATCH_SIZE) {
+      addBatchHolder();
+    }
+    BatchHolder bh = batchHolders.get( (currentIdx >>> 16) & HashTable.BATCH_MASK);
+    int idxWithinBatch = currentIdx & HashTable.BATCH_MASK;
 
-      // Check if we have almost filled up the workspace vectors and add a batch if necessary
-      if ((idxWithinBatch ==  (bh.capacity - 1)) && (bh.allocatedNextBatch == false)) {
-        htable.addNewKeyBatch();
-        addBatchHolder();
-        bh.allocatedNextBatch = true;
-      }
-
-
-      if (putStatus == HashTable.PutStatus.KEY_PRESENT) {
-        if (EXTRA_DEBUG_2) {
-          logger.debug("Group-by key already present in hash table, updating the aggregate values");
-        }
-
-        // debugging
-        //if (holder.value == 100018 || holder.value == 100021) {
-        //  logger.debug("group-by key = {} already present at hash table index = {}", holder.value, currentIdx) ;
-        //}
-
-      }
-      else if (putStatus == HashTable.PutStatus.KEY_ADDED) {
-        if (EXTRA_DEBUG_2) {
-          logger.debug("Group-by key was added to hash table, inserting new aggregate values") ;
-        }
-
-        // debugging
-        // if (holder.value == 100018 || holder.value == 100021) {
-        //  logger.debug("group-by key = {} added at hash table index = {}", holder.value, currentIdx) ;
-        //}
-      }
-
-      if (bh.updateAggrValues(incomingRowIdx, idxWithinBatch)) {
-        numGroupedRecords++;
-        return true;
-      }
+    // Check if we have almost filled up the workspace vectors and add a batch if necessary
+    if ((idxWithinBatch ==  (bh.capacity - 1)) && (bh.allocatedNextBatch == false)) {
+      htable.addNewKeyBatch();
+      addBatchHolder();
+      bh.allocatedNextBatch = true;
     }
 
-    logger.debug("HashAggr Put failed ! incomingRowIdx = {}, hash table size = {}.", incomingRowIdx, htable.size());
-    return false;
+
+
+    if (bh.updateAggrValues(incomingRowIdx, idxWithinBatch)) {
+      numGroupedRecords++;
+    }
   }
 
   private void updateStats(HashTable htable) {

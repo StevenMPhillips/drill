@@ -40,7 +40,7 @@ public class CopyUtil {
 
       if(hyper){
 
-        g.getEvalBlock()._if(
+        g.getEvalBlock().add(
                 outVV
                         .invoke("copyFromSafe")
                         .arg(
@@ -49,17 +49,14 @@ public class CopyUtil {
                         .arg(
                                 inVV.component(inIndex.shrz(JExpr.lit(16)))
                         )
-                        .not()
-        )
-                ._then()._return(JExpr.FALSE);
+        );
       }else{
-        g.getEvalBlock()._if(outVV.invoke("copyFromSafe").arg(inIndex).arg(outIndex).arg(inVV).not())._then()._return(JExpr.FALSE);
+        g.getEvalBlock().add(outVV.invoke("copyFromSafe").arg(inIndex).arg(outIndex).arg(inVV));
       }
 
       g.rotateBlock();
       fieldId++;
     }
-    g.getEvalBlock()._return(JExpr.TRUE);
   }
 
 }

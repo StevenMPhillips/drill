@@ -229,7 +229,6 @@ class DrillAggFuncHolder extends DrillFuncHolder{
 
     Preconditions.checkNotNull(body);
     sub.directStatement(body);
-    JVar successVar = sub.decl(JType.parse(g.getModel(), "boolean"), "success", JExpr.lit(false));
 
     // reassign workspace variables back.
     for(int i =0; i < workspaceJVars.length; i++){
@@ -247,11 +246,9 @@ class DrillAggFuncHolder extends DrillFuncHolder{
         setMeth = g.getWorkspaceVectors().get(workspaceVars[i]).invoke("getMutator").invoke("setSafe").arg(wsIndexVariable).arg(workspaceJVars[i].ref("value"));
       }
 
-      sub.assign(successVar, setMeth);
+      sub.add(setMeth);
 
       JClass drillRunTimeException = g.getModel().ref(DrillRuntimeException.class);
-
-      sub._if(successVar.eq(JExpr.lit(false)))._then()._throw(JExpr._new(drillRunTimeException).arg(JExpr.lit("setsafe() failed; cannot set holder value into the vector")));
     }
 
   }

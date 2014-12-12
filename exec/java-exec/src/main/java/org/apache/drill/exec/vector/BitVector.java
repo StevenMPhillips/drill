@@ -108,6 +108,17 @@ public final class BitVector extends BaseDataValueVector implements FixedWidthVe
   }
 
   /**
+   * Allocate new buffer with double capacity, and copy data into the new buffer. Replace vector's buffer with new buffer, and release old one
+   */
+  public void reAlloc() {
+    allocationValueCount *= 2;
+    DrillBuf newBuf = allocator.buffer(getSizeFromCount(allocationValueCount));
+    newBuf.setBytes(0, data, 0, data.capacity());
+    data.release();
+    data = newBuf;
+  }
+
+  /**
    * {@inheritDoc}
    */
   @Override
@@ -233,8 +244,8 @@ public final class BitVector extends BaseDataValueVector implements FixedWidthVe
     }
 
     @Override
-    public boolean copyValueSafe(int fromIndex, int toIndex) {
-      return to.copyFromSafe(fromIndex, toIndex, BitVector.this);
+    public void copyValueSafe(int fromIndex, int toIndex) {
+      to.copyFromSafe(fromIndex, toIndex, BitVector.this);
     }
   }
 
@@ -335,31 +346,25 @@ public final class BitVector extends BaseDataValueVector implements FixedWidthVe
       set(index, holder.value);
     }
 
-    public boolean setSafe(int index, int value) {
+    public void setSafe(int index, int value) {
       if(index >= getValueCapacity()) {
-        decrementAllocationMonitor();
-        return false;
+        reAlloc();
       }
       set(index, value);
-      return true;
     }
 
-    public boolean setSafe(int index, BitHolder holder) {
+    public void setSafe(int index, BitHolder holder) {
       if(index >= getValueCapacity()) {
-        decrementAllocationMonitor();
-        return false;
+        reAlloc();
       }
       set(index, holder.value);
-      return true;
     }
 
-    public boolean setSafe(int index, NullableBitHolder holder) {
+    public void setSafe(int index, NullableBitHolder holder) {
       if(index >= getValueCapacity()) {
-        decrementAllocationMonitor();
-        return false;
+        reAlloc();
       }
       set(index, holder.value);
-      return true;
     }
 
     public final void setValueCount(int valueCount) {

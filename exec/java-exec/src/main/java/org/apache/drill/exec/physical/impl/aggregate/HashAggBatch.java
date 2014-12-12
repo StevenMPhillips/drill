@@ -275,10 +275,7 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
 
     for (LogicalExpression aggr : aggrExprs) {
       HoldingContainer hc = cg.addExpr(aggr);
-      cg.getBlock(BlockType.EVAL)._if(hc.getValue().eq(JExpr.lit(0)))._then()._return(JExpr.FALSE);
     }
-
-    cg.getBlock(BlockType.EVAL)._return(JExpr.TRUE);
   }
 
   private void setupGetIndex(ClassGenerator<HashAggregator> cg) {

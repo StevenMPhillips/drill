@@ -253,11 +253,7 @@ public class ChainedHashTable {
       ValueVectorWriteExpression vvwExpr = new ValueVectorWriteExpression(htKeyFieldIds[i++], expr, true) ;
 
       HoldingContainer hc = cg.addExpr(vvwExpr, false); // this will write to the htContainer at htRowIdx
-      cg.getEvalBlock()._if(hc.getValue().eq(JExpr.lit(0)))._then()._return(JExpr.FALSE);
     }
-
-    cg.getEvalBlock()._return(JExpr.TRUE);
-
   }
 
   private void setupOutputRecordKeys(ClassGenerator<HashTable> cg, TypedFieldId[] htKeyFieldIds, TypedFieldId[] outKeyFieldIds) {
@@ -269,12 +265,9 @@ public class ChainedHashTable {
         ValueVectorReadExpression vvrExpr = new ValueVectorReadExpression(htKeyFieldIds[i]);
         ValueVectorWriteExpression vvwExpr = new ValueVectorWriteExpression(outKeyFieldIds[i], vvrExpr, true);
         HoldingContainer hc = cg.addExpr(vvwExpr);
-        cg.getEvalBlock()._if(hc.getValue().eq(JExpr.lit(0)))._then()._return(JExpr.FALSE);
       }
 
-      cg.getEvalBlock()._return(JExpr.TRUE);
     } else {
-      cg.getEvalBlock()._return(JExpr.FALSE);
     }
   }
 

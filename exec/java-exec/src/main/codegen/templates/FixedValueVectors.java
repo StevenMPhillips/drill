@@ -198,8 +198,8 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
     }
     
     @Override
-    public boolean copyValueSafe(int fromIndex, int toIndex) {
-      return to.copyFromSafe(fromIndex, toIndex, ${minor.class}Vector.this);
+    public void copyValueSafe(int fromIndex, int toIndex) {
+      to.copyFromSafe(fromIndex, toIndex, ${minor.class}Vector.this);
     }
   }
   
@@ -213,12 +213,11 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
     </#if> <#-- type.width -->
   }
   
-  public boolean copyFromSafe(int fromIndex, int thisIndex, ${minor.class}Vector from){
+  public void copyFromSafe(int fromIndex, int thisIndex, ${minor.class}Vector from){
     if(thisIndex >= getValueCapacity()) {
         reAlloc();
     }
     copyFrom(fromIndex, thisIndex, from);
-    return true;
   }
 
   private void decrementAllocationMonitor() {
@@ -561,12 +560,11 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
      data.setBytes(index * ${type.width}, value, 0, ${type.width});
    }
 
-   public boolean setSafe(int index, <#if (type.width > 4)>${minor.javaType!type.javaType}<#else>int</#if> value) {
+   public void setSafe(int index, <#if (type.width > 4)>${minor.javaType!type.javaType}<#else>int</#if> value) {
      if(index >= getValueCapacity()) {
        reAlloc();
      }
      data.setBytes(index * ${type.width}, value, 0, ${type.width});
-     return true;
    }
 
    <#if (minor.class == "TimeStampTZ")>
@@ -583,20 +581,19 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
      set(index, holder.value, holder.index);
    }
 
-   public boolean setSafe(int index, long timestamp, int tzindex){
+   public void setSafe(int index, long timestamp, int tzindex){
      if(index >= getValueCapacity()) {
        reAlloc();
      }
      set(index, timestamp, tzindex);
-     return true;
    }
    
-   public boolean setSafe(int index, ${minor.class}Holder holder){
-     return setSafe(index, holder.value, holder.index);
+   public void setSafe(int index, ${minor.class}Holder holder){
+     setSafe(index, holder.value, holder.index);
    }
 
-   public boolean setSafe(int index, Nullable${minor.class}Holder holder){
-     return setSafe(index, holder.value, holder.index);
+   public void setSafe(int index, Nullable${minor.class}Holder holder){
+     setSafe(index, holder.value, holder.index);
    }
    
    <#elseif (minor.class == "Interval")>
@@ -615,20 +612,19 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
      set(index, holder.months, holder.days, holder.milliseconds);
    }
 
-   public boolean setSafe(int index, int months, int days, int milliseconds){
+   public void setSafe(int index, int months, int days, int milliseconds){
      if(index >= getValueCapacity()) {
        reAlloc();
      }
      set(index, months, days, milliseconds);
-     return true;
    }
 
-   public boolean setSafe(int index, Nullable${minor.class}Holder holder){
-     return setSafe(index, holder.months, holder.days, holder.milliseconds);
+   public void setSafe(int index, Nullable${minor.class}Holder holder){
+     setSafe(index, holder.months, holder.days, holder.milliseconds);
    }
    
-   public boolean setSafe(int index, ${minor.class}Holder holder){
-     return setSafe(index, holder.months, holder.days, holder.milliseconds);
+   public void setSafe(int index, ${minor.class}Holder holder){
+     setSafe(index, holder.months, holder.days, holder.milliseconds);
    }
    
    <#elseif (minor.class == "IntervalDay")>
@@ -645,20 +641,19 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
      set(index, holder.days, holder.milliseconds);
    }
 
-   public boolean setSafe(int index, int days, int milliseconds){
+   public void setSafe(int index, int days, int milliseconds){
      if(index >= getValueCapacity()) {
        reAlloc();
      }
      set(index, days, milliseconds);
-     return true;
    }
    
-   public boolean setSafe(int index, ${minor.class}Holder holder){
-     return setSafe(index, holder.days, holder.milliseconds);
+   public void setSafe(int index, ${minor.class}Holder holder){
+     setSafe(index, holder.days, holder.milliseconds);
    }
 
-   public boolean setSafe(int index, Nullable${minor.class}Holder holder){
-     return setSafe(index, holder.days, holder.milliseconds);
+   public void setSafe(int index, Nullable${minor.class}Holder holder){
+     setSafe(index, holder.days, holder.milliseconds);
    }
 
    <#elseif (minor.class == "Decimal28Sparse" || minor.class == "Decimal38Sparse") || (minor.class == "Decimal28Dense") || (minor.class == "Decimal38Dense")>
@@ -671,19 +666,18 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
      set(index, holder.start, holder.buffer);
    }
    
-   public boolean setSafe(int index,  Nullable${minor.class}Holder holder){
-     return setSafe(index, holder.start, holder.buffer);
+   public void setSafe(int index,  Nullable${minor.class}Holder holder){
+     setSafe(index, holder.start, holder.buffer);
    }
-   public boolean setSafe(int index,  ${minor.class}Holder holder){
-     return setSafe(index, holder.start, holder.buffer);
+   public void setSafe(int index,  ${minor.class}Holder holder){
+     setSafe(index, holder.start, holder.buffer);
    }
    
-   public boolean setSafe(int index, int start, DrillBuf buffer){
+   public void setSafe(int index, int start, DrillBuf buffer){
      if(index >= getValueCapacity()) {
        reAlloc();
      }
      set(index, start, buffer);
-     return true;
    }
    
    public void set(int index, int start, DrillBuf buffer){
@@ -704,19 +698,18 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
      data.setBytes(index * ${type.width}, buffer, start, ${type.width});
    }
    
-   public boolean setSafe(int index, ${minor.class}Holder holder){
-     return setSafe(index, holder.start, holder.buffer);
+   public void setSafe(int index, ${minor.class}Holder holder){
+     setSafe(index, holder.start, holder.buffer);
    }
-   public boolean setSafe(int index, Nullable${minor.class}Holder holder){
-     return setSafe(index, holder.start, holder.buffer);
+   public void setSafe(int index, Nullable${minor.class}Holder holder){
+     setSafe(index, holder.start, holder.buffer);
    }
    
-   public boolean setSafe(int index, int start, DrillBuf buffer){     
+   public void setSafe(int index, int start, DrillBuf buffer){
      if(index >= getValueCapacity()) {
        reAlloc();
      }
      set(index, holder);
-     return true;
    }
 
    public void set(int index, Nullable${minor.class}Holder holder){
@@ -744,36 +737,33 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
      data.set${(minor.javaType!type.javaType)?cap_first}(index * ${type.width}, value);
    }
 
-   public boolean setSafe(int index, <#if (type.width >= 4)>${minor.javaType!type.javaType}<#else>int</#if> value) {
+   public void setSafe(int index, <#if (type.width >= 4)>${minor.javaType!type.javaType}<#else>int</#if> value) {
      if(index >= getValueCapacity()) {
        reAlloc();
      }
      set(index, value);
-     return true;
    }
 
    protected void set(int index, ${minor.class}Holder holder){
      data.set${(minor.javaType!type.javaType)?cap_first}(index * ${type.width}, holder.value);
    }
 
-   public boolean setSafe(int index, ${minor.class}Holder holder){
+   public void setSafe(int index, ${minor.class}Holder holder){
      if(index >= getValueCapacity()) {
        reAlloc();
      }
      set(index, holder);
-     return true;
    }
 
    protected void set(int index, Nullable${minor.class}Holder holder){
      data.set${(minor.javaType!type.javaType)?cap_first}(index * ${type.width}, holder.value);
    }
 
-   public boolean setSafe(int index, Nullable${minor.class}Holder holder){
+   public void setSafe(int index, Nullable${minor.class}Holder holder){
      if(index >= getValueCapacity()) {
        reAlloc();
      }
      set(index, holder);
-     return true;
    }
 
    @Override

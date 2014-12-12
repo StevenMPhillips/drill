@@ -48,15 +48,13 @@ public abstract class CopierTemplate2 implements Copier{
     int outgoingPosition = 0;
 
     for(int svIndex = index; svIndex < index + recordCount; svIndex++, outgoingPosition++){
-      if (!doEval(sv2.getIndex(svIndex), outgoingPosition)) {
-        break;
-      }
+      doEval(sv2.getIndex(svIndex), outgoingPosition);
     }
     return outgoingPosition;
   }
 
   public abstract void doSetup(@Named("context") FragmentContext context, @Named("incoming") RecordBatch incoming, @Named("outgoing") RecordBatch outgoing);
-  public abstract boolean doEval(@Named("inIndex") int inIndex, @Named("outIndex") int outIndex);
+  public abstract void doEval(@Named("inIndex") int inIndex, @Named("outIndex") int outIndex);
 
 
 

@@ -236,8 +236,8 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
     }
     
     @Override
-    public boolean copyValueSafe(int fromIndex, int toIndex) {
-      return to.copyFromSafe(fromIndex, toIndex, ${minor.class}Vector.this);
+    public void copyValueSafe(int fromIndex, int toIndex) {
+      to.copyFromSafe(fromIndex, toIndex, ${minor.class}Vector.this);
     }
   }
 
@@ -407,7 +407,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
       data.setBytes(currentOffset, bytes, 0, bytes.length);
     }
 
-    public boolean setSafe(int index, byte[] bytes) {
+    public void setSafe(int index, byte[] bytes) {
       assert index >= 0;
 
       int currentOffset = offsetVector.getAccessor().get(index);
@@ -417,7 +417,6 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
       offsetVector.getMutator().setSafe(index + 1, currentOffset + bytes.length);
       offsetVector.getMutator().set(index + 1, currentOffset + bytes.length);
       data.setBytes(currentOffset, bytes, 0, bytes.length);
-      return true;
     }
 
     /**
@@ -435,7 +434,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
       data.setBytes(currentOffset, bytes, start, length);
     }
 
-    public boolean setSafe(int index, byte[] bytes, int start, int length) {
+    public void setSafe(int index, byte[] bytes, int start, int length) {
       assert index >= 0;
 
       int currentOffset = offsetVector.getAccessor().get(index);
@@ -445,19 +444,18 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
       }
       offsetVector.getMutator().setSafe(index + 1, currentOffset + length);
       data.setBytes(currentOffset, bytes, start, length);
-      return true;
     }
 
-    public boolean setValueLengthSafe(int index, int length) {
+    public void setValueLengthSafe(int index, int length) {
       int offset = offsetVector.getAccessor().get(index);
       if(data.capacity() < offset + length ) {
         reAlloc();
       }
-      return offsetVector.getMutator().setSafe(index + 1, offsetVector.getAccessor().get(index) + length);
+      offsetVector.getMutator().setSafe(index + 1, offsetVector.getAccessor().get(index) + length);
     }
 
 
-    public boolean setSafe(int index, int start, int end, DrillBuf buffer){
+    public void setSafe(int index, int start, int end, DrillBuf buffer){
       int len = end - start;
       
       int outputStart = offsetVector.data.get${(minor.javaType!type.javaType)?cap_first}(index * ${type.width});
@@ -468,12 +466,10 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
       
       offsetVector.getMutator().setSafe( index+1,  outputStart + len);
       buffer.getBytes(start, data, outputStart, len);
-
-      return true;
     }
     
     
-    public boolean setSafe(int index, Nullable${minor.class}Holder holder){
+    public void setSafe(int index, Nullable${minor.class}Holder holder){
       assert holder.isSet == 1;
 
       int start = holder.start;
@@ -488,13 +484,9 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
       
       holder.buffer.getBytes(start, data, outputStart, len);
       offsetVector.getMutator().setSafe( index+1,  outputStart + len);
-
-      // set(index, holder);
-
-      return true;
     }
     
-    public boolean setSafe(int index, ${minor.class}Holder holder){
+    public void setSafe(int index, ${minor.class}Holder holder){
 
       int start = holder.start;
       int end =   holder.end;
@@ -508,10 +500,6 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
       
       holder.buffer.getBytes(start, data, outputStart, len);
       offsetVector.getMutator().setSafe( index+1,  outputStart + len);
-
-      // set(index, holder);
-
-      return true;
     }
     
     protected void set(int index, int start, int length, DrillBuf buffer){
