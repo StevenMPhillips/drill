@@ -17,8 +17,8 @@
  */
 package org.apache.drill.exec.physical.impl.aggregate;
 
-import com.sun.codemodel.JExpr;
-import com.sun.codemodel.JVar;
+import java.io.IOException;
+
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.ErrorCollector;
 import org.apache.drill.common.expression.ErrorCollectorImpl;
@@ -51,7 +51,8 @@ import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
 import org.apache.drill.exec.vector.ValueVector;
 
-import java.io.IOException;
+import com.sun.codemodel.JExpr;
+import com.sun.codemodel.JVar;
 
 public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HashAggBatch.class);
@@ -70,14 +71,12 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
       GeneratorMapping.create("setupInterior" /* setup method */, "outputRecordValues" /* eval method */,
           "resetValues" /* reset */, "cleanup" /* cleanup */);
 
-  private final MappingSet UpdateAggrValuesMapping =
-      new MappingSet("incomingRowIdx" /* read index */, "outRowIdx" /* write index */,
-          "htRowIdx" /* workspace index */, "incoming" /* read container */, "outgoing" /* write container */,
-          "aggrValuesContainer" /* workspace container */, UPDATE_AGGR_INSIDE, UPDATE_AGGR_OUTSIDE, UPDATE_AGGR_INSIDE);
+  private final MappingSet UpdateAggrValuesMapping = new MappingSet("incomingRowIdx" /* read index */, "outRowIdx" /* write index */,
+      "htRowIdx" /* workspace index */, "incoming" /* read container */, "outgoing" /* write container */, "aggrValuesContainer" /* workspace container */,
+      UPDATE_AGGR_INSIDE, UPDATE_AGGR_OUTSIDE, UPDATE_AGGR_INSIDE);
 
 
-  public HashAggBatch(HashAggregate popConfig, RecordBatch incoming, FragmentContext context) throws
-      ExecutionSetupException {
+  public HashAggBatch(HashAggregate popConfig, RecordBatch incoming, FragmentContext context) throws ExecutionSetupException {
     super(popConfig, context);
     this.incoming = incoming;
   }
@@ -124,22 +123,22 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
       }
       logger.debug("Next outcome of {}", outcome);
       switch (outcome) {
-      case NONE:
-        //        throw new UnsupportedOperationException("Received NONE on first batch");
-        return outcome;
-      case NOT_YET:
-      case STOP:
-        return outcome;
-      case OK_NEW_SCHEMA:
-        if (!createAggregator()) {
-          state = BatchState.DONE;
-          return IterOutcome.STOP;
-        }
-        break;
-      case OK:
-        break;
-      default:
-        throw new IllegalStateException(String.format("unknown outcome %s", outcome));
+        case NONE:
+//        throw new UnsupportedOperationException("Received NONE on first batch");
+          return outcome;
+        case NOT_YET:
+        case STOP:
+          return outcome;
+        case OK_NEW_SCHEMA:
+          if (!createAggregator()) {
+            state = BatchState.DONE;
+            return IterOutcome.STOP;
+          }
+          break;
+        case OK:
+          break;
+        default:
+          throw new IllegalStateException(String.format("unknown outcome %s", outcome));
       }
     }
 
@@ -159,22 +158,22 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
       AggOutcome out = aggregator.doWork();
       logger.debug("Aggregator response {}, records {}", out, aggregator.getOutputCount());
       switch (out) {
-      case CLEANUP_AND_RETURN:
-        container.zeroVectors();
-        aggregator.cleanup();
-        state = BatchState.DONE;
-        // fall through
-      case RETURN_OUTCOME:
-        IterOutcome outcome = aggregator.getOutcome();
-        return aggregator.getOutcome();
-      case UPDATE_AGGREGATOR:
-        aggregator = null;
-        if (!createAggregator()) {
-          return IterOutcome.STOP;
-        }
-        continue;
-      default:
-        throw new IllegalStateException(String.format("Unknown state %s.", out));
+        case CLEANUP_AND_RETURN:
+          container.zeroVectors();
+          aggregator.cleanup();
+          state = BatchState.DONE;
+          // fall through
+        case RETURN_OUTCOME:
+          IterOutcome outcome = aggregator.getOutcome();
+          return aggregator.getOutcome();
+        case UPDATE_AGGREGATOR:
+          aggregator = null;
+          if (!createAggregator()) {
+            return IterOutcome.STOP;
+          }
+          continue;
+        default:
+          throw new IllegalStateException(String.format("Unknown state %s.", out));
       }
     }
   }
@@ -201,10 +200,8 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
     }
   }
 
-  private HashAggregator createAggregatorInternal() throws SchemaChangeException, ClassTransformationException,
-      IOException {
-    CodeGenerator<HashAggregator> top =
-        CodeGenerator.get(HashAggregator.TEMPLATE_DEFINITION, context.getFunctionRegistry());
+  private HashAggregator createAggregatorInternal() throws SchemaChangeException, ClassTransformationException, IOException {
+    CodeGenerator<HashAggregator> top = CodeGenerator.get(HashAggregator.TEMPLATE_DEFINITION, context.getFunctionRegistry());
     ClassGenerator<HashAggregator> cg = top.getRoot();
     ClassGenerator<HashAggregator> cgInner = cg.getInnerGenerator("BatchHolder");
 
@@ -222,8 +219,7 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
 
     for (i = 0; i < numGroupByExprs; i++) {
       NamedExpression ne = popConfig.getGroupByExprs()[i];
-      final LogicalExpression expr =
-          ExpressionTreeMaterializer.materialize(ne.getExpr(), incoming, collector, context.getFunctionRegistry());
+      final LogicalExpression expr = ExpressionTreeMaterializer.materialize(ne.getExpr(), incoming, collector, context.getFunctionRegistry());
       if (expr == null) {
         continue;
       }
@@ -237,8 +233,7 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
 
     for (i = 0; i < numAggrExprs; i++) {
       NamedExpression ne = popConfig.getAggrExprs()[i];
-      final LogicalExpression expr =
-          ExpressionTreeMaterializer.materialize(ne.getExpr(), incoming, collector, context.getFunctionRegistry());
+      final LogicalExpression expr = ExpressionTreeMaterializer.materialize(ne.getExpr(), incoming, collector, context.getFunctionRegistry());
 
       if (collector.hasErrors()) {
         throw new SchemaChangeException("Failure while materializing expression. " + collector.toErrorString());
@@ -262,12 +257,17 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
     container.buildSchema(SelectionVectorMode.NONE);
     HashAggregator agg = context.getImplementationClass(top);
 
-    HashTableConfig htConfig =
-        new HashTableConfig(context.getOptions().getOption(ExecConstants.MIN_HASH_TABLE_SIZE_KEY).num_val.intValue(),
-            HashTable.DEFAULT_LOAD_FACTOR, popConfig.getGroupByExprs(), null /* no probe exprs */);
+    HashTableConfig htConfig = new HashTableConfig(context.getOptions().getOption(ExecConstants.MIN_HASH_TABLE_SIZE_KEY).num_val.intValue(),
+        HashTable.DEFAULT_LOAD_FACTOR,
+        popConfig.getGroupByExprs(),
+        null /* no probe exprs */);
 
-    agg.setup(popConfig, htConfig, context, this.stats, oContext.getAllocator(), incoming, this, aggrExprs,
-        cgInner.getWorkspaceTypes(), groupByOutFieldIds, this.container);
+    agg.setup(popConfig, htConfig, context, this.stats,
+        oContext.getAllocator(), incoming, this,
+        aggrExprs,
+        cgInner.getWorkspaceTypes(),
+        groupByOutFieldIds,
+        this.container);
 
     return agg;
   }
@@ -277,34 +277,36 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
 
     for (LogicalExpression aggr : aggrExprs) {
       HoldingContainer hc = cg.addExpr(aggr);
-      cg.getBlock(BlockType.EVAL)._if(hc.getValue().eq(JExpr.lit(0)))._then()._return(JExpr.FALSE);
     }
-
-    cg.getBlock(BlockType.EVAL)._return(JExpr.TRUE);
   }
 
   private void setupGetIndex(ClassGenerator<HashAggregator> cg) {
     switch (incoming.getSchema().getSelectionVectorMode()) {
-    case FOUR_BYTE: {
-      JVar var = cg.declareClassField("sv4_", cg.getModel()._ref(SelectionVector4.class));
-      cg.getBlock("doSetup").assign(var, JExpr.direct("incoming").invoke("getSelectionVector4"));
-      cg.getBlock("getVectorIndex")._return(var.invoke("get").arg(JExpr.direct("recordIndex")));
-      return;
-    }
-    case NONE: {
-      cg.getBlock("getVectorIndex")._return(JExpr.direct("recordIndex"));
-      return;
-    }
-    case TWO_BYTE: {
-      JVar var = cg.declareClassField("sv2_", cg.getModel()._ref(SelectionVector2.class));
-      cg.getBlock("doSetup").assign(var, JExpr.direct("incoming").invoke("getSelectionVector2"));
-      cg.getBlock("getVectorIndex")._return(var.invoke("getIndex").arg(JExpr.direct("recordIndex")));
-      return;
+      case FOUR_BYTE: {
+        JVar var = cg.declareClassField("sv4_", cg.getModel()._ref(SelectionVector4.class));
+        cg.getBlock("doSetup").assign(var, JExpr.direct("incoming").invoke("getSelectionVector4"));
+        cg.getBlock("getVectorIndex")._return(var.invoke("get").arg(JExpr.direct("recordIndex")));
+        ;
+        return;
+      }
+      case NONE: {
+        cg.getBlock("getVectorIndex")._return(JExpr.direct("recordIndex"));
+        ;
+        return;
+      }
+      case TWO_BYTE: {
+        JVar var = cg.declareClassField("sv2_", cg.getModel()._ref(SelectionVector2.class));
+        cg.getBlock("doSetup").assign(var, JExpr.direct("incoming").invoke("getSelectionVector2"));
+        cg.getBlock("getVectorIndex")._return(var.invoke("getIndex").arg(JExpr.direct("recordIndex")));
+        ;
+        return;
+      }
+
+      default:
+        throw new IllegalStateException();
+
     }
 
-    default:
-      throw new IllegalStateException();
-    }
   }
 
   @Override
@@ -320,4 +322,5 @@ public class HashAggBatch extends AbstractRecordBatch<HashAggregate> {
   protected void killIncoming(boolean sendUpstream) {
     incoming.kill(sendUpstream);
   }
+
 }

@@ -25,8 +25,7 @@ import org.apache.drill.exec.record.VectorContainer;
 
 public interface HashTable {
 
-  public static TemplateClassDefinition<HashTable> TEMPLATE_DEFINITION =
-      new TemplateClassDefinition<HashTable>(HashTable.class, HashTableTemplate.class);
+  public static TemplateClassDefinition<HashTable> TEMPLATE_DEFINITION = new TemplateClassDefinition<HashTable>(HashTable.class, HashTableTemplate.class);
 
   /**
    * The initial default capacity of the hash table (in terms of number of buckets).
@@ -51,16 +50,18 @@ public interface HashTable {
   static final public int BATCH_SIZE = Character.MAX_VALUE + 1;
   static final public int BATCH_MASK = 0x0000FFFF;
 
-  /** Variable width vector size in bytes */
+  /**
+   * Variable width vector size in bytes
+   */
   public static final int VARIABLE_WIDTH_VECTOR_SIZE = 50 * BATCH_SIZE;
 
   public void setup(HashTableConfig htConfig, FragmentContext context, BufferAllocator allocator,
-      RecordBatch incomingBuild, RecordBatch incomingProbe,
-      RecordBatch outgoing, VectorContainer htContainerOrig);
+                    RecordBatch incomingBuild, RecordBatch incomingProbe,
+                    RecordBatch outgoing, VectorContainer htContainerOrig);
 
   public void updateBatches();
 
-  public PutStatus put(int incomingRowIdx, IndexPointer htIdxHolder, int retryCount);
+  public void put(int incomingRowIdx, IndexPointer htIdxHolder, int retryCount);
 
   public int containsKey(int incomingRowIdx, boolean isProbe);
 

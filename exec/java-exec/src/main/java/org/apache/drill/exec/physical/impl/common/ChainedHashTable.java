@@ -17,13 +17,19 @@
  */
 package org.apache.drill.exec.physical.impl.common;
 
-import com.sun.codemodel.JConditional;
-import com.sun.codemodel.JExpr;
-import org.apache.drill.common.exceptions.DrillRuntimeException;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.apache.drill.common.expression.ErrorCollector;
 import org.apache.drill.common.expression.ErrorCollectorImpl;
 import org.apache.drill.common.expression.LogicalExpression;
+import org.apache.drill.common.expression.FunctionCall;
+import org.apache.drill.common.expression.ExpressionPosition;
+import org.apache.drill.common.exceptions.DrillRuntimeException;
+import org.apache.drill.common.expression.ValueExpressions;
 import org.apache.drill.common.logical.data.NamedExpression;
+import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.compile.sig.GeneratorMapping;
@@ -45,11 +51,11 @@ import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.resolver.TypeCastRules;
+import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.ValueVector;
 
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
+import com.sun.codemodel.JConditional;
+import com.sun.codemodel.JExpr;
 
 
 public class ChainedHashTable {
@@ -64,16 +70,16 @@ public class ChainedHashTable {
           null /* reset */, null /* cleanup */);
 
   private static final GeneratorMapping GET_HASH_BUILD =
-      GeneratorMapping.create("doSetup" /* setup method */, "getHashBuild" /* eval method */, null /* reset */,
-          null /* cleanup */);
+      GeneratorMapping.create("doSetup" /* setup method */, "getHashBuild" /* eval method */,
+          null /* reset */, null /* cleanup */);
 
   private static final GeneratorMapping GET_HASH_PROBE =
-      GeneratorMapping.create("doSetup" /* setup method */, "getHashProbe" /* eval method */, null /* reset */,
-          null /* cleanup */);
+      GeneratorMapping.create("doSetup" /* setup method */, "getHashProbe" /* eval method */,
+          null /* reset */, null /* cleanup */);
 
   private static final GeneratorMapping SET_VALUE =
-      GeneratorMapping.create("setupInterior" /* setup method */, "setValue" /* eval method */, null /* reset */,
-          null /* cleanup */);
+      GeneratorMapping.create("setupInterior" /* setup method */, "setValue" /* eval method */,
+          null /* reset */, null /* cleanup */);
 
   private static final GeneratorMapping OUTPUT_KEYS =
       GeneratorMapping.create("setupInterior" /* setup method */, "outputRecordKeys" /* eval method */,
@@ -86,29 +92,18 @@ public class ChainedHashTable {
 
   // GM for putting constant expression into method "doSetup"
   private static final GeneratorMapping DO_SETUP_CONSTANT =
-      GeneratorMapping.create("doSetup" /* setup method */, "doSetup" /* eval method */, null /* reset */,
-          null /* cleanup */);
+      GeneratorMapping.create("doSetup" /* setup method */, "doSetup" /* eval method */,
+          null /* reset */, null /* cleanup */);
 
-  private final MappingSet KeyMatchIncomingBuildMapping =
-      new MappingSet("incomingRowIdx", null, "incomingBuild", null, SETUP_INTERIOR_CONSTANT, KEY_MATCH_BUILD);
-  private final MappingSet KeyMatchIncomingProbeMapping =
-      new MappingSet("incomingRowIdx", null, "incomingProbe", null, SETUP_INTERIOR_CONSTANT, KEY_MATCH_PROBE);
-  private final MappingSet KeyMatchHtableMapping =
-      new MappingSet("htRowIdx", null, "htContainer", null, SETUP_INTERIOR_CONSTANT, KEY_MATCH_BUILD);
-  private final MappingSet KeyMatchHtableProbeMapping =
-      new MappingSet("htRowIdx", null, "htContainer", null, SETUP_INTERIOR_CONSTANT, KEY_MATCH_PROBE);
-  private final MappingSet GetHashIncomingBuildMapping =
-      new MappingSet("incomingRowIdx", null, "incomingBuild", null, DO_SETUP_CONSTANT, GET_HASH_BUILD);
-  private final MappingSet GetHashIncomingProbeMapping =
-      new MappingSet("incomingRowIdx", null, "incomingProbe", null, DO_SETUP_CONSTANT, GET_HASH_PROBE);
-  private final MappingSet SetValueMapping =
-      new MappingSet("incomingRowIdx" /* read index */, "htRowIdx" /* write index */,
-          "incomingBuild" /* read container */, "htContainer" /* write container */, SETUP_INTERIOR_CONSTANT,
-          SET_VALUE);
+  private final MappingSet KeyMatchIncomingBuildMapping = new MappingSet("incomingRowIdx", null, "incomingBuild", null, SETUP_INTERIOR_CONSTANT, KEY_MATCH_BUILD);
+  private final MappingSet KeyMatchIncomingProbeMapping = new MappingSet("incomingRowIdx", null, "incomingProbe", null, SETUP_INTERIOR_CONSTANT, KEY_MATCH_PROBE);
+  private final MappingSet KeyMatchHtableMapping = new MappingSet("htRowIdx", null, "htContainer", null, SETUP_INTERIOR_CONSTANT, KEY_MATCH_BUILD);
+  private final MappingSet KeyMatchHtableProbeMapping = new MappingSet("htRowIdx", null, "htContainer", null, SETUP_INTERIOR_CONSTANT, KEY_MATCH_PROBE);
+  private final MappingSet GetHashIncomingBuildMapping = new MappingSet("incomingRowIdx", null, "incomingBuild", null, DO_SETUP_CONSTANT, GET_HASH_BUILD);
+  private final MappingSet GetHashIncomingProbeMapping = new MappingSet("incomingRowIdx", null, "incomingProbe", null, DO_SETUP_CONSTANT, GET_HASH_PROBE);
+  private final MappingSet SetValueMapping = new MappingSet("incomingRowIdx" /* read index */, "htRowIdx" /* write index */, "incomingBuild" /* read container */, "htContainer" /* write container */, SETUP_INTERIOR_CONSTANT, SET_VALUE);
 
-  private final MappingSet OutputRecordKeysMapping =
-      new MappingSet("htRowIdx" /* read index */, "outRowIdx" /* write index */, "htContainer" /* read container */,
-          "outgoing" /* write container */, SETUP_INTERIOR_CONSTANT, OUTPUT_KEYS);
+  private final MappingSet OutputRecordKeysMapping = new MappingSet("htRowIdx" /* read index */, "outRowIdx" /* write index */, "htContainer" /* read container */, "outgoing" /* write container */, SETUP_INTERIOR_CONSTANT, OUTPUT_KEYS);
 
   private HashTableConfig htConfig;
   private final FragmentContext context;
@@ -118,8 +113,13 @@ public class ChainedHashTable {
   private final RecordBatch outgoing;
   private final boolean areNullsEqual;
 
-  public ChainedHashTable(HashTableConfig htConfig, FragmentContext context, BufferAllocator allocator,
-      RecordBatch incomingBuild, RecordBatch incomingProbe, RecordBatch outgoing, boolean areNullsEqual) {
+  public ChainedHashTable(HashTableConfig htConfig,
+                          FragmentContext context,
+                          BufferAllocator allocator,
+                          RecordBatch incomingBuild,
+                          RecordBatch incomingProbe,
+                          RecordBatch outgoing,
+                          boolean areNullsEqual) {
 
     this.htConfig = htConfig;
     this.context = context;
@@ -130,8 +130,7 @@ public class ChainedHashTable {
     this.areNullsEqual = areNullsEqual;
   }
 
-  public HashTable createAndSetupHashTable(TypedFieldId[] outKeyFieldIds) throws ClassTransformationException,
-      IOException, SchemaChangeException {
+  public HashTable createAndSetupHashTable(TypedFieldId[] outKeyFieldIds) throws ClassTransformationException, IOException, SchemaChangeException {
     CodeGenerator<HashTable> top = CodeGenerator.get(HashTable.TEMPLATE_DEFINITION, context.getFunctionRegistry());
     ClassGenerator<HashTable> cg = top.getRoot();
     ClassGenerator<HashTable> cgInner = cg.getInnerGenerator("BatchHolder");
@@ -150,8 +149,7 @@ public class ChainedHashTable {
 
     int i = 0;
     for (NamedExpression ne : htConfig.getKeyExprsBuild()) {
-      final LogicalExpression expr =
-          ExpressionTreeMaterializer.materialize(ne.getExpr(), incomingBuild, collector, context.getFunctionRegistry());
+      final LogicalExpression expr = ExpressionTreeMaterializer.materialize(ne.getExpr(), incomingBuild, collector, context.getFunctionRegistry());
       if (collector.hasErrors()) {
         throw new SchemaChangeException("Failure while materializing expression. " + collector.toErrorString());
       }
@@ -171,9 +169,7 @@ public class ChainedHashTable {
     if (isProbe) {
       i = 0;
       for (NamedExpression ne : htConfig.getKeyExprsProbe()) {
-        final LogicalExpression expr =
-            ExpressionTreeMaterializer.materialize(ne.getExpr(), incomingProbe, collector,
-                context.getFunctionRegistry());
+        final LogicalExpression expr = ExpressionTreeMaterializer.materialize(ne.getExpr(), incomingProbe, collector, context.getFunctionRegistry());
         if (collector.hasErrors()) {
           throw new SchemaChangeException("Failure while materializing expression. " + collector.toErrorString());
         }
@@ -187,8 +183,7 @@ public class ChainedHashTable {
 
     // generate code for isKeyMatch(), setValue(), getHash() and outputRecordKeys()
     setupIsKeyMatchInternal(cgInner, KeyMatchIncomingBuildMapping, KeyMatchHtableMapping, keyExprsBuild, htKeyFieldIds);
-    setupIsKeyMatchInternal(cgInner, KeyMatchIncomingProbeMapping, KeyMatchHtableProbeMapping, keyExprsProbe,
-        htKeyFieldIds);
+    setupIsKeyMatchInternal(cgInner, KeyMatchIncomingProbeMapping, KeyMatchHtableProbeMapping, keyExprsProbe, htKeyFieldIds);
 
     setupSetValue(cgInner, keyExprsBuild, htKeyFieldIds);
     if (outgoing != null) {
@@ -218,9 +213,9 @@ public class ChainedHashTable {
   }
 
 
-  private void setupIsKeyMatchInternal(ClassGenerator<HashTable> cg, MappingSet incomingMapping,
-      MappingSet htableMapping, LogicalExpression[] keyExprs, TypedFieldId[] htKeyFieldIds) throws
-      SchemaChangeException {
+  private void setupIsKeyMatchInternal(ClassGenerator<HashTable> cg, MappingSet incomingMapping, MappingSet htableMapping,
+                                       LogicalExpression[] keyExprs, TypedFieldId[] htKeyFieldIds)
+      throws SchemaChangeException {
     cg.setMappingSet(incomingMapping);
 
     if (keyExprs == null || keyExprs.length == 0) {
@@ -260,38 +255,32 @@ public class ChainedHashTable {
     cg.getEvalBlock()._return(JExpr.TRUE);
   }
 
-  private void setupSetValue(ClassGenerator<HashTable> cg, LogicalExpression[] keyExprs,
-      TypedFieldId[] htKeyFieldIds) throws SchemaChangeException {
+  private void setupSetValue(ClassGenerator<HashTable> cg, LogicalExpression[] keyExprs, TypedFieldId[] htKeyFieldIds)
+      throws SchemaChangeException {
 
     cg.setMappingSet(SetValueMapping);
 
     int i = 0;
     for (LogicalExpression expr : keyExprs) {
-      ValueVectorWriteExpression vvwExpr = new ValueVectorWriteExpression(htKeyFieldIds[i++], expr, true);
+      boolean useSetSafe = !Types.isFixedWidthType(expr.getMajorType()) || Types.isRepeated(expr.getMajorType());
+      ValueVectorWriteExpression vvwExpr = new ValueVectorWriteExpression(htKeyFieldIds[i++], expr, useSetSafe);
 
-      HoldingContainer hc = cg.addExpr(vvwExpr, false); // this will write to the htContainer at htRowIdx
-      cg.getEvalBlock()._if(hc.getValue().eq(JExpr.lit(0)))._then()._return(JExpr.FALSE);
+      cg.addExpr(vvwExpr, false); // this will write to the htContainer at htRowIdx
     }
-
-    cg.getEvalBlock()._return(JExpr.TRUE);
   }
 
-  private void setupOutputRecordKeys(ClassGenerator<HashTable> cg, TypedFieldId[] htKeyFieldIds,
-      TypedFieldId[] outKeyFieldIds) {
+  private void setupOutputRecordKeys(ClassGenerator<HashTable> cg, TypedFieldId[] htKeyFieldIds, TypedFieldId[] outKeyFieldIds) {
 
     cg.setMappingSet(OutputRecordKeysMapping);
 
     if (outKeyFieldIds != null) {
       for (int i = 0; i < outKeyFieldIds.length; i++) {
         ValueVectorReadExpression vvrExpr = new ValueVectorReadExpression(htKeyFieldIds[i]);
-        ValueVectorWriteExpression vvwExpr = new ValueVectorWriteExpression(outKeyFieldIds[i], vvrExpr, true);
-        HoldingContainer hc = cg.addExpr(vvwExpr);
-        cg.getEvalBlock()._if(hc.getValue().eq(JExpr.lit(0)))._then()._return(JExpr.FALSE);
+        boolean useSetSafe = !Types.isFixedWidthType(vvrExpr.getMajorType()) || Types.isRepeated(vvrExpr.getMajorType());
+        ValueVectorWriteExpression vvwExpr = new ValueVectorWriteExpression(outKeyFieldIds[i], vvrExpr, useSetSafe);
+        cg.addExpr(vvwExpr);
       }
 
-      cg.getEvalBlock()._return(JExpr.TRUE);
-    } else {
-      cg.getEvalBlock()._return(JExpr.FALSE);
     }
   }
 
@@ -319,34 +308,24 @@ public class ChainedHashTable {
         ErrorCollector errorCollector = new ErrorCollectorImpl();
 
         if (result == null) {
-          throw new DrillRuntimeException(String.format("Join conditions cannot be compared failing build " +
-              "expression:" + " %s failing probe expression: %s", buildExpr.getMajorType().toString(),
-              probeExpr.getMajorType().toString()));
+          throw new DrillRuntimeException(String.format("Join conditions cannot be compared failing build expression: %s failing probe expression: %s",
+              buildExpr.getMajorType().toString(), probeExpr.getMajorType().toString()));
         } else if (result != buildType) {
           // Add a cast expression on top of the build expression
-          LogicalExpression castExpr =
-              ExpressionTreeMaterializer.addCastExpression(buildExpr, probeExpr.getMajorType(),
-                  context.getFunctionRegistry(), errorCollector);
+          LogicalExpression castExpr = ExpressionTreeMaterializer.addCastExpression(buildExpr, probeExpr.getMajorType(), context.getFunctionRegistry(), errorCollector);
           // Store the newly casted expression
-          keyExprsBuild[i] =
-              ExpressionTreeMaterializer.materialize(castExpr, incomingBuild, errorCollector,
-                  context.getFunctionRegistry());
+          keyExprsBuild[i] = ExpressionTreeMaterializer.materialize(castExpr, incomingBuild, errorCollector, context.getFunctionRegistry());
         } else if (result != probeType) {
           // Add a cast expression on top of the probe expression
-          LogicalExpression castExpr =
-              ExpressionTreeMaterializer.addCastExpression(probeExpr, buildExpr.getMajorType(),
-                  context.getFunctionRegistry(), errorCollector);
+          LogicalExpression castExpr = ExpressionTreeMaterializer.addCastExpression(probeExpr, buildExpr.getMajorType(), context.getFunctionRegistry(), errorCollector);
           // store the newly casted expression
-          keyExprsProbe[i] =
-              ExpressionTreeMaterializer.materialize(castExpr, incomingProbe, errorCollector,
-                  context.getFunctionRegistry());
+          keyExprsProbe[i] = ExpressionTreeMaterializer.materialize(castExpr, incomingProbe, errorCollector, context.getFunctionRegistry());
         }
       }
     }
   }
 
-  private void setupGetHash(ClassGenerator<HashTable> cg, MappingSet incomingMapping, LogicalExpression[] keyExprs,
-      boolean isProbe) throws SchemaChangeException {
+  private void setupGetHash(ClassGenerator<HashTable> cg, MappingSet incomingMapping, LogicalExpression[] keyExprs, boolean isProbe) throws SchemaChangeException {
 
     cg.setMappingSet(incomingMapping);
 
@@ -364,9 +343,7 @@ public class ChainedHashTable {
       HoldingContainer input = cg.addExpr(expr, false);
 
       // compute the hash(expr)
-      LogicalExpression hashfunc =
-          FunctionGenerationHelper.getFunctionExpression("hash", Types.required(MinorType.INT),
-              context.getFunctionRegistry(), input);
+      LogicalExpression hashfunc = FunctionGenerationHelper.getFunctionExpression("hash", Types.required(MinorType.INT), context.getFunctionRegistry(), input);
       HoldingContainer hashValue = cg.addExpr(hashfunc, false);
 
       if (i == 0) {
@@ -374,9 +351,7 @@ public class ChainedHashTable {
       } else {
 
         // compute the combined hash value using XOR
-        LogicalExpression xorfunc =
-            FunctionGenerationHelper.getFunctionExpression("xor", Types.required(MinorType.INT),
-                context.getFunctionRegistry(), hashValue, combinedHashValue);
+        LogicalExpression xorfunc = FunctionGenerationHelper.getFunctionExpression("xor", Types.required(MinorType.INT), context.getFunctionRegistry(), hashValue, combinedHashValue);
         combinedHashValue = cg.addExpr(xorfunc, false);
       }
     }
