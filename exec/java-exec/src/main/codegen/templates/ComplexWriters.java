@@ -61,6 +61,10 @@ public class ${eName}WriterImpl extends AbstractFieldWriter {
     return vector.getValueCapacity();
   }
 
+  public void checkValueCapacity() {
+    inform(vector.getValueCapacity() > idx());
+  }
+
   public void allocate(){
     inform(vector.allocateNewSafe());
   }

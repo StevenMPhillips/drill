@@ -69,7 +69,8 @@ public abstract class HashAggTemplate implements HashAggregator {
 
   private static final boolean EXTRA_DEBUG_1 = false;
   private static final boolean EXTRA_DEBUG_2 = false;
-  private static final String TOO_BIG_ERROR = "Couldn't add value to an empty batch.  This likely means that a single value is too long for a varlen field.";
+  private static final String TOO_BIG_ERROR =
+      "Couldn't add value to an empty batch.  This likely means that a single value is too long for a varlen field.";
   private boolean first = true;
   private boolean newSchema = false;
   private int underlyingIndex = 0;
@@ -201,7 +202,8 @@ public abstract class HashAggTemplate implements HashAggregator {
     // Code-generated methods (implemented in HashAggBatch)
 
     @RuntimeOverridden
-    public void setupInterior(@Named("incoming") RecordBatch incoming, @Named("outgoing") RecordBatch outgoing, @Named("aggrValuesContainer") VectorContainer aggrValuesContainer) {
+    public void setupInterior(@Named("incoming") RecordBatch incoming, @Named("outgoing") RecordBatch outgoing,
+        @Named("aggrValuesContainer") VectorContainer aggrValuesContainer) {
     }
 
     @RuntimeOverridden
@@ -215,15 +217,10 @@ public abstract class HashAggTemplate implements HashAggregator {
 
 
   @Override
-  public void setup(HashAggregate hashAggrConfig, HashTableConfig htConfig,
-                    FragmentContext context,
-                    OperatorStats stats,
-                    BufferAllocator allocator, RecordBatch incoming, HashAggBatch outgoing,
-                    LogicalExpression[] valueExprs,
-                    List<TypedFieldId> valueFieldIds,
-                    TypedFieldId[] groupByOutFieldIds,
-                    VectorContainer outContainer)
-      throws SchemaChangeException, ClassTransformationException, IOException {
+  public void setup(HashAggregate hashAggrConfig, HashTableConfig htConfig, FragmentContext context,
+      OperatorStats stats, BufferAllocator allocator, RecordBatch incoming, HashAggBatch outgoing,
+      LogicalExpression[] valueExprs, List<TypedFieldId> valueFieldIds, TypedFieldId[] groupByOutFieldIds,
+      VectorContainer outContainer) throws SchemaChangeException, ClassTransformationException, IOException {
 
     if (valueExprs == null || valueFieldIds == null) {
       throw new IllegalArgumentException("Invalid aggr value exprs or workspace variables.");
@@ -249,7 +246,8 @@ public abstract class HashAggTemplate implements HashAggregator {
     // we need to build a hash table on the aggregation column a1.
     // TODO:  This functionality will be added later.
     if (hashAggrConfig.getGroupByExprs().length == 0) {
-      throw new IllegalArgumentException("Currently, hash aggregation is only applicable if there are group-by expressions.");
+      throw new IllegalArgumentException("Currently, hash aggregation is only applicable if there are group-by " +
+          "expressions.");
     }
 
     this.htIdxHolder = new IndexPointer();
@@ -260,14 +258,16 @@ public abstract class HashAggTemplate implements HashAggregator {
 
     if (valueFieldIds.size() > 0) {
       int i = 0;
-      FieldReference ref = new FieldReference("dummy", ExpressionPosition.UNKNOWN, valueFieldIds.get(0).getIntermediateType());
+      FieldReference ref =
+          new FieldReference("dummy", ExpressionPosition.UNKNOWN, valueFieldIds.get(0).getIntermediateType());
       for (TypedFieldId id : valueFieldIds) {
         materializedValueFields[i++] = MaterializedField.create(ref, id.getIntermediateType());
       }
     }
 
-    ChainedHashTable ht = new ChainedHashTable(htConfig, context, allocator, incoming,
-        null /* no incoming probe */, outgoing, true /* nulls are equal */);
+    ChainedHashTable ht =
+        new ChainedHashTable(htConfig, context, allocator, incoming, null /* no incoming probe */, outgoing,
+            true /* nulls are equal */);
     this.htable = ht.createAndSetupHashTable(groupByOutFieldIds);
 
     numGroupByOutFields = groupByOutFieldIds.length;

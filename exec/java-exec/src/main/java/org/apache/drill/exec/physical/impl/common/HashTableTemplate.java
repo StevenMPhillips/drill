@@ -165,14 +165,15 @@ public abstract class HashTableTemplate implements HashTable {
     // at the incomingRowIdx. if the key does not match, update the
     // currentIdxHolder with the index of the next link.
     private boolean isKeyMatch(int incomingRowIdx,
-                               IndexPointer currentIdxHolder,
-                               boolean isProbe) {
+        IndexPointer currentIdxHolder,
+        boolean isProbe) {
 
       int currentIdxWithinBatch = currentIdxHolder.value & BATCH_MASK;
       boolean match = false;
 
       if (currentIdxWithinBatch >= HashTable.BATCH_SIZE) {
-        logger.debug("Batch size = {}, incomingRowIdx = {}, currentIdxWithinBatch = {}.", HashTable.BATCH_SIZE, incomingRowIdx, currentIdxWithinBatch);
+        logger.debug("Batch size = {}, incomingRowIdx = {}, currentIdxWithinBatch = {}.", HashTable.BATCH_SIZE,
+            incomingRowIdx, currentIdxWithinBatch);
       }
       assert (currentIdxWithinBatch < HashTable.BATCH_SIZE);
       assert (incomingRowIdx < HashTable.BATCH_SIZE);
@@ -209,7 +210,8 @@ public abstract class HashTableTemplate implements HashTable {
       maxOccupiedIdx = Math.max(maxOccupiedIdx, currentIdxWithinBatch);
 
       if (EXTRA_DEBUG) {
-        logger.debug("BatchHolder: inserted key at incomingRowIdx = {}, currentIdx = {}, hash value = {}.", incomingRowIdx, currentIdx, hashValue);
+        logger.debug("BatchHolder: inserted key at incomingRowIdx = {}, currentIdx = {}, hash value = {}.",
+            incomingRowIdx, currentIdx, hashValue);
       }
     }
 
@@ -238,7 +240,10 @@ public abstract class HashTableTemplate implements HashTable {
           newHashValues.getMutator().setSafe(entryIdxWithinBatch, hash);
 
           if (EXTRA_DEBUG) {
-            logger.debug("New bucket was empty. bucketIdx = {}, newStartIndices[ {} ] = {}, newLinks[ {} ] = {}, hash value = {}.", bucketIdx, bucketIdx, newStartIndices.getAccessor().get(bucketIdx), entryIdxWithinBatch, newLinks.getAccessor().get(entryIdxWithinBatch), newHashValues.getAccessor().get(entryIdxWithinBatch));
+            logger.debug("New bucket was empty. bucketIdx = {}, newStartIndices[ {} ] = {}, newLinks[ {} ] = {}, " +
+                "hash value = {}.", bucketIdx, bucketIdx, newStartIndices.getAccessor().get(bucketIdx),
+                entryIdxWithinBatch, newLinks.getAccessor().get(entryIdxWithinBatch),
+                newHashValues.getAccessor().get(entryIdxWithinBatch));
           }
 
         } else {
@@ -260,17 +265,26 @@ public abstract class HashTableTemplate implements HashTable {
               newHashValues.getMutator().setSafe(entryIdxWithinBatch, hash);
 
               if (EXTRA_DEBUG) {
-                logger.debug("Followed hash chain in new bucket. bucketIdx = {}, newLinks[ {} ] = {}, newLinks[ {} ] = {}, hash value = {}.", bucketIdx, idxWithinBatch, newLinks.getAccessor().get(idxWithinBatch), entryIdxWithinBatch, newLinks.getAccessor().get(entryIdxWithinBatch), newHashValues.getAccessor().get(entryIdxWithinBatch));
+                logger.debug("Followed hash chain in new bucket. bucketIdx = {}, newLinks[ {} ] = {}, " +
+                    "newLinks[ {} ] = {}, hash value = {}.", bucketIdx, idxWithinBatch,
+                    newLinks.getAccessor().get(idxWithinBatch), entryIdxWithinBatch,
+                    newLinks.getAccessor().get(entryIdxWithinBatch), newHashValues.getAccessor().get
+                        (entryIdxWithinBatch));
               }
 
               break;
             } else if (bh != this && bh.links.getAccessor().get(idxWithinBatch) == EMPTY_SLOT) {
               bh.links.getMutator().setSafe(idxWithinBatch, entryIdx); // update the link in the other batch
-              newLinks.getMutator().setSafe(entryIdxWithinBatch, EMPTY_SLOT); // update the newLink entry in this batch to mark end of the hash chain
+              newLinks.getMutator().setSafe(entryIdxWithinBatch, EMPTY_SLOT); // update the newLink entry in this
+              // batch to mark end of the hash chain
               newHashValues.getMutator().setSafe(entryIdxWithinBatch, hash);
 
               if (EXTRA_DEBUG) {
-                logger.debug("Followed hash chain in new bucket. bucketIdx = {}, newLinks[ {} ] = {}, newLinks[ {} ] = {}, hash value = {}.", bucketIdx, idxWithinBatch, newLinks.getAccessor().get(idxWithinBatch), entryIdxWithinBatch, newLinks.getAccessor().get(entryIdxWithinBatch), newHashValues.getAccessor().get(entryIdxWithinBatch));
+                logger.debug("Followed hash chain in new bucket. bucketIdx = {}, newLinks[ {} ] = {}, " +
+                    "newLinks[ {} ] = {}, hash value = {}.", bucketIdx, idxWithinBatch,
+                    newLinks.getAccessor().get(idxWithinBatch), entryIdxWithinBatch,
+                    newLinks.getAccessor().get(entryIdxWithinBatch),
+                    newHashValues.getAccessor().get(entryIdxWithinBatch));
               }
 
               break;
@@ -296,9 +310,9 @@ public abstract class HashTableTemplate implements HashTable {
     private boolean outputKeys(VectorContainer outContainer, int outStartIndex, int numRecords) {
 
       /** for debugging
-       BigIntVector vv0 = getValueVector(0);
-       BigIntHolder holder = new BigIntHolder();
-       */
+      BigIntVector vv0 = getValueVector(0);
+      BigIntHolder holder = new BigIntHolder();
+      */
 
       // set the value count for htContainer's value vectors before the transfer ..
       setValueCount();
@@ -313,7 +327,8 @@ public abstract class HashTableTemplate implements HashTable {
       }
 
 /*
-      logger.debug("Attempting to output keys for batch index: {} from index {} to maxOccupiedIndex {}.", this.batchIndex, 0, maxOccupiedIdx);
+      logger.debug("Attempting to output keys for batch index: {} from index {} to maxOccupiedIndex {}.",
+      this.batchIndex, 0, maxOccupiedIdx);
       for (int i = batchOutputCount; i <= maxOccupiedIdx; i++) {
         if (outputRecordKeys(i, batchOutputCount) ) {
           if (EXTRA_DEBUG) logger.debug("Outputting keys to output index: {}", batchOutputCount) ;
@@ -321,7 +336,8 @@ public abstract class HashTableTemplate implements HashTable {
           // debugging
           // holder.value = vv0.getAccessor().get(i);
           // if (holder.value == 100018 || holder.value == 100021) {
-          //  logger.debug("Outputting key = {} at index - {} to outgoing index = {}.", holder.value, i, batchOutputCount);
+          //  logger.debug("Outputting key = {} at index - {} to outgoing index = {}.", holder.value, i,
+          //      batchOutputCount);
           // }
 
           batchOutputCount++;
@@ -346,7 +362,8 @@ public abstract class HashTableTemplate implements HashTable {
         if (idxWithinBatch == EMPTY_SLOT) {
           break;
         } else {
-          logger.debug("links[ {} ] = {}, hashValues[ {} ] = {}.", idxWithinBatch, links.getAccessor().get(idxWithinBatch), idxWithinBatch, hashValues.getAccessor().get(idxWithinBatch));
+          logger.debug("links[ {} ] = {}, hashValues[ {} ] = {}.", idxWithinBatch,
+              links.getAccessor().get(idxWithinBatch), idxWithinBatch, hashValues.getAccessor().get(idxWithinBatch));
           idx = links.getAccessor().get(idxWithinBatch);
         }
       }
@@ -354,7 +371,6 @@ public abstract class HashTableTemplate implements HashTable {
 
     private void clear() {
       htContainer.clear();
-      ;
       links.clear();
       hashValues.clear();
     }
@@ -373,19 +389,22 @@ public abstract class HashTableTemplate implements HashTable {
     // These methods will be code-generated
 
     @RuntimeOverridden
-    protected void setupInterior(@Named("incomingBuild") RecordBatch incomingBuild,
-                                 @Named("incomingProbe") RecordBatch incomingProbe,
-                                 @Named("outgoing") RecordBatch outgoing,
-                                 @Named("htContainer") VectorContainer htContainer) {
+    protected void setupInterior(
+        @Named("incomingBuild") RecordBatch incomingBuild,
+        @Named("incomingProbe") RecordBatch incomingProbe,
+        @Named("outgoing") RecordBatch outgoing,
+        @Named("htContainer") VectorContainer htContainer) {
     }
 
     @RuntimeOverridden
-    protected boolean isKeyMatchInternalBuild(@Named("incomingRowIdx") int incomingRowIdx, @Named("htRowIdx") int htRowIdx) {
+    protected boolean isKeyMatchInternalBuild(
+        @Named("incomingRowIdx") int incomingRowIdx, @Named("htRowIdx") int htRowIdx) {
       return false;
     }
 
     @RuntimeOverridden
-    protected boolean isKeyMatchInternalProbe(@Named("incomingRowIdx") int incomingRowIdx, @Named("htRowIdx") int htRowIdx) {
+    protected boolean isKeyMatchInternalProbe(
+        @Named("incomingRowIdx") int incomingRowIdx, @Named("htRowIdx") int htRowIdx) {
       return false;
     }
 
@@ -402,8 +421,8 @@ public abstract class HashTableTemplate implements HashTable {
 
   @Override
   public void setup(HashTableConfig htConfig, FragmentContext context, BufferAllocator allocator,
-                    RecordBatch incomingBuild, RecordBatch incomingProbe,
-                    RecordBatch outgoing, VectorContainer htContainerOrig) {
+      RecordBatch incomingBuild, RecordBatch incomingProbe,
+      RecordBatch outgoing, VectorContainer htContainerOrig) {
     float loadf = htConfig.getLoadFactor();
     int initialCap = htConfig.getInitialCapacity();
 
@@ -531,7 +550,8 @@ public abstract class HashTableTemplate implements HashTable {
       addBatchIfNeeded(currentIdx);
 
       if (EXTRA_DEBUG) {
-        logger.debug("Empty bucket index = {}. incomingRowIdx = {}; inserting new entry at currentIdx = {}.", i, incomingRowIdx, currentIdx);
+        logger.debug("Empty bucket index = {}. incomingRowIdx = {}; inserting new entry at currentIdx = {}.", i,
+            incomingRowIdx, currentIdx);
       }
 
       insertEntry(incomingRowIdx, currentIdx, hash, lastEntryBatch, lastEntryIdxWithinBatch);
