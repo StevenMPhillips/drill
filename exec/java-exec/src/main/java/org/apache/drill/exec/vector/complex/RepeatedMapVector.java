@@ -57,7 +57,7 @@ public class RepeatedMapVector extends AbstractContainerVector implements Repeat
 
   public final static MajorType TYPE = MajorType.newBuilder().setMinorType(MinorType.MAP).setMode(DataMode.REPEATED).build();
 
-  private final UInt4Vector offsets;   // offsets to start of each record (considering record indices are 0-indexed)
+  final UInt4Vector offsets;   // offsets to start of each record (considering record indices are 0-indexed)
   private final RepeatedMapReaderImpl reader = new RepeatedMapReaderImpl(RepeatedMapVector.this);
   private final RepeatedMapAccessor accessor = new RepeatedMapAccessor();
   private final Mutator mutator = new Mutator();
@@ -78,6 +78,10 @@ public class RepeatedMapVector extends AbstractContainerVector implements Repeat
     }
     mutator.reset();
     accessor.reset();
+  }
+
+  public void reAlloc() {
+    offsets.reAlloc();
   }
 
   public Iterator<String> fieldNameIterator() {
@@ -439,9 +443,6 @@ public class RepeatedMapVector extends AbstractContainerVector implements Repeat
     }
 
     public void get(int index, RepeatedMapHolder holder) {
-      if (index >= getValueCapacity()) {
-        offsets.reAlloc();
-      }
       assert index < getValueCapacity() : String.format("Attempted to access index %d when value capacity is %d", index, getValueCapacity());
       holder.start = offsets.getAccessor().get(index);
       holder.end = offsets.getAccessor().get(index+1);
@@ -498,7 +499,7 @@ public class RepeatedMapVector extends AbstractContainerVector implements Repeat
 
     public void startNewGroup(int index) {
       populateEmpties(index+1);
-      offsets.getMutator().set(index+1, offsets.getAccessor().get(index));
+      offsets.getMutator().setSafe(index+1, offsets.getAccessor().get(index));
     }
 
     public int add(int index) {

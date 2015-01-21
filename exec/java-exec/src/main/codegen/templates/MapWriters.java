@@ -63,7 +63,11 @@ public class ${mode}MapWriter extends AbstractFieldWriter{
   }
 
   public void checkValueCapacity(){
-    inform(container.getValueCapacity() > idx());
+    <#if mode == "Repeated">
+    if (container.getValueCapacity() <= idx()) {
+      container.reAlloc();
+    }
+    </#if>
   }
 
   public MapWriter map(String name){
@@ -109,7 +113,7 @@ public class ${mode}MapWriter extends AbstractFieldWriter{
   <#if mode == "Repeated">
   public void start(){
     if(ok()){
-//      checkValueCapacity();
+      checkValueCapacity();
       if (!ok()) return;
       // update the repeated vector to state that there is current+1 objects.
       

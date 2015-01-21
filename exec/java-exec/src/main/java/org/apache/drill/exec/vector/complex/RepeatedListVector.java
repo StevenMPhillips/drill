@@ -106,6 +106,10 @@ public class RepeatedListVector extends AbstractContainerVector implements Repea
     }
   }
 
+  public void reAlloc() {
+    offsets.reAlloc();
+  }
+
   public class Mutator implements ValueVector.Mutator, RepeatedMutator{
 
     public void startNewGroup(int index) {
