@@ -177,6 +177,7 @@ public class SimpleParallelizer {
   }
 
   private void assignEndpoints(Collection<DrillbitEndpoint> allNodes, PlanningSet planningSet) throws PhysicalOperatorSetupException {
+    logger.debug("tag 8");
     // for each node, set the width based on the parallelization threshold and cluster width.
     for (Wrapper wrapper : planningSet) {
 
@@ -201,6 +202,7 @@ public class SimpleParallelizer {
       // figure out endpoint assignments. also informs the exchanges about their respective endpoints.
       wrapper.assignEndpoints(allNodes, affinityFactor);
     }
+    logger.debug("tag 9");
   }
 
 }

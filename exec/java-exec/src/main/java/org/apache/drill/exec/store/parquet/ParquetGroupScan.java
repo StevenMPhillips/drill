@@ -377,6 +377,8 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
         "Mappings length [%d] should be longer than minor fragment id [%d] but it isn't.", mappings.size(),
         minorFragmentId);
 
+    logger.debug("tag 7");
+
     List<RowGroupInfo> rowGroupsForMinor = mappings.get(minorFragmentId);
 
     Preconditions.checkArgument(!rowGroupsForMinor.isEmpty(),
