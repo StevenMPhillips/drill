@@ -200,6 +200,7 @@ public class SimpleParallelizer {
 //      logger.debug("Setting width {} on fragment {}", width, wrapper);
       wrapper.setWidth(width);
       // figure out endpoint assignments. also informs the exchanges about their respective endpoints.
+      logger.debug("tag 10");
       wrapper.assignEndpoints(allNodes, affinityFactor);
     }
     logger.debug("tag 9");

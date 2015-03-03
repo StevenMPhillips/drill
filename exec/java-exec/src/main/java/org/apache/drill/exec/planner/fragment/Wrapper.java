@@ -189,6 +189,7 @@ public class Wrapper {
       }
     }
 
+    logger.debug("tag 11");
     // Set scan and store endpoints.
     AssignEndpointsToScanAndStore visitor = new AssignEndpointsToScanAndStore();
     node.getRoot().accept(visitor, endpoints);

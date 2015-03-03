@@ -63,6 +63,7 @@ public class AssignmentCreator<T extends CompleteWork> {
   private AssignmentCreator(List<DrillbitEndpoint> incomingEndpoints, List<T> units) {
     logger.debug("Assigning {} units to {} endpoints", units.size(), incomingEndpoints.size());
     Stopwatch watch = new Stopwatch();
+    watch.start();
 
     Preconditions.checkArgument(incomingEndpoints.size() <= units.size(), String.format("Incoming endpoints %d "
         + "is greater than number of row groups %d", incomingEndpoints.size(), units.size()));
@@ -71,9 +72,12 @@ public class AssignmentCreator<T extends CompleteWork> {
 
     ArrayList<T> rowGroupList = new ArrayList<>(units);
     for (double cutoff : ASSIGNMENT_CUTOFFS) {
+      logger.debug("tag 10");
       scanAndAssign(rowGroupList, cutoff, false, false);
     }
+    logger.debug("tag 11");
     scanAndAssign(rowGroupList, 0.0, true, false);
+    logger.debug("tag 12");
     scanAndAssign(rowGroupList, 0.0, true, true);
 
     logger.debug("Took {} ms to apply assignments", watch.elapsed(TimeUnit.MILLISECONDS));
