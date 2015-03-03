@@ -289,8 +289,12 @@ public class Foreman implements Runnable, Closeable, Comparable<Object> {
 
   private void runPhysicalPlan(PhysicalPlan plan) throws ExecutionSetupException {
 
+
+    logger.debug("tag 4");
     validatePlan(plan);
+    logger.debug("tag 5");
     setupSortMemoryAllocations(plan);
+    logger.debug("tag 6");
     acquireQuerySemaphore(plan);
 
     final QueryWorkUnit work = getQueryWorkUnit(plan);
@@ -370,10 +374,13 @@ public class Foreman implements Runnable, Closeable, Comparable<Object> {
 
   private QueryWorkUnit getQueryWorkUnit(PhysicalPlan plan) throws ExecutionSetupException {
     PhysicalOperator rootOperator = plan.getSortedOperators(false).iterator().next();
+    logger.debug("tag 1");
     MakeFragmentsVisitor makeFragmentsVisitor = new MakeFragmentsVisitor();
     Fragment rootFragment = rootOperator.accept(makeFragmentsVisitor, null);
+    logger.debug("tag 2");
     PlanningSet planningSet = StatsCollector.collectStats(rootFragment);
     SimpleParallelizer parallelizer = new SimpleParallelizer(context);
+    logger.debug("tag 3");
 
 
     return parallelizer.getFragments(context.getOptions().getOptionList(), context.getCurrentEndpoint(),
