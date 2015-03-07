@@ -25,6 +25,7 @@ import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.logical.FormatPluginConfig;
 import org.apache.drill.common.logical.StoragePluginConfig;
 import org.apache.drill.exec.physical.EndpointAffinity;
+import org.apache.drill.exec.physical.PhysicalOperatorSetupException;
 import org.apache.drill.exec.physical.base.AbstractFileGroupScan;
 import org.apache.drill.exec.physical.base.FileGroupScan;
 import org.apache.drill.exec.physical.base.GroupScan;
@@ -175,11 +176,15 @@ public class EasyGroupScan extends AbstractFileGroupScan{
   }
 
   @Override
-  public void applyAssignments(List<DrillbitEndpoint> incomingEndpoints) {
-    mappings = AssignmentCreator.getMappings(incomingEndpoints, chunks);
+  public void applyAssignments(List<DrillbitEndpoint> incomingEndpoints) throws PhysicalOperatorSetupException {
+    try {
+      mappings = AssignmentCreator.getMappings(incomingEndpoints, chunks, Math.min(16, chunks.size() / incomingEndpoints.size()));
+    } catch (IOException e) {
+      throw new PhysicalOperatorSetupException("Exception while applying assignments", e);
+    }
   }
 
-  private void createMappings(List<EndpointAffinity> affinities) {
+  private void createMappings(List<EndpointAffinity> affinities) throws PhysicalOperatorSetupException {
     List<DrillbitEndpoint> endpoints = Lists.newArrayList();
     for (EndpointAffinity e : affinities) {
       endpoints.add(e.getEndpoint());
@@ -188,9 +193,13 @@ public class EasyGroupScan extends AbstractFileGroupScan{
   }
 
   @Override
-  public EasySubScan getSpecificScan(int minorFragmentId) {
+  public EasySubScan getSpecificScan(int minorFragmentId) throws ExecutionSetupException {
     if (mappings == null) {
-      createMappings(this.endpointAffinities);
+      try {
+        createMappings(this.endpointAffinities);
+      } catch (PhysicalOperatorSetupException e) {
+        throw new ExecutionSetupException(e);
+      }
     }
     assert minorFragmentId < mappings.size() : String.format(
         "Mappings length [%d] should be longer than minor fragment id [%d] but it isn't.", mappings.size(),

@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.store.schedule;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -30,6 +31,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import org.apache.drill.exec.store.TimedRunnable;
 
 /**
  * The AssignmentCreator is responsible for assigning a set of work units to the available slices.
@@ -37,11 +39,34 @@ import com.google.common.collect.Lists;
 public class AssignmentCreator<T extends CompleteWork> {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AssignmentCreator.class);
 
-  static final double[] ASSIGNMENT_CUTOFFS = { 0.99, 0.50, 0.25, 0.00 };
   private final ArrayListMultimap<Integer, T> mappings;
   private final List<DrillbitEndpoint> endpoints;
+  private int offset;
 
+  public static <T extends CompleteWork> ListMultimap<Integer, T> getMappings(List<DrillbitEndpoint> incomingEndpoints,
+                                                                              List<T> units, int parallelization) throws IOException {
+    List<TimedRunnable<ListMultimap<Integer,T>>> assigners = Lists.newArrayList();
 
+    int offsetInc = incomingEndpoints.size() / parallelization;
+    int inc = units.size() / parallelization;
+    for (int i = 0; i < parallelization; i++) {
+      int start = i * inc;
+      int end = start + inc;
+      assigners.add(new Assigner(incomingEndpoints, units.subList(start, end), offsetInc * i));
+    }
+
+    List<ListMultimap<Integer,T>> assignmentLists = TimedRunnable.run("Applying assignments", logger,
+        assigners, parallelization);
+    return combineMaps(assignmentLists);
+  }
+
+  private static <Integer,V> ListMultimap<Integer,V> combineMaps(List<ListMultimap<Integer,V>> maps) {
+    ListMultimap<Integer,V> multiMap = ArrayListMultimap.create();
+    for (ListMultimap map : maps) {
+      multiMap.putAll(map);
+    }
+    return multiMap;
+  }
 
   /**
    * Given a set of endpoints to assign work to, attempt to evenly assign work based on affinity of work units to
@@ -54,15 +79,17 @@ public class AssignmentCreator<T extends CompleteWork> {
    *          The work units to assign.
    * @return ListMultimap of Integer > List<CompleteWork> (based on their incoming order) to with
    */
-  public static <T extends CompleteWork> ListMultimap<Integer, T> getMappings(List<DrillbitEndpoint> incomingEndpoints,
-      List<T> units) {
-    AssignmentCreator<T> creator = new AssignmentCreator<T>(incomingEndpoints, units);
+  public static <T extends CompleteWork> ListMultimap<Integer, T> getMappingsInternal(List<DrillbitEndpoint> incomingEndpoints,
+                                                                                      List<T> units, int offset) {
+    AssignmentCreator<T> creator = new AssignmentCreator<T>(incomingEndpoints, units, offset);
     return creator.mappings;
   }
 
-  private AssignmentCreator(List<DrillbitEndpoint> incomingEndpoints, List<T> units) {
+  private AssignmentCreator(List<DrillbitEndpoint> incomingEndpoints, List<T> units, int offset) {
+    this.offset = offset;
     logger.debug("Assigning {} units to {} endpoints", units.size(), incomingEndpoints.size());
     Stopwatch watch = new Stopwatch();
+    watch.start();
 
     Preconditions.checkArgument(incomingEndpoints.size() <= units.size(), String.format("Incoming endpoints %d "
         + "is greater than number of row groups %d", incomingEndpoints.size(), units.size()));
@@ -70,11 +97,9 @@ public class AssignmentCreator<T extends CompleteWork> {
     this.endpoints = Lists.newLinkedList(incomingEndpoints);
 
     ArrayList<T> rowGroupList = new ArrayList<>(units);
-    for (double cutoff : ASSIGNMENT_CUTOFFS) {
-      scanAndAssign(rowGroupList, cutoff, false, false);
-    }
-    scanAndAssign(rowGroupList, 0.0, true, false);
-    scanAndAssign(rowGroupList, 0.0, true, true);
+    scanAndAssign(rowGroupList, false, false);
+    scanAndAssign(rowGroupList, true, false);
+    scanAndAssign(rowGroupList, true, true);
 
     logger.debug("Took {} ms to apply assignments", watch.elapsed(TimeUnit.MILLISECONDS));
     Preconditions.checkState(rowGroupList.isEmpty(), "All readEntries should be assigned by now, but some are still unassigned");
@@ -83,22 +108,15 @@ public class AssignmentCreator<T extends CompleteWork> {
   }
 
   /**
-   *
-   * @param mappings
-   *          the mapping between fragment/endpoint and rowGroup
-   * @param endpoints
-   *          the list of drillbits, ordered by the corresponding fragment
-   * @param workunits
-   *          the list of rowGroups to assign
-   * @param requiredPercentage
-   *          the percentage of max bytes required to make an assignment
-   * @param assignAll
-   *          if true, will assign even if no affinity
+   * Attempts to assign workunits to endpoints
+   * @param workunits the workunits to assign
+   * @param assignAllToEmpty assign remaining work units to any empty endpoints, regardless of affinity
+   * @param assignAll assign all remaining work units to an endpoint, regardless of affinity or whether that endpoint is empty
    */
-  private void scanAndAssign(List<T> workunits, double requiredPercentage, boolean assignAllToEmpty, boolean assignAll) {
+  private void scanAndAssign(List<T> workunits, boolean assignAllToEmpty, boolean assignAll) {
+    final int numEndpoints = endpoints.size();
     Collections.sort(workunits);
-    int fragmentPointer = 0;
-    final boolean requireAffinity = requiredPercentage > 0;
+    int fragmentPointer = offset;
     int maxAssignments = (int) (workunits.size() / endpoints.size());
 
     if (maxAssignments < 1) {
@@ -107,33 +125,60 @@ public class AssignmentCreator<T extends CompleteWork> {
 
     for (Iterator<T> iter = workunits.iterator(); iter.hasNext();) {
       T unit = iter.next();
-      for (int i = 0; i < endpoints.size(); i++) {
-        int minorFragmentId = (fragmentPointer + i) % endpoints.size();
-        DrillbitEndpoint currentEndpoint = endpoints.get(minorFragmentId);
-        EndpointByteMap endpointByteMap = unit.getByteMap();
-        boolean haveAffinity = endpointByteMap.isSet(currentEndpoint);
+      int minorFragmentId = fragmentPointer;
+      for (int i = 0; i < endpoints.size(); i++, minorFragmentId++) {
+        if (minorFragmentId == numEndpoints) {
+          minorFragmentId = 0;
+        }
+        boolean haveAffinity = false;
+        boolean slotEmpty = false;
+
+        if (!assignAll) {
+          DrillbitEndpoint currentEndpoint = endpoints.get(minorFragmentId);
+          EndpointByteMap endpointByteMap = unit.getByteMap();
+          Long affinity = endpointByteMap.get(currentEndpoint);
+          haveAffinity = affinity != null && affinity > 0.5;
+          slotEmpty = !mappings.containsKey(minorFragmentId);
+        }
 
         if (assignAll
-            || (assignAllToEmpty && !mappings.containsKey(minorFragmentId))
-            || (!endpointByteMap.isEmpty() && (!requireAffinity || haveAffinity)
-                && (!mappings.containsKey(minorFragmentId) || mappings.get(minorFragmentId).size() < maxAssignments) && (!requireAffinity || endpointByteMap
-                .get(currentEndpoint) >= endpointByteMap.getMaxBytes() * requiredPercentage))) {
+            || (assignAllToEmpty && slotEmpty)
+            || (slotEmpty || mappings.get(minorFragmentId).size() < maxAssignments) &&
+            haveAffinity) {
 
           mappings.put(minorFragmentId, unit);
-          logger.debug("Assigned unit: {} to minorFragmentId: {}", unit, minorFragmentId);
-          // logger.debug("Assigned rowGroup {} to minorFragmentId {} endpoint {}", rowGroupInfo.getRowGroupIndex(),
-          // minorFragmentId, endpoints.get(minorFragmentId).getAddress());
-          // if (bytesPerEndpoint.get(currentEndpoint) != null) {
-          // // assignmentAffinityStats.update(bytesPerEndpoint.get(currentEndpoint) / rowGroupInfo.getLength());
-          // } else {
-          // // assignmentAffinityStats.update(0);
-          // }
           iter.remove();
-          fragmentPointer = (minorFragmentId + 1) % endpoints.size();
+          fragmentPointer = minorFragmentId + 1;
+          if (fragmentPointer == numEndpoints) {
+            fragmentPointer = 0;
+          }
           break;
         }
       }
 
+    }
+  }
+
+  private static class Assigner<X extends CompleteWork> extends TimedRunnable<ListMultimap<Integer, X>> {
+
+    private List<DrillbitEndpoint> endpoints;
+    private List<X> workUnits;
+    private int offset;
+
+    public Assigner(List<DrillbitEndpoint> endpoints, List<X> workUnits, int offset) {
+      this.endpoints = endpoints;
+      this.workUnits = workUnits;
+      this.offset = offset;
+    }
+
+    @Override
+    protected ListMultimap<Integer, X> runInner() throws Exception {
+      return AssignmentCreator.getMappingsInternal(endpoints, workUnits, offset);
+    }
+
+    @Override
+    protected IOException convertToIOException(Exception e) {
+      return null;
     }
   }
 
