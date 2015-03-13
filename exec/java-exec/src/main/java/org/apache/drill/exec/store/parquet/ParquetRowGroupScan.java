@@ -40,6 +40,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
+import org.apache.drill.exec.store.dfs.ReadEntryWithPath;
 
 // Class containing information for reading a single parquet row group form HDFS
 @JsonTypeName("parquet-row-group-scan")
@@ -71,9 +72,8 @@ public class ParquetRowGroupScan extends AbstractBase implements SubScan {
       String userName, //
       ParquetFormatPlugin formatPlugin, //
       List<RowGroupReadEntry> rowGroupReadEntries, //
-      List<SchemaPath> columns, //
-      String selectionRoot //
-  ) {
+      List<SchemaPath> columns,
+      String selectionRoot) {
     super(userName);
     this.formatPlugin = Preconditions.checkNotNull(formatPlugin);
     this.formatConfig = formatPlugin.getConfig();

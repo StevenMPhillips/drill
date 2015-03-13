@@ -79,7 +79,12 @@ public class BatchPrinter {
           String value = new String((byte[]) o);
           System.out.printf("| %-15s",value.length() <= 15 ? value : value.substring(0, 14));
         } else {
-          String value = o.toString();
+          String value;
+          if (o == null) {
+            value = "null";
+          } else {
+            value = o.toString();
+          }
           System.out.printf("| %-15s",value.length() <= 15 ? value : value.substring(0,14));
         }
       }

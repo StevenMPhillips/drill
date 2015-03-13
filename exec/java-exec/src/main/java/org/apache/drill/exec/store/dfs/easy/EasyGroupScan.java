@@ -129,7 +129,8 @@ public class EasyGroupScan extends AbstractFileGroupScan{
   private void initFromSelection(FileSelection selection, EasyFormatPlugin<?> formatPlugin) throws IOException {
     final DrillFileSystem dfs = ImpersonationUtil.createFileSystem(getUserName(), formatPlugin.getFsConf());
     this.selection = selection;
-    BlockMapBuilder b = new BlockMapBuilder(dfs, formatPlugin.getContext().getBits());
+    BlockMapBuilder b = new BlockMapBuilder(dfs, formatPlugin.getContext().getBits(), null);
+
     this.chunks = b.generateFileWork(selection.getFileStatusList(dfs), formatPlugin.isBlockSplittable());
     this.maxWidth = chunks.size();
     this.endpointAffinities = AffinityCreator.getAffinityMap(chunks);

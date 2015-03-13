@@ -22,6 +22,7 @@ import java.util.Iterator;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.record.BatchSchema;
+import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.exec.record.CloseableRecordBatch;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
@@ -30,6 +31,7 @@ import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.WritableBatch;
 import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
+import org.apache.drill.exec.util.BatchPrinter;
 import org.apache.drill.exec.vector.VectorValidator;
 
 public class IteratorValidatorBatchIterator implements CloseableRecordBatch {
@@ -135,6 +137,11 @@ public class IteratorValidatorBatchIterator implements CloseableRecordBatch {
 
       if (VALIDATE_VECTORS) {
         VectorValidator.validate(incoming);
+      }
+
+      if (incoming.getSchema().getSelectionVectorMode() != SelectionVectorMode.FOUR_BYTE) {
+        System.out.println(incoming.getClass().getName());
+        BatchPrinter.printBatch(incoming);
       }
     }
 
