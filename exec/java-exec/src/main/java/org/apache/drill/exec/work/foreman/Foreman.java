@@ -336,7 +336,7 @@ public class Foreman implements Runnable, Closeable, Comparable<Object> {
           context.getConfig().getLong(ExecConstants.TOP_LEVEL_MAX_ALLOC));
       maxAllocPerNode = Math.min(maxAllocPerNode,
           context.getOptions().getOption(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY).num_val);
-      long maxSortAlloc = maxAllocPerNode / (sortCount * maxWidthPerNode);
+      long maxSortAlloc = (long) (maxAllocPerNode / (sortCount * maxWidthPerNode) * .75);
       logger.debug("Max sort alloc: {}", maxSortAlloc);
       for (PhysicalOperator op : plan.getSortedOperators()) {
         if (op instanceof ExternalSort) {
