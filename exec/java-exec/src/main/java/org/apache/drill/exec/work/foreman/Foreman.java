@@ -68,6 +68,7 @@ import org.apache.drill.exec.rpc.user.UserServer.UserClientConnection;
 import org.apache.drill.exec.server.DrillbitContext;
 import org.apache.drill.exec.server.options.OptionManager;
 import org.apache.drill.exec.testing.ExceptionInjector;
+import org.apache.drill.exec.store.parquet.ParquetWriter;
 import org.apache.drill.exec.util.Pointer;
 import org.apache.drill.exec.work.EndpointListener;
 import org.apache.drill.exec.work.QueryWorkUnit;
@@ -362,28 +363,30 @@ public class Foreman implements Runnable {
     }
   }
 
-  private void setupSortMemoryAllocations(final PhysicalPlan plan) {
-    // look for external sorts
-    final List<ExternalSort> sortList = new LinkedList<>();
+  private void setupSortMemoryAllocations(PhysicalPlan plan){
+    int sortCount = 0;
+    int parquetWriterCount = 0;
     for (PhysicalOperator op : plan.getSortedOperators()) {
       if (op instanceof ExternalSort) {
-        sortList.add((ExternalSort) op);
+        sortCount++;
+      } else if (op instanceof ParquetWriter) {
+        parquetWriterCount++;
       }
     }
 
-    // if there are any sorts, compute the maximum allocation, and set it on them
-    if (sortList.size() > 0) {
-      final OptionManager optionManager = queryContext.getOptions();
-      final long maxWidthPerNode = optionManager.getOption(ExecConstants.MAX_WIDTH_PER_NODE_KEY).num_val;
+    if (sortCount > 0) {
+      long maxWidthPerNode = context.getOptions().getOption(ExecConstants.MAX_WIDTH_PER_NODE_KEY).num_val;
       long maxAllocPerNode = Math.min(DrillConfig.getMaxDirectMemory(),
-          queryContext.getConfig().getLong(ExecConstants.TOP_LEVEL_MAX_ALLOC));
-      maxAllocPerNode = Math.min(maxAllocPerNode,
-          optionManager.getOption(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY).num_val);
-      final long maxSortAlloc = maxAllocPerNode / (sortList.size() * maxWidthPerNode);
+          context.getConfig().getLong(ExecConstants.TOP_LEVEL_MAX_ALLOC))
+          - parquetWriterCount * maxWidthPerNode * context.getOptions().getOption(ExecConstants.PARQUET_BLOCK_SIZE).num_val;
+//      maxAllocPerNode = Math.min(maxAllocPerNode,
+//          context.getOptions().getOption(ExecConstants.MAX_QUERY_MEMORY_PER_NODE_KEY).num_val);
+      long maxSortAlloc = (long) (maxAllocPerNode / (sortCount * maxWidthPerNode) * .75);
       logger.debug("Max sort alloc: {}", maxSortAlloc);
-
-      for(ExternalSort externalSort : sortList) {
-        externalSort.setMaxAllocation(maxSortAlloc);
+      for (PhysicalOperator op : plan.getSortedOperators()) {
+        if (op instanceof ExternalSort) {
+          ((ExternalSort) op).setMaxAllocation(maxSortAlloc);
+        }
       }
     }
   }
