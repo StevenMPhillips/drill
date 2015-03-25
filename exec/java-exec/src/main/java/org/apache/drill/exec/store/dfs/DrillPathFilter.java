@@ -26,17 +26,9 @@ public class DrillPathFilter extends Utils.OutputFileUtils.OutputFilesFilter {
     if (path.toString().contains("_metadata")) {
       return false;
     }
-    return super.accept(path);
-  }
-
-  public static class DrillIgnoreDotFilter extends DrillPathFilter {
-    @Override
-    public boolean accept(Path path) {
-      String p = path.getName();
-      if (p.startsWith(".")) {
-        return false;
-      }
-      return super.accept(path);
+    if (path.getName().startsWith(".")) {
+      return false;
     }
+    return super.accept(path);
   }
 }

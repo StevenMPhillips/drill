@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import org.apache.drill.exec.store.dfs.DrillPathFilter;
-import org.apache.drill.exec.store.dfs.DrillPathFilter.DrillIgnoreDotFilter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -97,7 +96,7 @@ public class Metadata {
   private static List<FileStatus> getFileStatuses(FileSystem fs, FileStatus fileStatus) throws IOException {
     List<FileStatus> statuses = Lists.newArrayList();
     if (fileStatus.isDirectory()) {
-      for (FileStatus child : fs.listStatus(fileStatus.getPath(), new DrillIgnoreDotFilter())) {
+      for (FileStatus child : fs.listStatus(fileStatus.getPath(), new DrillPathFilter())) {
         statuses.addAll(getFileStatuses(fs, child));
       }
     } else {

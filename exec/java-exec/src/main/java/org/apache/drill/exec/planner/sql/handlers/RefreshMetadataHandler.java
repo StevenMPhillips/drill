@@ -43,6 +43,7 @@ import org.apache.drill.exec.store.dfs.FormatSelection;
 import org.apache.drill.exec.store.parquet.Metadata;
 import org.apache.drill.exec.work.foreman.ForemanSetupException;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
 import org.eigenbase.rel.RelNode;
 import org.eigenbase.sql.SqlNode;
 
@@ -70,6 +71,11 @@ public class RefreshMetadataHandler extends DefaultSqlHandler {
           refreshTable.getSchemaPath());
 
       final String tableName = refreshTable.getName();
+
+      if (tableName.contains("*") || tableName.contains("?")) {
+        return direct(false, "Glob path %s not supported for metadata refresh", tableName);
+      }
+
       final Table table = schema.getTable(tableName);
 
       if(table == null){
@@ -93,12 +99,12 @@ public class RefreshMetadataHandler extends DefaultSqlHandler {
       FileSystemPlugin plugin = (FileSystemPlugin) drillTable.getPlugin();
       DrillFileSystem fs = plugin.getFormatPlugin(formatSelection.getFormat()).getFileSystem();
 
-      List<FileStatus> files = formatSelection.getSelection().getFileStatusList(fs);
-      if(files.size() != 1 || !files.get(0).isDirectory()){
+      String selectionRoot = formatSelection.getSelection().selectionRoot;
+      if (!fs.getFileStatus(new Path(selectionRoot)).isDirectory()) {
         return notSupported(tableName);
       }
 
-      Metadata.createMeta(fs.getConf(), fs, files.get(0).getPath().toString());
+      Metadata.createMeta(fs.getConf(), fs, selectionRoot);
       return direct(true, "Successfully updated metadata for table %s.", tableName);
 
     } catch(Exception e) {
