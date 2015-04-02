@@ -138,7 +138,7 @@ public class Metadata {
     logger.info("Took {} ms to write .drill.blocks");
   }
 
-  public static Map<String,List<BlockLocation>> readBlockMeta(FileSystem fs, String path, List<FileStatus> fileStatusList) throws IOException {
+  public static Map<String,List<BlockLocation>> readBlockMeta(FileSystem fs, String path, Map<String,FileStatus> fileStatusList) throws IOException {
     Path p = new Path(path);
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -150,7 +150,7 @@ public class Metadata {
       FileStatus fileStatus = new FileStatus();
       ByteArrayDataInput input = ByteStreams.newDataInput(fileBlockLocations.fileStatus);
       fileStatus.readFields(input);
-      fileStatusList.add(fileStatus);
+      fileStatusList.put(fileBlockLocations.path, fileStatus);
     }
     return map;
   }

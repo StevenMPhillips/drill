@@ -19,6 +19,7 @@ package org.apache.drill.exec.store.schedule;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,7 +59,7 @@ public class BlockMapBuilder {
   private final ImmutableMap<String,DrillbitEndpoint> endPointMap;
   private final CompressionCodecFactory codecFactory;
   private Map<String,List<BlockLocation>> cachedBlocks;
-  private List<FileStatus> fileStatuses;
+  private Map<String,FileStatus> fileStatuses;
 
   public BlockMapBuilder(FileSystem fs, Collection<DrillbitEndpoint> endpoints, String path) {
     this.fs = fs;
@@ -67,7 +68,7 @@ public class BlockMapBuilder {
     if (path != null) {
       try {
         Path p = new Path(path, ".drill.blocks");
-        List<FileStatus> fileStatuses = Lists.newArrayList();
+        Map<String,FileStatus> fileStatuses = Maps.newHashMap();
         if (fs.exists(p)) {
           cachedBlocks = Metadata.readBlockMeta(fs, p.toString(), fileStatuses);
         }
@@ -79,7 +80,7 @@ public class BlockMapBuilder {
   }
 
   public List<FileStatus> getFileStatuses() {
-    return fileStatuses;
+    return new ArrayList(fileStatuses.values());
   }
 
   private boolean compressed(FileStatus fileStatus) {
@@ -173,7 +174,13 @@ public class BlockMapBuilder {
   }
 
   private ImmutableRangeMap<Long,BlockLocation> buildBlockMap(Path path) throws IOException {
-    FileStatus status = fs.getFileStatus(path);
+    FileStatus status = null;
+    if (fileStatuses != null) {
+      status = fileStatuses.get(path.toString());
+    }
+    if (status == null) {
+      status = fs.getFileStatus(path);
+    }
     return buildBlockMap(status);
   }
 
@@ -234,7 +241,7 @@ public class BlockMapBuilder {
   public EndpointByteMap getEndpointByteMap(FileWork work) throws IOException {
     Stopwatch watch = new Stopwatch();
     watch.start();
-    Path fileName = new Path(work.getPath());
+    Path fileName = Path.getPathWithoutSchemeAndAuthority(new Path(work.getPath()));
 
 
     ImmutableRangeMap<Long,BlockLocation> blockMap = getBlockMap(fileName);
