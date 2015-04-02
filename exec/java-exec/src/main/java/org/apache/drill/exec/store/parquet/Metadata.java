@@ -22,10 +22,15 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import org.apache.drill.exec.store.dfs.DrillPathFilter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
@@ -110,8 +115,10 @@ public class Metadata {
     Stopwatch watch = new Stopwatch();
     watch.start();
     for (FileStatus file : files) {
+      ByteArrayDataOutput out = ByteStreams.newDataOutput();
+      file.write(out);
       BlockLocation[] blockLocations = fs.getFileBlockLocations(file, 0, file.getLen());
-      fileBlockLocationsList.add(new FileBlockLocations(Path.getPathWithoutSchemeAndAuthority(file.getPath()).toString(), Arrays.asList(blockLocations)));
+      fileBlockLocationsList.add(new FileBlockLocations(Path.getPathWithoutSchemeAndAuthority(file.getPath()).toString(), out.toByteArray(), Arrays.asList(blockLocations)));
     }
 
     logger.info("Took {} ms to get block locations", watch.elapsed(TimeUnit.MILLISECONDS));
@@ -125,20 +132,25 @@ public class Metadata {
     jsonFactory.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, false);
     ObjectMapper mapper = new ObjectMapper(jsonFactory);
     FSDataOutputStream os = fs.create(new Path(p, ".drill.blocks"));
-    mapper.writeValue(os, fileBlockLocationsList);
+    mapper.writerWithDefaultPrettyPrinter().writeValue(os, fileBlockLocationsList);
     os.flush();
     os.close();
     logger.info("Took {} ms to write .drill.blocks");
   }
 
-  public static Map<String,List<BlockLocation>> readBlockMeta(FileSystem fs, String path) throws IOException {
+  public static Map<String,List<BlockLocation>> readBlockMeta(FileSystem fs, String path, List<FileStatus> fileStatusList) throws IOException {
     Path p = new Path(path);
     ObjectMapper mapper = new ObjectMapper();
+    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     FSDataInputStream is = fs.open(p);
     List<FileBlockLocations> fileBlockLocationsList = mapper.readValue(is, new TypeReference<List<FileBlockLocations>>(){});
     Map<String,List<BlockLocation>> map = new HashMap();
     for (FileBlockLocations fileBlockLocations : fileBlockLocationsList) {
       map.put(fileBlockLocations.path, fileBlockLocations.blockLocations);
+      FileStatus fileStatus = new FileStatus();
+      ByteArrayDataInput input = ByteStreams.newDataInput(fileBlockLocations.fileStatus);
+      fileStatus.readFields(input);
+      fileStatusList.add(fileStatus);
     }
     return map;
   }
@@ -147,14 +159,17 @@ public class Metadata {
     @JsonProperty
     public String path;
     @JsonProperty
+    public byte[] fileStatus;
+    @JsonProperty
     public List<BlockLocation> blockLocations;
 
     public FileBlockLocations() {
      super();
     }
 
-    public FileBlockLocations(String path, List<BlockLocation> blockLocations) {
+    public FileBlockLocations(String path, byte[] fileStatus, List<BlockLocation> blockLocations) {
       this.path = path;
+      this.fileStatus = fileStatus;
       this.blockLocations = blockLocations;
     }
 

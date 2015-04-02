@@ -58,6 +58,7 @@ public class BlockMapBuilder {
   private final ImmutableMap<String,DrillbitEndpoint> endPointMap;
   private final CompressionCodecFactory codecFactory;
   private Map<String,List<BlockLocation>> cachedBlocks;
+  private List<FileStatus> fileStatuses;
 
   public BlockMapBuilder(FileSystem fs, Collection<DrillbitEndpoint> endpoints, String path) {
     this.fs = fs;
@@ -66,13 +67,19 @@ public class BlockMapBuilder {
     if (path != null) {
       try {
         Path p = new Path(path, ".drill.blocks");
+        List<FileStatus> fileStatuses = Lists.newArrayList();
         if (fs.exists(p)) {
-          cachedBlocks = Metadata.readBlockMeta(fs, p.toString());
+          cachedBlocks = Metadata.readBlockMeta(fs, p.toString(), fileStatuses);
         }
+        this.fileStatuses = fileStatuses;
       } catch (IOException e) {
         logger.warn("failure while attempting to read .drill.blocks");
       }
     }
+  }
+
+  public List<FileStatus> getFileStatuses() {
+    return fileStatuses;
   }
 
   private boolean compressed(FileStatus fileStatus) {
