@@ -332,9 +332,11 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
       BlockMapBuilder bmb = new BlockMapBuilder(fs, formatPlugin.getContext().getBits(), path);
 
       try {
-        List<FileStatus> files = Lists.newArrayList();
-        for (ReadEntryWithPath entry : entries) {
-          files.addAll(getFiles(entry.getPath()));
+        List<FileStatus> files = bmb.getFileStatuses();
+        if (files == null) {
+          for (ReadEntryWithPath entry : entries) {
+            files.addAll(getFiles(entry.getPath()));
+          }
         }
 
         final int threadCount = formatPlugin.getContext().getConfig().getInt(ExecConstants.METATADATA_THREADS);
