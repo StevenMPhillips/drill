@@ -467,7 +467,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
   @Override
   public ScanStats getScanStats() {
     int columnCount = columns == null ? 20 : columns.size();
-    return new ScanStats(GroupScanProperty.NO_EXACT_ROW_COUNT, chunks.size()*1000000, 1, chunks.size() * 1000000 * columnCount);
+    return new ScanStats(GroupScanProperty.NO_EXACT_ROW_COUNT, chunks.size()*1000000L, 1, chunks.size() * 1000000L * columnCount);
   }
 
   @Override
