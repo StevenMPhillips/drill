@@ -74,7 +74,7 @@ public class ScanBatch implements RecordBatch {
   private RecordReader currentReader;
   private BatchSchema schema;
   private final Mutator mutator = new Mutator();
-  private Iterator<String[]> partitionColumns;
+  private Map<Object,String[]> partitionColumns;
   private String[] partitionValues;
   private List<ValueVector> partitionVectors;
   private List<Integer> selectedPartitionColumns;
@@ -84,7 +84,7 @@ public class ScanBatch implements RecordBatch {
   private SchemaChangeCallBack callBack = new SchemaChangeCallBack();
 
   public ScanBatch(PhysicalOperator subScanConfig, FragmentContext context, OperatorContext oContext,
-                   Iterator<RecordReader> readers, List<String[]> partitionColumns, List<Integer> selectedPartitionColumns) throws ExecutionSetupException {
+                   Iterator<RecordReader> readers, Map<Object,String[]> partitionColumns, List<Integer> selectedPartitionColumns) throws ExecutionSetupException {
     this.context = context;
     this.readers = readers;
     if (!readers.hasNext()) {
@@ -100,8 +100,8 @@ public class ScanBatch implements RecordBatch {
     } finally {
       oContext.getStats().stopProcessing();
     }
-    this.partitionColumns = partitionColumns.iterator();
-    this.partitionValues = this.partitionColumns.hasNext() ? this.partitionColumns.next() : null;
+    this.partitionColumns = partitionColumns;
+    this.partitionValues = partitionColumns.get(currentReader.getKey());
     this.selectedPartitionColumns = selectedPartitionColumns;
     DrillConfig config = context.getConfig();
     this.partitionColumnDesignator = config == null ? "dir" : config.getString(ExecConstants.FILESYSTEM_PARTITION_COLUMN_LABEL);
@@ -111,7 +111,7 @@ public class ScanBatch implements RecordBatch {
   public ScanBatch(PhysicalOperator subScanConfig, FragmentContext context, Iterator<RecordReader> readers) throws ExecutionSetupException {
     this(subScanConfig, context,
         new OperatorContext(subScanConfig, context, false /* ScanBatch is not subject to fragment memory limit */),
-        readers, Collections.<String[]> emptyList(), Collections.<Integer> emptyList());
+        readers, Collections.<Object,String[]> emptyMap(), Collections.<Integer> emptyList());
   }
 
   public FragmentContext getContext() {
@@ -177,7 +177,7 @@ public class ScanBatch implements RecordBatch {
 
           currentReader.cleanup();
           currentReader = readers.next();
-          partitionValues = partitionColumns.hasNext() ? partitionColumns.next() : null;
+          partitionValues = partitionColumns.get(currentReader.getKey());
           currentReader.setup(mutator);
           currentReader.setOperatorContext(oContext);
           try {
@@ -237,7 +237,7 @@ public class ScanBatch implements RecordBatch {
     for (int index = 0; index < selectedPartitionColumns.size(); index++) {
       int i = selectedPartitionColumns.get(index);
       NullableVarCharVector v = (NullableVarCharVector) partitionVectors.get(index);
-      if (partitionValues.length > i) {
+      if (partitionValues != null && partitionValues.length > i) {
         String val = partitionValues[i];
         AllocationHelper.allocate(v, recordCount, val.length());
         byte[] bytes = val.getBytes();

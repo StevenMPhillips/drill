@@ -56,11 +56,11 @@ public class Metadata {
 
   public static void main(String[] args) throws IOException {
 
-    String path = "/user/steven/table2/";
-//    String path = "/drill/tpchmulti/lineitem/";
+//    String path = "/user/steven/table2/";
+    String path = "/tmp/parquet_normal/";
 
     Configuration conf = new Configuration();
-    conf.set("fs.default.name", "maprfs:///");
+//    conf.set("fs.default.name", "maprfs:///");
     FileSystem fs = FileSystem.get(conf);
     createMeta(conf, fs, path);
 //    Map<String,List<BlockLocation>> m = readBlockMeta(fs, path + "/.drill.blocks");
@@ -78,18 +78,18 @@ public class Metadata {
     Stopwatch watch = new Stopwatch();
     watch.start();
     List<FileStatus> fileStatuses = getFileStatuses(fs, fileStatus);
-    logger.info("Took {} ms to get file statuses", watch.equals(TimeUnit.MILLISECONDS));
-    watch.stop();
-    watch.reset();
-    watch.start();
-    List<Footer> footers = ParquetFileReader.readAllFootersInParallel(conf, fileStatuses);
-    logger.info("Took {} ms to get read footers", watch.equals(TimeUnit.MILLISECONDS));
+    logger.info("Took {} ms to get file statuses", watch.elapsed(TimeUnit.MILLISECONDS));
+//    watch.stop();
+//    watch.reset();
+//    watch.start();
+//    List<Footer> footers = ParquetFileReader.readAllFootersInParallel(conf, fileStatuses);
+//    logger.info("Took {} ms to get read footers", watch.elapsed(TimeUnit.MILLISECONDS));
 
-    watch.stop();
-    watch.reset();
-    watch.start();
-    ParquetFileWriter.writeMetadataFile(conf, p, footers);
-    logger.info("Took {} ms to get write _metadata", watch.equals(TimeUnit.MILLISECONDS));
+//    watch.stop();
+//    watch.reset();
+//    watch.start();
+//    ParquetFileWriter.writeMetadataFile(conf, p, footers);
+//    logger.info("Took {} ms to write _metadata", watch.elapsed(TimeUnit.MILLISECONDS));
     createBlockMeta(fs, fileStatuses, p);
   }
 

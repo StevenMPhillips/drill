@@ -37,6 +37,8 @@ public abstract class AbstractRecordReader implements RecordReader {
   private Collection<SchemaPath> columns = null;
   private boolean isStarQuery = false;
 
+  private Object key;
+
   protected final void setColumns(Collection<SchemaPath> projected) {
     assert Preconditions.checkNotNull(projected, COL_NULL_ERROR).size() > 0 : COL_EMPTY_ERROR;
     isStarQuery = isStarQuery(projected);
@@ -69,5 +71,15 @@ public abstract class AbstractRecordReader implements RecordReader {
     for (ValueVector v : vectorMap.values()) {
       v.allocateNew();
     }
+  }
+
+  @Override
+  public void setKey(Object key) {
+    this.key = key;
+  }
+
+  @Override
+  public Object getKey() {
+    return key;
   }
 }

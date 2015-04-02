@@ -41,6 +41,7 @@ import org.apache.drill.exec.store.dfs.DrillFileSystem;
 import org.apache.drill.exec.store.dfs.FileSystemPlugin;
 import org.apache.drill.exec.store.dfs.FormatSelection;
 import org.apache.drill.exec.store.parquet.Metadata;
+import org.apache.drill.exec.store.parquet.ParquetFormatConfig;
 import org.apache.drill.exec.work.foreman.ForemanSetupException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -95,6 +96,10 @@ public class RefreshMetadataHandler extends DefaultSqlHandler {
       }
 
       FormatSelection formatSelection = (FormatSelection) selection;
+
+      if (!(formatSelection.getFormat() instanceof ParquetFormatConfig)) {
+        return notSupported(tableName);
+      }
 
       FileSystemPlugin plugin = (FileSystemPlugin) drillTable.getPlugin();
       DrillFileSystem fs = plugin.getFormatPlugin(formatSelection.getFormat()).getFileSystem();

@@ -42,6 +42,7 @@ import org.apache.drill.exec.physical.base.ScanStats.GroupScanProperty;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
 import org.apache.drill.exec.store.StoragePluginRegistry;
 import org.apache.drill.exec.store.TimedRunnable;
+import org.apache.drill.exec.store.dfs.DrillPathFilter;
 import org.apache.drill.exec.store.dfs.FileSelection;
 import org.apache.drill.exec.store.dfs.ReadEntryFromHDFS;
 import org.apache.drill.exec.store.dfs.ReadEntryWithPath;
@@ -49,6 +50,7 @@ import org.apache.drill.exec.store.dfs.easy.FileWork;
 import org.apache.drill.exec.store.schedule.AffinityCreator;
 import org.apache.drill.exec.store.schedule.AssignmentCreator;
 import org.apache.drill.exec.store.schedule.BlockMapBuilder;
+import org.apache.drill.exec.store.schedule.CompleteFileWork;
 import org.apache.drill.exec.store.schedule.CompleteWork;
 import org.apache.drill.exec.store.schedule.EndpointByteMap;
 import org.apache.hadoop.fs.FileStatus;
@@ -84,8 +86,9 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
 
   final Histogram assignmentAffinityStats = metrics.histogram(ASSIGNMENT_AFFINITY_HIST);
 
-  private ListMultimap<Integer, RowGroupInfo> mappings;
+  private ListMultimap<Integer, CompleteFileWork> mappings;
   private List<RowGroupInfo> rowGroupInfos;
+  private List<CompleteFileWork> chunks;
   private final List<ReadEntryWithPath> entries;
   private final Stopwatch watch = new Stopwatch();
   private final ParquetFormatPlugin formatPlugin;
@@ -141,8 +144,9 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     this.formatConfig = formatPlugin.getConfig();
     this.entries = entries;
     this.selectionRoot = selectionRoot;
-    this.readFooterFromEntries();
+//    this.readFooterFromEntries();
 
+    init();
   }
 
   public String getSelectionRoot() {
@@ -166,7 +170,8 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
 
     this.selectionRoot = selectionRoot;
 
-    readFooter(files);
+            init();
+//    readFooter(files);
   }
 
   /*
@@ -182,6 +187,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     this.mappings = that.mappings;
     this.rowCount = that.rowCount;
     this.rowGroupInfos = that.rowGroupInfos;
+    this.chunks = that.chunks;
     this.selectionRoot = that.selectionRoot;
     this.columnValueCounts = that.columnValueCounts;
   }
@@ -317,6 +323,31 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     }
   }
 
+  private void init() {
+    if (this.endpointAffinities == null) {
+      String path = null;
+      if (entries.size() == 1) {
+        path = entries.get(0).getPath();
+      }
+      BlockMapBuilder bmb = new BlockMapBuilder(fs, formatPlugin.getContext().getBits(), path);
+
+      try {
+        List<FileStatus> files = Lists.newArrayList();
+        for (ReadEntryWithPath entry : entries) {
+          files.addAll(getFiles(entry.getPath()));
+        }
+
+        final int threadCount = formatPlugin.getContext().getConfig().getInt(ExecConstants.METATADATA_THREADS);
+        chunks = bmb.generateFileWork(files, false, threadCount);
+
+        this.endpointAffinities = AffinityCreator.getAffinityMap(chunks);
+      } catch (IOException e) {
+        logger.warn("Failure while determining operator affinity.", e);
+      }
+
+    }
+  }
+
   /**
    * Calculates the affinity each endpoint has for this scan, by adding up the affinity each endpoint has for each
    * rowGroup
@@ -332,22 +363,41 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
         path = entries.get(0).getPath();
       }
       BlockMapBuilder bmb = new BlockMapBuilder(fs, formatPlugin.getContext().getBits(), path);
-      final int threadCount = formatPlugin.getContext().getConfig().getInt(ExecConstants.METATADATA_THREADS);
 
       try {
-        List<TimedRunnable<Void>> blockMappers = Lists.newArrayList();
-        for (RowGroupInfo rgi : rowGroupInfos) {
-          blockMappers.add(new BlockMapper(bmb, rgi));
+        List<FileStatus> files = Lists.newArrayList();
+        for (ReadEntryWithPath entry : entries) {
+          files.addAll(getFiles(entry.getPath()));
         }
-        TimedRunnable.run("Load Parquet RowGroup block maps", logger, blockMappers, threadCount);
+
+        final int threadCount = formatPlugin.getContext().getConfig().getInt(ExecConstants.METATADATA_THREADS);
+        chunks = bmb.generateFileWork(files, false, threadCount);
+
+        this.endpointAffinities = AffinityCreator.getAffinityMap(chunks);
+
+        return endpointAffinities;
+
       } catch (IOException e) {
         logger.warn("Failure while determining operator affinity.", e);
         return Collections.emptyList();
       }
 
-      this.endpointAffinities = AffinityCreator.getAffinityMap(rowGroupInfos);
     }
     return this.endpointAffinities;
+  }
+
+  private List<FileStatus> getFiles(String path) throws IOException {
+    Path p = Path.getPathWithoutSchemeAndAuthority(new Path(path));
+    FileStatus fileStatus = fs.getFileStatus(p);
+    List<FileStatus> files = Lists.newArrayList();
+    if (fileStatus.isDirectory()) {
+      for (FileStatus f : fs.listStatus(p, new DrillPathFilter())) {
+        files.addAll(getFiles(f.getPath().toString()));
+      }
+    } else {
+      files.add(fileStatus);
+    }
+    return files;
   }
 
   private class BlockMapper extends TimedRunnable<Void> {
@@ -377,7 +427,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
   @Override
   public void applyAssignments(List<DrillbitEndpoint> incomingEndpoints) throws PhysicalOperatorSetupException {
 
-    this.mappings = AssignmentCreator.getMappings(incomingEndpoints, rowGroupInfos);
+    this.mappings = AssignmentCreator.getMappings(incomingEndpoints, chunks);
   }
 
   @Override
@@ -386,7 +436,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
         "Mappings length [%d] should be longer than minor fragment id [%d] but it isn't.", mappings.size(),
         minorFragmentId);
 
-    List<RowGroupInfo> rowGroupsForMinor = mappings.get(minorFragmentId);
+    List<CompleteFileWork> rowGroupsForMinor = mappings.get(minorFragmentId);
 
     Preconditions.checkArgument(!rowGroupsForMinor.isEmpty(),
         String.format("MinorFragmentId %d has no read entries assigned", minorFragmentId));
@@ -394,19 +444,18 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     return new ParquetRowGroupScan(formatPlugin, convertToReadEntries(rowGroupsForMinor), columns, selectionRoot);
   }
 
-  private List<RowGroupReadEntry> convertToReadEntries(List<RowGroupInfo> rowGroups) {
-    List<RowGroupReadEntry> entries = Lists.newArrayList();
-    for (RowGroupInfo rgi : rowGroups) {
-      RowGroupReadEntry rgre = new RowGroupReadEntry(rgi.getPath(), rgi.getStart(), rgi.getLength(),
-          rgi.getRowGroupIndex());
-      entries.add(rgre);
+  private List<ReadEntryWithPath> convertToReadEntries(List<CompleteFileWork> rowGroups) {
+    List<ReadEntryWithPath> entries = Lists.newArrayList();
+    for (CompleteFileWork rgi : rowGroups) {
+      ReadEntryWithPath entry = new ReadEntryWithPath(rgi.getPath());
+      entries.add(entry);
     }
     return entries;
   }
 
   @Override
   public int getMaxParallelizationWidth() {
-    return rowGroupInfos.size();
+    return chunks.size();
   }
 
   public List<SchemaPath> getColumns() {
