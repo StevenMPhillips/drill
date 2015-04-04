@@ -67,6 +67,9 @@ public class AssignmentCreator<T extends CompleteWork> {
       List<DrillbitEndpoint> endpoints = workPair.sortedEndpoints;
       for (DrillbitEndpoint endpoint : endpoints) {
         FragIteratorWrapper iteratorWrapper = endpointIterators.get(endpoint);
+        if (iteratorWrapper == null) {
+          continue;
+        }
         if (iteratorWrapper.count < iteratorWrapper.maxCount) {
           Integer assignment = iteratorWrapper.iter.next();
           iteratorWrapper.count++;
