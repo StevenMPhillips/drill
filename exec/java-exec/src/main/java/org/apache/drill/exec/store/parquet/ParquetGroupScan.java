@@ -337,6 +337,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
       ParquetTableMetadata parquetTableMetadata;
       DrillConfig config = formatPlugin.getContext().getConfig();
       List<FileStatus> fileStatuses = null;
+      Map<String,FileStatus> fileStatusMap = Maps.newHashMap();
       try {
         if (entries.size() == 1) {
           Path p = Path.getPathWithoutSchemeAndAuthority(new Path(entries.get(0).getPath()));
@@ -347,10 +348,10 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
             parquetTableMetadata = Metadata.getParquetTableMetadata(formatPlugin.getContext().getConfig(), fs, p.toString());
           }
         } else {
-          fileStatuses = Lists.newArrayList();
           for (ReadEntryWithPath entry : entries) {
-            fileStatuses.addAll(getFiles(entry.getPath()));
+            getFiles(entry.getPath(),fileStatusMap);
           }
+          fileStatuses = new ArrayList(fileStatusMap.values());
           parquetTableMetadata = Metadata.getParquetTableMetadata(config, fs, fileStatuses);
         }
 
@@ -365,10 +366,11 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
             ByteArrayDataInput in = ByteStreams.newDataInput(file.fileStatus);
             fileStatus.readFields(in);
             fileStatuses.add(fileStatus);
+            fileStatusMap.put(file.path, fileStatus);
           }
         }
 
-        BlockMapBuilder bmb = new BlockMapBuilder(fs, formatPlugin.getContext().getBits(), cachedBlockLocations);
+        BlockMapBuilder bmb = new BlockMapBuilder(fs, formatPlugin.getContext().getBits(), cachedBlockLocations, fileStatusMap);
 
         final int threadCount = formatPlugin.getContext().getConfig().getInt(ExecConstants.METATADATA_THREADS);
         chunks = bmb.generateFileWork(fileStatuses, false, threadCount);
@@ -404,10 +406,10 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
       }
 //      BlockMapBuilder bmb = new BlockMapBuilder(fs, formatPlugin.getContext().getBits(), path);
 
-      try {
+//      try {
         List<FileStatus> files = Lists.newArrayList();
         for (ReadEntryWithPath entry : entries) {
-          files.addAll(getFiles(entry.getPath()));
+          files.addAll(null);
         }
 
         final int threadCount = formatPlugin.getContext().getConfig().getInt(ExecConstants.METATADATA_THREADS);
@@ -417,27 +419,25 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
 
         return endpointAffinities;
 
-      } catch (IOException e) {
-        logger.warn("Failure while determining operator affinity.", e);
-        return Collections.emptyList();
-      }
+//      } catch (IOException e) {
+//        logger.warn("Failure while determining operator affinity.", e);
+//        return Collections.emptyList();
+//      }
 
     }
     return this.endpointAffinities;
   }
 
-  private List<FileStatus> getFiles(String path) throws IOException {
+  private void getFiles(String path, Map<String,FileStatus> fileStatusMap) throws IOException {
     Path p = Path.getPathWithoutSchemeAndAuthority(new Path(path));
     FileStatus fileStatus = fs.getFileStatus(p);
-    List<FileStatus> files = Lists.newArrayList();
     if (fileStatus.isDirectory()) {
       for (FileStatus f : fs.listStatus(p, new DrillPathFilter())) {
-        files.addAll(getFiles(f.getPath().toString()));
+        getFiles(f.getPath().toString(), fileStatusMap);
       }
     } else {
-      files.add(fileStatus);
+      fileStatusMap.put(p.toString(), fileStatus);
     }
-    return files;
   }
 
   private class BlockMapper extends TimedRunnable<Void> {

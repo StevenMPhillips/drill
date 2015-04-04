@@ -229,7 +229,7 @@ public class ParquetFormatPlugin implements FormatPlugin{
           return true;
         } else {
 
-          if (fs.exists(new Path(dir.getPath(), ".drill.blocks"))) {
+          if (fs.exists(new Path(dir.getPath(), ".drill.parquet_metadata"))) {
             return true;
           }
           PathFilter filter = new DrillPathFilter();

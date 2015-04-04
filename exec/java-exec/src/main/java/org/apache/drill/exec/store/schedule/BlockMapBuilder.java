@@ -61,11 +61,12 @@ public class BlockMapBuilder {
   private Map<String,List<BlockLocation>> cachedBlocks;
   private Map<String,FileStatus> fileStatuses;
 
-  public BlockMapBuilder(FileSystem fs, Collection<DrillbitEndpoint> endpoints, Map<String,List<BlockLocation>> cachedBlocks) {
+  public BlockMapBuilder(FileSystem fs, Collection<DrillbitEndpoint> endpoints, Map<String,List<BlockLocation>> cachedBlocks, Map<String,FileStatus> fileStatuses) {
     this.fs = fs;
     this.codecFactory = new CompressionCodecFactory(fs.getConf());
     this.endPointMap = buildEndpointMap(endpoints);
     this.cachedBlocks = cachedBlocks;
+    this.fileStatuses = fileStatuses;
   }
 
   private boolean compressed(FileStatus fileStatus) {
