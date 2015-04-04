@@ -218,10 +218,11 @@ public class ParquetScanBatchCreator implements BatchCreator<ParquetRowGroupScan
         RecordReader reader;
         if (useNewReader || isComplex(currentFooter)) {
           reader = new DrillParquetReader(context, currentFooter, currentEntry, currentRowGroupIndex, scan.getColumns(), fs);
-
+          reader.setKey(currentEntry.getPath());
         } else {
           reader = new ParquetRecordReader(context, currentEntry.getPath(), currentRowGroupIndex, fs,
             scan.getStorageEngine().getCodecFactoryExposer(), currentFooter, scan.getColumns());
+          reader.setKey(currentEntry.getPath());
         }
         next = reader;
       } catch (ExecutionSetupException e) {
