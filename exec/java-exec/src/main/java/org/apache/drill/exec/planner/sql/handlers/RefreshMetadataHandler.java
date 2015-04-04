@@ -25,6 +25,7 @@ import net.hydromatic.optiq.Table;
 import net.hydromatic.optiq.tools.RelConversionException;
 import net.hydromatic.optiq.tools.ValidationException;
 
+import org.apache.drill.common.logical.FormatPluginConfig;
 import org.apache.drill.exec.physical.PhysicalPlan;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.planner.logical.DrillRel;
@@ -40,6 +41,7 @@ import org.apache.drill.exec.store.AbstractSchema;
 import org.apache.drill.exec.store.dfs.DrillFileSystem;
 import org.apache.drill.exec.store.dfs.FileSystemPlugin;
 import org.apache.drill.exec.store.dfs.FormatSelection;
+import org.apache.drill.exec.store.dfs.NamedFormatPluginConfig;
 import org.apache.drill.exec.store.parquet.Metadata;
 import org.apache.drill.exec.store.parquet.ParquetFormatConfig;
 import org.apache.drill.exec.work.foreman.ForemanSetupException;
@@ -97,7 +99,9 @@ public class RefreshMetadataHandler extends DefaultSqlHandler {
 
       FormatSelection formatSelection = (FormatSelection) selection;
 
-      if (!(formatSelection.getFormat() instanceof ParquetFormatConfig)) {
+      FormatPluginConfig formatConfig = formatSelection.getFormat();
+      if (!((formatConfig instanceof ParquetFormatConfig) ||
+          ((formatConfig instanceof NamedFormatPluginConfig) && ((NamedFormatPluginConfig) formatConfig).name.equals("parquet")))) {
         return notSupported(tableName);
       }
 
@@ -109,7 +113,7 @@ public class RefreshMetadataHandler extends DefaultSqlHandler {
         return notSupported(tableName);
       }
 
-      Metadata.createMeta(fs.getConf(), fs, selectionRoot);
+      Metadata.createMeta(context.getConfig(), fs, selectionRoot);
       return direct(true, "Successfully updated metadata for table %s.", tableName);
 
     } catch(Exception e) {

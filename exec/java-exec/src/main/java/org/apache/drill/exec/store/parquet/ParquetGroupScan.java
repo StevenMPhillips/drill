@@ -17,13 +17,18 @@
  */
 package org.apache.drill.exec.store.parquet;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.Maps;
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteStreams;
 import org.apache.drill.common.config.DrillConfig;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
@@ -47,12 +52,16 @@ import org.apache.drill.exec.store.dfs.FileSelection;
 import org.apache.drill.exec.store.dfs.ReadEntryFromHDFS;
 import org.apache.drill.exec.store.dfs.ReadEntryWithPath;
 import org.apache.drill.exec.store.dfs.easy.FileWork;
+import org.apache.drill.exec.store.parquet.Metadata.ColumnWithValueCount;
+import org.apache.drill.exec.store.parquet.Metadata.ParquetFileMetadata;
+import org.apache.drill.exec.store.parquet.Metadata.ParquetTableMetadata;
 import org.apache.drill.exec.store.schedule.AffinityCreator;
 import org.apache.drill.exec.store.schedule.AssignmentCreator;
 import org.apache.drill.exec.store.schedule.BlockMapBuilder;
 import org.apache.drill.exec.store.schedule.CompleteFileWork;
 import org.apache.drill.exec.store.schedule.CompleteWork;
 import org.apache.drill.exec.store.schedule.EndpointByteMap;
+import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -325,24 +334,53 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
 
   private void init() {
     if (this.endpointAffinities == null) {
-      String path = null;
-      if (entries.size() == 1) {
-        path = entries.get(0).getPath();
-      }
-      BlockMapBuilder bmb = new BlockMapBuilder(fs, formatPlugin.getContext().getBits(), path);
-
+      ParquetTableMetadata parquetTableMetadata;
+      DrillConfig config = formatPlugin.getContext().getConfig();
+      List<FileStatus> fileStatuses = null;
       try {
-        List<FileStatus> files = bmb.getFileStatuses();
-        if (files == null) {
+        if (entries.size() == 1) {
+          Path p = Path.getPathWithoutSchemeAndAuthority(new Path(entries.get(0).getPath()));
+          Path metaPath = new Path(p, ".drill.parquet_metadata");
+          if (fs.exists(metaPath)) {
+            parquetTableMetadata = Metadata.readBlockMeta(config, fs, metaPath.toString());
+          } else {
+            parquetTableMetadata = Metadata.getParquetTableMetadata(formatPlugin.getContext().getConfig(), fs, p.toString());
+          }
+        } else {
+          fileStatuses = Lists.newArrayList();
           for (ReadEntryWithPath entry : entries) {
-            files.addAll(getFiles(entry.getPath()));
+            fileStatuses.addAll(getFiles(entry.getPath()));
+          }
+          parquetTableMetadata = Metadata.getParquetTableMetadata(config, fs, fileStatuses);
+        }
+
+        Map<String,List<BlockLocation>> cachedBlockLocations = Maps.newHashMap();
+        for (ParquetFileMetadata file : parquetTableMetadata.files) {
+          cachedBlockLocations.put(file.path, file.blockLocations);
+        }
+        if (fileStatuses == null) {
+          fileStatuses = Lists.newArrayList();
+          for (ParquetFileMetadata file : parquetTableMetadata.files) {
+            FileStatus fileStatus = new FileStatus();
+            ByteArrayDataInput in = ByteStreams.newDataInput(file.fileStatus);
+            fileStatus.readFields(in);
+            fileStatuses.add(fileStatus);
           }
         }
 
+        BlockMapBuilder bmb = new BlockMapBuilder(fs, formatPlugin.getContext().getBits(), cachedBlockLocations);
+
         final int threadCount = formatPlugin.getContext().getConfig().getInt(ExecConstants.METATADATA_THREADS);
-        chunks = bmb.generateFileWork(files, false, threadCount);
+        chunks = bmb.generateFileWork(fileStatuses, false, threadCount);
 
         this.endpointAffinities = AffinityCreator.getAffinityMap(chunks);
+
+        columnValueCounts = Maps.newHashMap();
+        for (ColumnWithValueCount column : parquetTableMetadata.columnValueCounts) {
+          columnValueCounts.put(column.column, column.valueCount);
+        }
+        rowCount = parquetTableMetadata.rowCount;
+        columns = new ArrayList(columnValueCounts.keySet());
       } catch (IOException e) {
         logger.warn("Failure while determining operator affinity.", e);
       }
@@ -364,7 +402,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
       if (entries.size() == 1) {
         path = entries.get(0).getPath();
       }
-      BlockMapBuilder bmb = new BlockMapBuilder(fs, formatPlugin.getContext().getBits(), path);
+//      BlockMapBuilder bmb = new BlockMapBuilder(fs, formatPlugin.getContext().getBits(), path);
 
       try {
         List<FileStatus> files = Lists.newArrayList();
@@ -373,7 +411,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
         }
 
         final int threadCount = formatPlugin.getContext().getConfig().getInt(ExecConstants.METATADATA_THREADS);
-        chunks = bmb.generateFileWork(files, false, threadCount);
+//        chunks = bmb.generateFileWork(files, false, threadCount);
 
         this.endpointAffinities = AffinityCreator.getAffinityMap(chunks);
 
@@ -467,7 +505,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
   @Override
   public ScanStats getScanStats() {
     int columnCount = columns == null ? 20 : columns.size();
-    return new ScanStats(GroupScanProperty.NO_EXACT_ROW_COUNT, chunks.size()*1000000L, 1, chunks.size() * 1000000L * columnCount);
+    return new ScanStats(GroupScanProperty.EXACT_ROW_COUNT, rowCount, 1, rowCount * columnCount);
   }
 
   @Override

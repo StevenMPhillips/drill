@@ -61,26 +61,11 @@ public class BlockMapBuilder {
   private Map<String,List<BlockLocation>> cachedBlocks;
   private Map<String,FileStatus> fileStatuses;
 
-  public BlockMapBuilder(FileSystem fs, Collection<DrillbitEndpoint> endpoints, String path) {
+  public BlockMapBuilder(FileSystem fs, Collection<DrillbitEndpoint> endpoints, Map<String,List<BlockLocation>> cachedBlocks) {
     this.fs = fs;
     this.codecFactory = new CompressionCodecFactory(fs.getConf());
     this.endPointMap = buildEndpointMap(endpoints);
-    if (path != null) {
-      try {
-        Path p = new Path(path, ".drill.blocks");
-        Map<String,FileStatus> fileStatuses = Maps.newHashMap();
-        if (fs.exists(p)) {
-          cachedBlocks = Metadata.readBlockMeta(fs, p.toString(), fileStatuses);
-        }
-        this.fileStatuses = fileStatuses;
-      } catch (IOException e) {
-        logger.warn("failure while attempting to read .drill.blocks");
-      }
-    }
-  }
-
-  public List<FileStatus> getFileStatuses() {
-    return new ArrayList(fileStatuses.values());
+    this.cachedBlocks = cachedBlocks;
   }
 
   private boolean compressed(FileStatus fileStatus) {
@@ -271,7 +256,7 @@ public class BlockMapBuilder {
         if (endpoint != null) {
           endpointByteMap.add(endpoint, bytes);
         } else {
-          logger.info("Failure finding Drillbit running on host {}.  Skipping affinity to that host.", host);
+//          logger.info("Failure finding Drillbit running on host {}.  Skipping affinity to that host.", host);
         }
       }
     }
