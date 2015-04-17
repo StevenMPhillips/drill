@@ -175,11 +175,11 @@ public final class BitVector extends BaseDataValueVector implements FixedWidthVe
     return new Accessor();
   }
 
-  public TransferPair getTransferPair() {
-    return new TransferImpl(getField());
+  public TransferPair getTransferPair(BufferAllocator allocator) {
+    return new TransferImpl(getField(), allocator);
   }
-  public TransferPair getTransferPair(FieldReference ref) {
-    return new TransferImpl(getField().clone(ref));
+  public TransferPair getTransferPair(FieldReference ref, BufferAllocator allocator) {
+    return new TransferImpl(getField().clone(ref), allocator);
   }
 
   public TransferPair makeTransferPair(ValueVector to) {
@@ -200,9 +200,8 @@ public final class BitVector extends BaseDataValueVector implements FixedWidthVe
     int byteSize = getSizeFromCount(length);
     int offset = startIndex % 8;
     if (offset == 0) {
-      // slice
-      target.data = (DrillBuf) this.data.slice(firstByte, byteSize);
-      target.data.retain();
+      data.getBytes(startIndex, target.data, 0, byteSize);
+      data.writerIndex(byteSize);
     } else {
       // Copy data
       // When the first bit starts from the middle of a byte (offset != 0), copy data from src BitVector.
@@ -229,7 +228,7 @@ public final class BitVector extends BaseDataValueVector implements FixedWidthVe
   private class TransferImpl implements TransferPair {
     BitVector to;
 
-    public TransferImpl(MaterializedField field) {
+    public TransferImpl(MaterializedField field, BufferAllocator allocator) {
       this.to = new BitVector(field, allocator);
     }
 
