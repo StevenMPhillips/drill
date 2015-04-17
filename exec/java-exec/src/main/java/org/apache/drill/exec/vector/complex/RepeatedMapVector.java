@@ -128,8 +128,8 @@ public class RepeatedMapVector extends AbstractMapVector implements RepeatedFixe
   }
 
   @Override
-  public TransferPair getTransferPair() {
-    return new RepeatedMapTransferPair(this, getField().getPath());
+  public TransferPair getTransferPair(BufferAllocator allocator) {
+    return new RepeatedMapTransferPair(this, getField().getPath(), allocator);
   }
 
   @Override
@@ -192,13 +192,13 @@ public class RepeatedMapVector extends AbstractMapVector implements RepeatedFixe
     return super.getFieldIdIfMatches(builder, addToBreadCrumb, seg);
   }
 
-  public TransferPair getTransferPairToSingleMap(FieldReference reference) {
-    return new SingleMapTransferPair(this, reference);
+  public TransferPair getTransferPairToSingleMap(FieldReference reference, BufferAllocator allocator) {
+    return new SingleMapTransferPair(this, reference, allocator);
   }
 
   @Override
-  public TransferPair getTransferPair(FieldReference ref) {
-    return new RepeatedMapTransferPair(this, ref);
+  public TransferPair getTransferPair(FieldReference ref, BufferAllocator allocator) {
+    return new RepeatedMapTransferPair(this, ref, allocator);
   }
 
   @Override
@@ -216,8 +216,8 @@ public class RepeatedMapVector extends AbstractMapVector implements RepeatedFixe
     private final MapVector to;
     private static final MajorType MAP_TYPE = Types.required(MinorType.MAP);
 
-    public SingleMapTransferPair(RepeatedMapVector from, SchemaPath path) {
-      this(from, new MapVector(MaterializedField.create(path, MAP_TYPE), from.allocator, from.callBack), false);
+    public SingleMapTransferPair(RepeatedMapVector from, SchemaPath path, BufferAllocator allocator) {
+      this(from, new MapVector(MaterializedField.create(path, MAP_TYPE), allocator, from.callBack), false);
     }
 
     public SingleMapTransferPair(RepeatedMapVector from, MapVector to) {
@@ -282,8 +282,8 @@ public class RepeatedMapVector extends AbstractMapVector implements RepeatedFixe
     private final RepeatedMapVector to;
     private final RepeatedMapVector from;
 
-    public RepeatedMapTransferPair(RepeatedMapVector from, SchemaPath path) {
-      this(from, new RepeatedMapVector(MaterializedField.create(path, TYPE), from.allocator, from.callBack), false);
+    public RepeatedMapTransferPair(RepeatedMapVector from, SchemaPath path, BufferAllocator allocator) {
+      this(from, new RepeatedMapVector(MaterializedField.create(path, TYPE), allocator, from.callBack), false);
     }
 
     public RepeatedMapTransferPair(RepeatedMapVector from, RepeatedMapVector to) {

@@ -144,11 +144,11 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
     assert metadata.getBufferLength() == loaded : String.format("Expected to load %d bytes but actually loaded %d bytes", metadata.getBufferLength(), loaded);
   }
 
-  public TransferPair getTransferPair(){
-    return new TransferImpl(getField());
+  public TransferPair getTransferPair(BufferAllocator allocator){
+    return new TransferImpl(getField(), allocator);
   }
-  public TransferPair getTransferPair(FieldReference ref){
-    return new TransferImpl(getField().clone(ref));
+  public TransferPair getTransferPair(FieldReference ref, BufferAllocator allocator){
+    return new TransferImpl(getField().clone(ref), allocator);
   }
 
   public TransferPair makeTransferPair(ValueVector to) {
@@ -157,6 +157,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
 
   public void transferTo(${minor.class}Vector target){
     target.clear();
+    target.allocator.takeOwnership(data);
     target.data = data;
     target.data.retain();
     target.data.writerIndex(data.writerIndex());
@@ -176,7 +177,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
   private class TransferImpl implements TransferPair{
     ${minor.class}Vector to;
 
-    public TransferImpl(MaterializedField field){
+    public TransferImpl(MaterializedField field, BufferAllocator allocator){
       this.to = new ${minor.class}Vector(field, allocator);
     }
 

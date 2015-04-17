@@ -229,11 +229,11 @@ public final class ${className} extends BaseDataValueVector implements <#if type
   
   </#if>
   
-  public TransferPair getTransferPair(){
-    return new TransferImpl(getField());
+  public TransferPair getTransferPair(BufferAllocator allocator){
+    return new TransferImpl(getField(), allocator);
   }
-  public TransferPair getTransferPair(FieldReference ref){
-    return new TransferImpl(getField().clone(ref));
+  public TransferPair getTransferPair(FieldReference ref, BufferAllocator allocator){
+    return new TransferImpl(getField().clone(ref), allocator);
   }
 
   public TransferPair makeTransferPair(ValueVector to) {
@@ -261,7 +261,7 @@ public final class ${className} extends BaseDataValueVector implements <#if type
   private class TransferImpl implements TransferPair{
     Nullable${minor.class}Vector to;
     
-    public TransferImpl(MaterializedField field){
+    public TransferImpl(MaterializedField field, BufferAllocator allocator){
       this.to = new Nullable${minor.class}Vector(field, allocator);
     }
 

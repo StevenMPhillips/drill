@@ -18,6 +18,7 @@
 
 import java.lang.Override;
 
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.record.TransferPair;
 import org.apache.drill.exec.vector.BaseValueVector;
 import org.apache.drill.exec.vector.RepeatedFixedWidthVector;
@@ -88,11 +89,11 @@ public final class Repeated${minor.class}Vector extends BaseValueVector implemen
       return values.getBuffer();
   }
   
-  public TransferPair getTransferPair(){
-    return new TransferImpl(getField());
+  public TransferPair getTransferPair(BufferAllocator allocator){
+    return new TransferImpl(getField(), allocator);
   }
-  public TransferPair getTransferPair(FieldReference ref){
-    return new TransferImpl(getField().clone(ref));
+  public TransferPair getTransferPair(FieldReference ref, BufferAllocator allocator){
+    return new TransferImpl(getField().clone(ref), allocator);
   }
 
   public TransferPair makeTransferPair(ValueVector to) {
@@ -132,7 +133,7 @@ public final class Repeated${minor.class}Vector extends BaseValueVector implemen
   private class TransferImpl implements TransferPair{
     Repeated${minor.class}Vector to;
     
-    public TransferImpl(MaterializedField field){
+    public TransferImpl(MaterializedField field, BufferAllocator allocator){
       this.to = new Repeated${minor.class}Vector(field, allocator);
     }
 

@@ -159,11 +159,11 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
     return buffers;
   }
   
-  public TransferPair getTransferPair(){
-    return new TransferImpl(getField());
+  public TransferPair getTransferPair(BufferAllocator allocator){
+    return new TransferImpl(getField(), allocator);
   }
-  public TransferPair getTransferPair(FieldReference ref){
-    return new TransferImpl(getField().clone(ref));
+  public TransferPair getTransferPair(FieldReference ref, BufferAllocator allocator){
+    return new TransferImpl(getField().clone(ref), allocator);
   }
 
   public TransferPair makeTransferPair(ValueVector to) {
@@ -173,6 +173,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
   public void transferTo(${minor.class}Vector target){
     target.clear();
     this.offsetVector.transferTo(target.offsetVector);
+    target.allocator.takeOwnership(data);
     target.data = data;
     target.data.retain();
     clear();
@@ -222,7 +223,7 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
   private class TransferImpl implements TransferPair{
     ${minor.class}Vector to;
     
-    public TransferImpl(MaterializedField field){
+    public TransferImpl(MaterializedField field, BufferAllocator allocator){
       this.to = new ${minor.class}Vector(field, allocator);
     }
 

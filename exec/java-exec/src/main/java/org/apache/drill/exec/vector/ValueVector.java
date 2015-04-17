@@ -22,6 +22,7 @@ import io.netty.buffer.DrillBuf;
 import java.io.Closeable;
 
 import org.apache.drill.common.expression.FieldReference;
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.memory.OutOfMemoryRuntimeException;
 import org.apache.drill.exec.proto.UserBitShared.SerializedField;
 import org.apache.drill.exec.record.MaterializedField;
@@ -86,9 +87,9 @@ public interface ValueVector<V extends ValueVector, A extends ValueVector.Access
    * Returns a {@link org.apache.drill.exec.record.TransferPair transfer pair}, creating a new target vector of
    * the same type.
    */
-  TransferPair getTransferPair();
+  TransferPair getTransferPair(BufferAllocator allocator);
 
-  TransferPair getTransferPair(FieldReference ref);
+  TransferPair getTransferPair(FieldReference ref, BufferAllocator allocator);
 
   /**
    * Returns a new {@link org.apache.drill.exec.record.TransferPair transfer pair} that is used to transfer underlying
