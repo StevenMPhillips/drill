@@ -194,7 +194,7 @@ public final class BitVector extends BaseDataValueVector implements FixedWidthVe
     clear();
   }
 
-  public void splitAndTransferTo(int startIndex, int length, BitVector target) {
+  public void copyRangeTo(int startIndex, int length, BitVector target) {
     assert startIndex + length <= valueCount;
     int firstByte = getByteIndex(startIndex);
     int byteSize = getSizeFromCount(length);
@@ -245,8 +245,8 @@ public final class BitVector extends BaseDataValueVector implements FixedWidthVe
       transferTo(to);
     }
 
-    public void splitAndTransfer(int startIndex, int length) {
-      splitAndTransferTo(startIndex, length, to);
+    public void copyRange(int startIndex, int length) {
+      copyRangeTo(startIndex, length, to);
     }
 
     @Override

@@ -375,7 +375,7 @@ public abstract class HashAggTemplate implements HashAggregator {
 
   private void allocateOutgoing(int records) {
     // Skip the keys and only allocate for outputting the workspace values
-    // (keys will be output through splitAndTransfer)
+    // (keys will be output through copyRange)
     Iterator<VectorWrapper<?>> outgoingIter = outContainer.iterator();
     for (int i = 0; i < numGroupByOutFields; i++) {
       outgoingIter.next();

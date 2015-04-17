@@ -298,7 +298,7 @@ public class RepeatedListVector extends AbstractContainerVector implements Repea
     }
 
     @Override
-    public void splitAndTransfer(int startIndex, int length) {
+    public void copyRange(int startIndex, int length) {
       throw new UnsupportedOperationException();
     }
 

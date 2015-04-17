@@ -106,7 +106,7 @@ public abstract class FlattenTemplate implements Flattener {
 //        }
 
         for (TransferPair t : transfers) {
-          t.splitAndTransfer(startIndex, childIndex - startIndex);
+          t.copyRange(startIndex, childIndex - startIndex);
         }
         return childIndex - startIndex;
 

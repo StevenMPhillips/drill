@@ -250,9 +250,9 @@ public final class ${className} extends BaseDataValueVector implements <#if type
     clear();
   }
 
-  public void splitAndTransferTo(int startIndex, int length, Nullable${minor.class}Vector target) {
-    bits.splitAndTransferTo(startIndex, length, target.bits);
-    values.splitAndTransferTo(startIndex, length, target.values);
+  public void copyRangeTo(int startIndex, int length, Nullable${minor.class}Vector target) {
+    bits.copyRangeTo(startIndex, length, target.bits);
+    values.copyRangeTo(startIndex, length, target.values);
     <#if type.major == "VarLen">
     target.mutator.lastSet = length - 1;
     </#if>
@@ -277,8 +277,8 @@ public final class ${className} extends BaseDataValueVector implements <#if type
       transferTo(to);
     }
 
-    public void splitAndTransfer(int startIndex, int length) {
-      splitAndTransferTo(startIndex, length, to);
+    public void copyRange(int startIndex, int length) {
+      copyRangeTo(startIndex, length, to);
     }
 
     @Override

@@ -163,13 +163,14 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
     clear();
   }
 
-  public void splitAndTransferTo(int startIndex, int length, ${minor.class}Vector target) {
+  public void copyRangeTo(int startIndex, int length, ${minor.class}Vector target) {
     int currentWriterIndex = data.writerIndex();
     int startPoint = startIndex * ${type.width};
     int sliceLength = length * ${type.width};
-    target.data = this.data.slice(startPoint, sliceLength);
+    target.clear();
+    target.allocateNew(length);
+    data.getBytes(startIndex, target.data, 0, sliceLength);
     target.data.writerIndex(sliceLength);
-    target.data.retain();
   }
 
   private class TransferImpl implements TransferPair{
@@ -191,8 +192,8 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements F
       transferTo(to);
     }
 
-    public void splitAndTransfer(int startIndex, int length) {
-      splitAndTransferTo(startIndex, length, to);
+    public void copyRange(int startIndex, int length) {
+      copyRangeTo(startIndex, length, to);
     }
 
     @Override

@@ -75,7 +75,7 @@ public class UnorderedReceiverBatch implements RecordBatch {
   public UnorderedReceiverBatch(final FragmentContext context, final RawFragmentBatchProvider fragProvider, final UnorderedReceiver config) throws OutOfMemoryException {
     this.fragProvider = fragProvider;
     this.context = context;
-    // In normal case, batchLoader does not require an allocator. However, in case of splitAndTransfer of a value vector,
+    // In normal case, batchLoader does not require an allocator. However, in case of copyRange of a value vector,
     // we may need an allocator for the new offset vector. Therefore, here we pass the context's allocator to batchLoader.
     oContext = new OperatorContext(config, context, false);
     this.batchLoader = new RecordBatchLoader(oContext.getAllocator());

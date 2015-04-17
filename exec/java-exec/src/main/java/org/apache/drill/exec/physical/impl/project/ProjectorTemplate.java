@@ -63,7 +63,7 @@ public abstract class ProjectorTemplate implements Projector {
       }
       if (i < startIndex + recordCount || startIndex > 0) {
         for (TransferPair t : transfers) {
-          t.splitAndTransfer(startIndex, i - startIndex);
+          t.copyRange(startIndex, i - startIndex);
         }
         return i - startIndex;
       }

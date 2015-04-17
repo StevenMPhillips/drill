@@ -178,16 +178,14 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
     clear();
   }
 
-  public void splitAndTransferTo(int startIndex, int length, ${minor.class}Vector target) {
+  public void copyRangeTo(int startIndex, int length, ${minor.class}Vector target) {
     int startPoint = this.offsetVector.getAccessor().get(startIndex);
     int sliceLength = this.offsetVector.getAccessor().get(startIndex + length) - startPoint;
-    target.offsetVector.clear();
-    target.offsetVector.allocateNew(length + 1);
+    target.allocateNew(sliceLength, length);
     for (int i = 0; i < length + 1; i++) {
       target.offsetVector.getMutator().set(i, this.offsetVector.getAccessor().get(startIndex + i) - startPoint);
     }
-    target.data = this.data.slice(startPoint, sliceLength);
-    target.data.retain();
+    data.getBytes(startPoint, target.data, 0, sliceLength);
     target.getMutator().setValueCount(length);
 }
   
@@ -240,8 +238,8 @@ public final class ${minor.class}Vector extends BaseDataValueVector implements V
       transferTo(to);
     }
 
-    public void splitAndTransfer(int startIndex, int length) {
-      splitAndTransferTo(startIndex, length, to);
+    public void copyRange(int startIndex, int length) {
+      copyRangeTo(startIndex, length, to);
     }
     
     @Override

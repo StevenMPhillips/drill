@@ -209,9 +209,9 @@ public class MapVector extends AbstractMapVector {
     }
 
     @Override
-    public void splitAndTransfer(int startIndex, int length) {
+    public void copyRange(int startIndex, int length) {
       for (TransferPair p : pairs) {
-        p.splitAndTransfer(startIndex, length);
+        p.copyRange(startIndex, length);
       }
       to.getMutator().setValueCount(length);
     }

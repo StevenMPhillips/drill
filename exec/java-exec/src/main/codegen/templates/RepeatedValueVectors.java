@@ -108,7 +108,7 @@ public final class Repeated${minor.class}Vector extends BaseValueVector implemen
     clear();
   }
 
-  public void splitAndTransferTo(final int startIndex, final int groups, Repeated${minor.class}Vector to) {
+  public void copyRangeTo(final int startIndex, final int groups, Repeated${minor.class}Vector to) {
     final UInt4Vector.Accessor a = offsets.getAccessor();
     final UInt4Vector.Mutator m = to.offsets.getMutator();
     
@@ -116,7 +116,7 @@ public final class Repeated${minor.class}Vector extends BaseValueVector implemen
     final int endPos = offsets.getAccessor().get(startIndex + groups);
     final int valuesToCopy = endPos - startPos;
     
-    values.splitAndTransferTo(startPos, valuesToCopy, to.values);
+    values.copyRangeTo(startPos, valuesToCopy, to.values);
     to.offsets.clear();
     to.offsets.allocateNew(groups + 1);
     int normalizedPos = 0;
@@ -148,8 +148,8 @@ public final class Repeated${minor.class}Vector extends BaseValueVector implemen
       transferTo(to);
     }
 
-    public void splitAndTransfer(int startIndex, int length) {
-      splitAndTransferTo(startIndex, length, to);
+    public void copyRange(int startIndex, int length) {
+      copyRangeTo(startIndex, length, to);
     }
     
     @Override

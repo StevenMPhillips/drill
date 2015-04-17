@@ -53,7 +53,7 @@ public class TestSplitAndTransfer {
     for (int[] startLength : startLengths) {
       int start = startLength[0];
       int length = startLength[1];
-      tp.splitAndTransfer(start, length);
+      tp.copyRange(start, length);
       newVarCharVector.getMutator().setValueCount(length);
       for (int i = 0; i < length; i++) {
         boolean expectedSet = ((start + i) % 3) == 0;

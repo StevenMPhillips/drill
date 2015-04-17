@@ -267,9 +267,9 @@ public class RepeatedMapVector extends AbstractMapVector implements RepeatedFixe
     }
 
     @Override
-    public void splitAndTransfer(int startIndex, int length) {
+    public void copyRange(int startIndex, int length) {
       for (TransferPair p : pairs) {
-        p.splitAndTransfer(startIndex, length);
+        p.copyRange(startIndex, length);
       }
       to.getMutator().setValueCount(length);
     }
@@ -342,7 +342,7 @@ public class RepeatedMapVector extends AbstractMapVector implements RepeatedFixe
     }
 
     @Override
-    public void splitAndTransfer(final int groupStart, final int groups) {
+    public void copyRange(final int groupStart, final int groups) {
       final UInt4Vector.Accessor a = from.offsets.getAccessor();
       final UInt4Vector.Mutator m = to.offsets.getMutator();
 
@@ -363,7 +363,7 @@ public class RepeatedMapVector extends AbstractMapVector implements RepeatedFixe
       to.emptyPopulator.populate(groups);
 
       for (TransferPair p : pairs) {
-        p.splitAndTransfer(startPos, valuesToCopy);
+        p.copyRange(startPos, valuesToCopy);
       }
 
     }
