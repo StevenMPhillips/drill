@@ -297,8 +297,8 @@ public abstract class SplaySortTemplate implements SplaySorter {
       else if (cmp == 0) {
         root.value = value;
       }
-
     }
+
 
     /************************************************************************
      * splay function
