@@ -31,6 +31,16 @@ import java.math.BigDecimal;
 public class TestExampleQueries extends BaseTestQuery{
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
+  @Test
+  public void q() throws Exception {
+//    test("select * from cp.`tpch/nation.parquet` order by n_regionkey desc");
+    test("alter session set `planner.disable_exchanges` = true");
+    test("alter session set `planner.enable_hashagg` = false");
+    test("select l_extendedprice from dfs.`/drill/SF1/lineitem` order by l_extendedprice");
+//    test("select * from cp.`tpch/nation.parquet` order by n_regionkey");
+//    test("select * from cp.`tpch/region.parquet` order by r_comment desc");
+  }
+
   @Test // see DRILL-2328
   public void testConcatOnNull() throws Exception {
     try {
