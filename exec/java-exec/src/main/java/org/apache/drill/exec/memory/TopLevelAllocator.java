@@ -228,7 +228,7 @@ public class TopLevelAllocator implements BufferAllocator {
     }
 
     @Override
-    public DrillBuf buffer(int size, int max) {
+    public DrillBuf buffer(int size) {
       if (size == 0) {
         return empty;
       }
@@ -238,7 +238,7 @@ public class TopLevelAllocator implements BufferAllocator {
         return null;
       };
 
-      UnsafeDirectLittleEndian buffer = innerAllocator.directBuffer(size, max);
+      UnsafeDirectLittleEndian buffer = innerAllocator.directBuffer(size, size);
       DrillBuf wrapped = new DrillBuf(this, childAcct, buffer);
       childAcct.reserved(buffer.capacity(), wrapped);
       return wrapped;

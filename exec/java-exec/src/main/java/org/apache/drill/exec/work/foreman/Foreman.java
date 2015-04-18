@@ -375,10 +375,10 @@ public class Foreman implements Runnable {
     }
 
     if (sortCount > 0) {
-      long maxWidthPerNode = context.getOptions().getOption(ExecConstants.MAX_WIDTH_PER_NODE_KEY).num_val;
+      long maxWidthPerNode = drillbitContext.getOptionManager().getOption(ExecConstants.MAX_WIDTH_PER_NODE_KEY).num_val;
       long maxAllocPerNode = Math.min(DrillConfig.getMaxDirectMemory(),
-          context.getConfig().getLong(ExecConstants.TOP_LEVEL_MAX_ALLOC))
-          - 2 * parquetWriterCount * maxWidthPerNode * context.getOptions().getOption(ExecConstants.PARQUET_BLOCK_SIZE).num_val;
+          drillbitContext.getConfig().getLong(ExecConstants.TOP_LEVEL_MAX_ALLOC))
+          - 2 * parquetWriterCount * maxWidthPerNode * drillbitContext.getOptionManager().getOption(ExecConstants.PARQUET_BLOCK_SIZE).num_val;
       if (maxAllocPerNode < 64*1024*1024) {
         throw new ForemanSetupException("Not enough memory for sort. Reduce query width or lower writer block size");
       }
