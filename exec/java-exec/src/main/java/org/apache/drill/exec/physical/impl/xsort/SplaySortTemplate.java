@@ -156,6 +156,7 @@ public abstract class SplaySortTemplate implements SplaySorter {
 
   @Override
   public void cleanup() {
+    logger.debug("{} compares", compares);
 //    values.clear();
     finalSv4.clear();
     hyperBatch.clear();
@@ -210,6 +211,7 @@ public abstract class SplaySortTemplate implements SplaySorter {
   }
 
   public int compare(int leftIndex, int rightIndex) {
+    compares++;
     int sv1 = values.get(leftIndex);
     int sv2 = values.get(rightIndex);
     int comp = doEval(sv1, sv2);
@@ -377,7 +379,9 @@ public abstract class SplaySortTemplate implements SplaySorter {
       //   it is splayed to the root of the tree. If it does not, the last node
       //   along the search path for the key is splayed to the root.
       private int splay(int h, int key) {
-        if (h == NULL) return NULL;
+        if (h == NULL) {
+          return NULL;
+        }
 
         int cmp1 = compare(key, h);
 
@@ -397,8 +401,12 @@ public abstract class SplaySortTemplate implements SplaySorter {
             }
           }
 
-          if (getLeft(h) == NULL) return h;
-          else       return rotateRight(h);
+          if (getLeft(h) == NULL) {
+            return h;
+          }
+          else {
+            return rotateRight(h);
+          }
         } else if (cmp1 > 0) {
           // key not in tree, so we're done
           if (getRight(h) == NULL) {
@@ -421,7 +429,9 @@ public abstract class SplaySortTemplate implements SplaySorter {
           } else {
             return rotateLeft(h);
           }
-        } else return h;
+        } else {
+          return h;
+        }
       }
 
 
