@@ -245,6 +245,7 @@ public abstract class StreamingAggTemplate implements StreamingAggregator {
               }
             case STOP:
             default:
+              done = true;
               lastOutcome = out;
               outcome = out;
               return AggOutcome.CLEANUP_AND_RETURN;
