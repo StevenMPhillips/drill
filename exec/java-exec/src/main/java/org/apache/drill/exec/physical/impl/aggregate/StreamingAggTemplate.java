@@ -116,6 +116,7 @@ public abstract class StreamingAggTemplate implements StreamingAggregator {
 
       if (lastOutcome != null) {
         outcome = lastOutcome;
+        lastOutcome = null;
         return AggOutcome.CLEANUP_AND_RETURN;
       }
 
@@ -245,7 +246,7 @@ public abstract class StreamingAggTemplate implements StreamingAggregator {
               }
             case STOP:
             default:
-              done = true;
+//              done = true;
               lastOutcome = out;
               outcome = out;
               return AggOutcome.CLEANUP_AND_RETURN;
