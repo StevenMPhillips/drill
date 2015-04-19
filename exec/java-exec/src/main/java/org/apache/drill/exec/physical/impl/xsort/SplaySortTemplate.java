@@ -29,8 +29,12 @@ import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
 
 import javax.inject.Named;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public abstract class SplaySortTemplate implements SplaySorter {
@@ -103,7 +107,8 @@ public abstract class SplaySortTemplate implements SplaySorter {
       int index = (batchCount << 16) | ((hasSv2 ? sv2.getIndex(count) : count) & 65535);
       values.set(totalCount, index);
       tree.put(totalCount);
-      totalCount++;
+//      System.out.println("total count " + totalCount);
+//      print();
     }
     batchCount++;
     if (hasSv2) {
@@ -116,12 +121,14 @@ public abstract class SplaySortTemplate implements SplaySorter {
     StringBuilder b = new StringBuilder();
     b.append("root: " + tree.root + "\n");
     for (int i = 0; i < totalCount; i++) {
+      b.append(i + "\t");
       b.append(values.get(i) + "\t");
       b.append(leftPointers.get(i) + "\t");
       b.append(rightPointers.get(i) + "\t");
+      b.append(parentPointers.get(i) + "\t");
       b.append("\n");
     }
-    System.out.println(b);
+//    System.out.println(b);
   }
 
   @Override
@@ -214,8 +221,7 @@ public abstract class SplaySortTemplate implements SplaySorter {
     compares++;
     int sv1 = values.get(leftIndex);
     int sv2 = values.get(rightIndex);
-    int comp = doEval(sv1, sv2);
-    return comp == 0 ? 1 : comp;
+    return doEval(sv1, sv2);
   }
 
   public abstract void doSetup(@Named("context") FragmentContext context, @Named("incoming") VectorContainer incoming, @Named("outgoing") RecordBatch outgoing);
@@ -250,9 +256,9 @@ public abstract class SplaySortTemplate implements SplaySorter {
           return;
         }
         while (getLeft(next) != NULL) {
-          if (getParent(getLeft(next)) == NULL) {
-            setParent(getLeft(next), next);
-          }
+//          if (getParent(getLeft(next)) == NULL) {
+//            setParent(getLeft(next), next);
+//          }
           next = getLeft(next);
         }
       }
@@ -335,40 +341,152 @@ public abstract class SplaySortTemplate implements SplaySorter {
        * splay insertion
        * ***********************************************************************
        */
-      public void put(int key) {
-        // splay key to root
-        if (root == NULL) {
-          root = key;
+      public void put(int n) {
+        totalCount++;
+        int c = root;
+
+        if (c == NULL) {
+          root = n;
           return;
         }
 
-        root = splay(root, key);
+        while (true) {
+          int cmp = compare(n, c);
+//          System.out.printf("compare %d %d = %d\n", n, c, cmp);
 
-        int cmp = compare(key, root);
+          if (cmp == 0) {
+            setLeft(n, getLeft(c));
+//            System.out.printf("set %d.left %d\n", n, getLeft(n));
+            setLeft(c, n);
+//            System.out.printf("set %d.left %d\n", c, getLeft(c));
+            break;
+          }
 
-        // Insert new node at root
-        if (cmp < 0) {
-          int n = key;
-          setLeft(n, getLeft(root));
-          setRight(n, root);
-          setLeft(root, NULL);
-          root = n;
+          if (cmp < 0) {
+            int l = getLeft(c);
+//            System.out.printf("%d.left = %d\n", c, l);
+            if (l == NULL) {
+              setLeft(c, n);
+//              System.out.printf("set %d.left %d\n", c, getLeft(c));
+              c = n;
+              break;
+            } else {
+              c = l;
+            }
+          } else {
+            int r = getRight(c);
+//            System.out.printf("%d.right = %d\n", c, r);
+            if (r == NULL) {
+              setRight(c, n);
+//              System.out.printf("set %d.right %d\n", c, getRight(c));
+              c = n;
+              break;
+            } else {
+              c = r;
+            }
+          }
         }
 
-        // Insert new node at root
-        else if (cmp > 0) {
-          int n = key;
-          setRight(n, getRight(root));
-          setLeft(n, root);
-          setRight(root, NULL);
-          root = n;
-        }
+//        validate();
+//        System.out.println("before splay");
+//        print();
 
-        // It was a duplicate key. Simply replace the value
-        else if (cmp == 0) {
-          root = root;
+        splay(c);
+      }
+
+    private void validate() {
+      Queue<Integer> q = new LinkedList<Integer>();
+      Set<Integer> process = new HashSet();
+      q.add(root);
+      Integer c;
+      while((c = q.poll()) != null) {
+        int l = getLeft(c);
+        if (l != NULL) {
+          q.add(l);
+        }
+        if (process.contains(c)) {
+//          System.out.println("invalid tree");
+          print();
+          throw new RuntimeException();
+        }
+        process.add(c);
+        int r = getRight(c);
+        if (r != NULL) {
+          q.add(getRight(c));
         }
       }
+    }
+
+    private void splay(final int n) {
+//      System.out.printf("splay %d\n", n);
+      while (true) {
+        if (n == root) {
+          return;
+        }
+        if (getParent(n) == root) {
+//          System.out.printf("%d.parent = %d (root)\n", n, root);
+          if (isLeft(root, n)) {
+//            System.out.printf("rotate right %d\n", n);
+            rotateRight(root);
+          } else {
+//            System.out.printf("rotate left %d\n", n);
+            rotateLeft(root);
+          }
+          root = n;
+          setParent(root, NULL);
+          return;
+        }
+
+        int p = getParent(n);
+        int g = getParent(p);
+
+        if (g == root) {
+          root = n;
+          setParent(root, NULL);
+        }
+
+        assert n != NULL : "n null";
+        assert p != NULL : "p null";
+        assert g != NULL : "g null";
+
+        if (isLeft(p, n)) {
+          if (isLeft(g, p)) {
+//            System.out.printf("rotate right %d\n", g);
+            rotateRight(g);
+//            System.out.println("after 1 splay iteration");
+//            print();
+//            System.out.printf("rotate right %d\n", p);
+            rotateRight(p);
+          } else {
+//            System.out.printf("rotate right %d\n", p);
+            rotateRight(p);
+//            System.out.println("after 1 splay iteration");
+//            print();
+//            System.out.printf("rotate left %d\n", g);
+            rotateLeft(g);
+          }
+        } else {
+          if (isLeft(g, p)) {
+//            System.out.printf("rotate left %d\n", p);
+            rotateLeft(p);
+//            System.out.println("after 1 splay iteration");
+//            print();
+//            System.out.printf("rotate right %d\n", g);
+            rotateRight(g);
+          } else {
+//            System.out.printf("rotate left %d\n", g);
+            rotateLeft(g);
+//            System.out.println("after 1 splay iteration");
+//            print();
+//            System.out.printf("rotate left %d\n", p);
+            rotateLeft(p);
+          }
+        }
+//        validate();
+//        System.out.println("after 1 splay iteration");
+//        print();
+      }
+    }
 
       /**
        * *********************************************************************
@@ -444,7 +562,15 @@ public abstract class SplaySortTemplate implements SplaySorter {
     }
 
     private void setLeft(int key, int value) {
+//      System.out.printf("set %d.left %d\n", key, value);
       leftPointers.set(key, value);
+      if (value != NULL) {
+        setParent(value, key);
+      }
+    }
+
+    private boolean isLeft(int key, int child) {
+      return getLeft(key) == child;
     }
 
     private int getRight(int key) {
@@ -452,7 +578,15 @@ public abstract class SplaySortTemplate implements SplaySorter {
     }
 
     private void setRight(int key, int value) {
+//      System.out.printf("set %d.right %d\n", key, value);
       rightPointers.set(key, value);
+      if (value != NULL) {
+        setParent(value, key);
+      }
+    }
+
+    private boolean isRight(int key, int child) {
+      return getRight(key) == child;
     }
 
     private int getParent(int key) {
@@ -481,17 +615,39 @@ public abstract class SplaySortTemplate implements SplaySorter {
 //    }
 
     // right rotate
-    private int rotateRight(int h) {
+    private int rotateRight(final int h) {
+      int p = getParent(h);
       int x = getLeft(h);
       setLeft(h, getRight(x));
+      if (p != NULL) {
+        boolean isLeft = isLeft(p, h);
+        if (isLeft) {
+          setLeft(p, x);
+        } else {
+          setRight(p, x);
+        }
+      } else {
+        setParent(x, p);
+      }
       setRight(x, h);
       return x;
     }
 
     // left rotate
-    private int rotateLeft(int h) {
+    private int rotateLeft(final int h) {
+      int p = getParent(h);
       int x = getRight(h);
       setRight(h, getLeft(x));
+      if (p != NULL) {
+        boolean isLeft = isLeft(p, h);
+        if (isLeft) {
+          setLeft(p, x);
+        } else {
+          setRight(p, x);
+        }
+      } else {
+        setParent(x, p);
+      }
       setLeft(x, h);
       return x;
     }

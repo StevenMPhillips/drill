@@ -270,7 +270,12 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
             sorter = createNewSorter(context, hyperContainer);
             sorter.init(context, oContext.getAllocator(), !(batchData.getSv2() == null));
           }
-          sorter.add(context, batchData);
+          try {
+            sorter.add(context, batchData);
+          } catch (Throwable t) {
+            logger.debug(t.getMessage());
+            throw t;
+          }
           break;
         case OUT_OF_MEMORY:
           highWaterMark = totalSizeInMemory;

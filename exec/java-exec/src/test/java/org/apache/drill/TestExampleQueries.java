@@ -34,10 +34,11 @@ public class TestExampleQueries extends BaseTestQuery{
   @Test
   public void q() throws Exception {
 //    test("select * from cp.`tpch/nation.parquet` order by n_regionkey desc");
-    test("alter session set `planner.disable_exchanges` = true");
+//    test("alter session set `planner.disable_exchanges` = true");
     test("alter session set `planner.enable_hashagg` = false");
-    test("select l_extendedprice from dfs.`/drill/SF1/lineitem` order by l_extendedprice");
-//    test("select * from cp.`tpch/nation.parquet` order by n_regionkey");
+//    test("select l_extendedprice from dfs.`/drill/SF1/lineitem` order by l_extendedprice");
+    test("select count(distinct c) from (select cast(columns[0] as int) c from dfs.tmp.`file2.csv`)");
+//    test("select * from cp.`tpch/nation.parquet` order by n_nationkey");
 //    test("select * from cp.`tpch/region.parquet` order by r_comment desc");
   }
 
