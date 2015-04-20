@@ -125,7 +125,8 @@ public class PlannerSettings implements Context{
   }
 
   public boolean isMultiPhaseAggEnabled() {
-    return options.getOption(MULTIPHASE.getOptionName()).bool_val;
+//    return options.getOption(MULTIPHASE.getOptionName()).bool_val;
+    return false;
   }
 
   public boolean isBroadcastJoinEnabled() {
