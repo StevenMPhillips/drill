@@ -49,7 +49,7 @@ public class MergingReceiverPOP extends AbstractReceiver{
 
   @Override
   public boolean supportsOutOfOrderExchange() {
-    return false;
+    return true;
   }
 
   @Override

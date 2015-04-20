@@ -22,8 +22,14 @@ import java.util.List;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.exec.memory.OutOfMemoryException;
 import org.apache.drill.exec.ops.FragmentContext;
+import org.apache.drill.exec.physical.config.ExternalSort;
 import org.apache.drill.exec.physical.config.MergingReceiverPOP;
+import org.apache.drill.exec.physical.config.SelectionVectorRemover;
+import org.apache.drill.exec.physical.config.UnorderedReceiver;
 import org.apache.drill.exec.physical.impl.mergereceiver.MergingRecordBatch;
+import org.apache.drill.exec.physical.impl.svremover.RemovingRecordBatch;
+import org.apache.drill.exec.physical.impl.unorderedreceiver.UnorderedReceiverBatch;
+import org.apache.drill.exec.physical.impl.xsort.ExternalSortBatch;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.work.batch.IncomingBuffers;
 import org.apache.drill.exec.work.batch.RawBatchBuffer;
@@ -31,20 +37,36 @@ import org.apache.drill.exec.work.batch.RawBatchBuffer;
 public class MergingReceiverCreator implements BatchCreator<MergingReceiverPOP> {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MergingReceiverCreator.class);
 
-  @Override
-  public RecordBatch getBatch(FragmentContext context,
-                              MergingReceiverPOP receiver,
-                              List<RecordBatch> children)
-      throws ExecutionSetupException, OutOfMemoryException {
+//  @Override
+//  public RecordBatch getBatch(FragmentContext context,
+//                              MergingReceiverPOP receiver,
+//                              List<RecordBatch> children)
+//      throws ExecutionSetupException, OutOfMemoryException {
+//
+//    assert children == null || children.isEmpty();
+//    IncomingBuffers bufHolder = context.getBuffers();
+//
+//    assert bufHolder != null : "IncomingBuffers must be defined for any place a receiver is declared.";
+//    RawBatchBuffer[] buffers = bufHolder.getBuffers(receiver.getOppositeMajorFragmentId());
+//
+//    return new MergingRecordBatch(context, receiver, buffers);
+//  }
 
+  @Override
+  public RecordBatch getBatch(FragmentContext context, MergingReceiverPOP receiver, List<RecordBatch> children)
+      throws ExecutionSetupException {
     assert children == null || children.isEmpty();
     IncomingBuffers bufHolder = context.getBuffers();
-
     assert bufHolder != null : "IncomingBuffers must be defined for any place a receiver is declared.";
+
     RawBatchBuffer[] buffers = bufHolder.getBuffers(receiver.getOppositeMajorFragmentId());
-
-    return new MergingRecordBatch(context, receiver, buffers);
+    assert buffers.length == 1;
+    RawBatchBuffer buffer = buffers[0];
+    UnorderedReceiver newPop = new UnorderedReceiver(receiver.getOppositeMajorFragmentId(), receiver.getProvidingEndpoints());
+    UnorderedReceiverBatch batch = new UnorderedReceiverBatch(context, buffer, newPop);
+    ExternalSort sort = new ExternalSort(newPop, receiver.getOrderings(), false);
+    ExternalSortBatch sortBatch = new ExternalSortBatch(sort, context, batch);
+    return new RemovingRecordBatch(new SelectionVectorRemover(sort), context, sortBatch);
   }
-
 
 }
