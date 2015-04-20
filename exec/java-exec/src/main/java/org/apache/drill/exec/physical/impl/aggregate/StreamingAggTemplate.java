@@ -44,6 +44,7 @@ public abstract class StreamingAggTemplate implements StreamingAggregator {
   private StreamingAggBatch outgoing;
   private FragmentContext context;
   private boolean done = false;
+  private long totalAdded = 0;
 
 
   @Override
@@ -75,6 +76,8 @@ public abstract class StreamingAggTemplate implements StreamingAggregator {
   public AggOutcome doWork() {
     if (done) {
       outcome = IterOutcome.NONE;
+      long inputCount = outgoing.getTotalIncoming();
+      assert totalAdded == inputCount : String.format("Number of added records does not match incoming records: incoming: %d added: %d", inputCount, totalAdded);
       return AggOutcome.CLEANUP_AND_RETURN;
     }
     try { // outside loop to ensure that first is set to false after the first run.
@@ -330,6 +333,7 @@ public abstract class StreamingAggTemplate implements StreamingAggregator {
   private void addRecordInc(int index) {
     addRecord(index);
     this.addedRecordCount++;
+    assert ++totalAdded <= outgoing.getTotalIncoming() : String.format("Number of added records greater than incoming records: incoming: %d added: %d", outgoing.getTotalIncoming(), totalAdded);
   }
 
   @Override
