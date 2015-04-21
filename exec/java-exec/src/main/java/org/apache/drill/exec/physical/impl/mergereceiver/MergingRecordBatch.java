@@ -408,11 +408,13 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
 
         // add front value from batch[x] to priority queue
         if (batchLoaders[node.batchId].getRecordCount() != 0) {
-          pqueue.add(new Node(node.batchId, 0));
+          node.reset();
+          pqueue.add(node);
         }
 
       } else {
-        pqueue.add(new Node(node.batchId, node.valueIndex + 1));
+        node.increment();
+        pqueue.add(node);
       }
 
       if (prevBatchWasFull) {
@@ -689,9 +691,18 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   public class Node {
     public int batchId;      // incoming batch
     public int valueIndex;   // value within the batch
+
     Node(final int batchId, final int valueIndex) {
       this.batchId = batchId;
       this.valueIndex = valueIndex;
+    }
+
+    void increment() {
+      valueIndex++;
+    }
+
+    void reset() {
+      valueIndex = 0;
     }
   }
 
