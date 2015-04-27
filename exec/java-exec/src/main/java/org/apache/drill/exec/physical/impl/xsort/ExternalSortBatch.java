@@ -282,7 +282,7 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
           w.start();
           sorter.sort(sv2);
 //          logger.debug("Took {} us to sort {} records", w.elapsed(TimeUnit.MICROSECONDS), count);
-          RecordBatchData rbd = new RecordBatchData(incoming);
+          RecordBatchData rbd = new RecordBatchData(incoming, oContext.getAllocator());
           if (incoming.getSchema().getSelectionVectorMode() == SelectionVectorMode.NONE) {
             rbd.setSv2(sv2);
           }
@@ -336,7 +336,7 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
         builder = new SortRecordBatchBuilder(oContext.getAllocator(), MAX_SORT_BYTES);
 
         for (BatchGroup group : batchGroups) {
-          RecordBatchData rbd = new RecordBatchData(group.getContainer());
+          RecordBatchData rbd = new RecordBatchData(group.getContainer(), oContext.getAllocator());
           rbd.setSv2(group.getSv2());
           builder.add(rbd);
         }
@@ -430,7 +430,7 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
     int count = copier.next(targetRecordCount);
     assert count > 0;
 
-    VectorContainer c1 = VectorContainer.getTransferClone(outputContainer);
+    VectorContainer c1 = VectorContainer.getTransferClone(outputContainer, oContext.getAllocator());
     c1.buildSchema(BatchSchema.SelectionVectorMode.NONE);
     c1.setRecordCount(count);
 

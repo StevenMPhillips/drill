@@ -136,7 +136,7 @@ public class ProducerConsumerBatch extends AbstractRecordBatch {
               return;
             case OK_NEW_SCHEMA:
             case OK:
-              wrapper = new RecordBatchDataWrapper(new RecordBatchData(incoming), false, false);
+              wrapper = new RecordBatchDataWrapper(new RecordBatchData(incoming, oContext.getAllocator()), false, false);
               queue.put(wrapper);
               wrapper = null;
               break;

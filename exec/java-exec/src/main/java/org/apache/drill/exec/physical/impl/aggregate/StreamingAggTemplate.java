@@ -21,6 +21,7 @@ import javax.inject.Named;
 
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.ops.FragmentContext;
+import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.RecordBatch.IterOutcome;
@@ -40,15 +41,15 @@ public abstract class StreamingAggTemplate implements StreamingAggregator {
   private int addedRecordCount = 0;
   private IterOutcome outcome;
   private int outputCount = 0;
+  private  OperatorContext operatorContext;
   private RecordBatch incoming;
   private StreamingAggBatch outgoing;
-  private FragmentContext context;
   private boolean done = false;
 
 
   @Override
-  public void setup(FragmentContext context, RecordBatch incoming, StreamingAggBatch outgoing) throws SchemaChangeException {
-    this.context = context;
+  public void setup(OperatorContext operatorContext, RecordBatch incoming, StreamingAggBatch outgoing) throws SchemaChangeException {
+    this.operatorContext = operatorContext;
     this.incoming = incoming;
     this.outgoing = outgoing;
     setupInterior(incoming, outgoing);
@@ -166,7 +167,7 @@ public abstract class StreamingAggTemplate implements StreamingAggregator {
             if (previous != null) {
               previous.clear();
             }
-            previous = new InternalBatch(incoming);
+            previous = new InternalBatch(incoming, operatorContext.getAllocator());
             IterOutcome out = outgoing.next(0, incoming);
             if (EXTRA_DEBUG) {
               logger.debug("Received IterOutcome of {}", out);

@@ -49,10 +49,12 @@ public class SortRecordBatchBuilder {
   private long runningBatches;
   private final long maxBytes;
   private SelectionVector4 sv4;
+  private BufferAllocator allocator;
   final PreAllocator svAllocator;
 
   public SortRecordBatchBuilder(BufferAllocator a, long maxBytes) {
     this.maxBytes = maxBytes;
+    this.allocator = a;
     this.svAllocator = a.getNewPreAllocator();
   }
 
@@ -94,7 +96,7 @@ public class SortRecordBatchBuilder {
     }
 
 
-    RecordBatchData bd = new RecordBatchData(batch);
+    RecordBatchData bd = new RecordBatchData(batch, allocator);
     runningBytes += batchBytes;
     batches.put(batch.getSchema(), bd);
     recordCount += bd.getRecordCount();

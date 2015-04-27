@@ -45,7 +45,7 @@ public class TestSplitAndTransfer {
     }
     varCharVector.getMutator().setValueCount(500);
 
-    TransferPair tp = varCharVector.getTransferPair();
+    TransferPair tp = varCharVector.getTransferPair(allocator);
     NullableVarCharVector newVarCharVector = (NullableVarCharVector) tp.getTo();
     Accessor accessor = newVarCharVector.getAccessor();
     int[][] startLengths = {{0, 201}, {201, 200}, {401, 99}};
@@ -60,7 +60,6 @@ public class TestSplitAndTransfer {
         if (expectedSet) {
           byte[] expectedValue = compareArray[start + i].getBytes();
           Assert.assertFalse(accessor.isNull(i));
-//          System.out.println(new String(accessor.get(i)));
           Assert.assertArrayEquals(expectedValue, accessor.get(i));
         } else {
           Assert.assertTrue(accessor.isNull(i));

@@ -269,12 +269,12 @@ public class FlattenRecordBatch extends AbstractSingleRecordBatch<FlattenPOP> {
 
     TransferPair tp = null;
     if (flattenField instanceof RepeatedMapVector) {
-      tp = ((RepeatedMapVector)flattenField).getTransferPairToSingleMap(reference);
+      tp = ((RepeatedMapVector)flattenField).getTransferPairToSingleMap(reference, oContext.getAllocator());
     } else {
       ValueVector vvIn = ((RepeatedVector)flattenField).getAccessor().getAllChildValues();
       // vvIn may be null because of fast schema return for repeated list vectors
       if (vvIn != null) {
-        tp = vvIn.getTransferPair(reference);
+        tp = vvIn.getTransferPair(reference, oContext.getAllocator());
       }
     }
     return tp;

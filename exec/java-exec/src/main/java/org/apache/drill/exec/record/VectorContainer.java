@@ -29,6 +29,7 @@ import com.google.common.collect.Sets;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.expr.TypeHelper;
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.exec.vector.SchemaChangeCallBack;
@@ -109,15 +110,15 @@ public class VectorContainer implements Iterable<VectorWrapper<?>>, VectorAccess
    *          The RecordBatch iterator the contains the batch we should take over.
    * @return A cloned vector container.
    */
-  public static VectorContainer getTransferClone(VectorAccessible incoming) {
+  public static VectorContainer getTransferClone(VectorAccessible incoming, BufferAllocator allocator) {
     VectorContainer vc = new VectorContainer();
     for (VectorWrapper<?> w : incoming) {
-      vc.cloneAndTransfer(w);
+      vc.cloneAndTransfer(w, allocator);
     }
     return vc;
   }
 
-  public static VectorContainer getTransferClone(VectorAccessible incoming, VectorWrapper[] ignoreWrappers) {
+  public static VectorContainer getTransferClone(VectorAccessible incoming, VectorWrapper[] ignoreWrappers, BufferAllocator allocator) {
     Iterable<VectorWrapper<?>> wrappers = incoming;
     if (ignoreWrappers != null) {
       final List<VectorWrapper> ignored = Lists.newArrayList(ignoreWrappers);
@@ -128,7 +129,7 @@ public class VectorContainer implements Iterable<VectorWrapper<?>>, VectorAccess
 
     final VectorContainer vc = new VectorContainer();
     for (VectorWrapper<?> w : wrappers) {
-      vc.cloneAndTransfer(w);
+      vc.cloneAndTransfer(w, allocator);
     }
 
     return vc;
@@ -151,8 +152,13 @@ public class VectorContainer implements Iterable<VectorWrapper<?>>, VectorAccess
     return vc;
   }
 
-  private void cloneAndTransfer(VectorWrapper<?> wrapper) {
-    wrappers.add(wrapper.cloneAndTransfer());
+  /**
+   *
+   * @param wrapper the wrapper to transfer
+   * @param allocator the allocator that will own the buffers after transfer
+   */
+  private void cloneAndTransfer(VectorWrapper<?> wrapper, BufferAllocator allocator) {
+    wrappers.add(wrapper.cloneAndTransfer(allocator));
   }
 
   public void addCollection(Iterable<ValueVector> vectors) {

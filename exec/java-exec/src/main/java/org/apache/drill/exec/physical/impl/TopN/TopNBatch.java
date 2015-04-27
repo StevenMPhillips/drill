@@ -219,7 +219,7 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
           }
           countSincePurge += incoming.getRecordCount();
           batchCount++;
-          RecordBatchData batch = new RecordBatchData(incoming);
+          RecordBatchData batch = new RecordBatchData(incoming, oContext.getAllocator());
           batch.canonicalize();
           if (priorityQueue == null) {
             priorityQueue = createNewPriorityQueue(context, config.getOrderings(), new ExpandableHyperContainer(batch.getContainer()), MAIN_MAPPING, LEFT_MAPPING, RIGHT_MAPPING);

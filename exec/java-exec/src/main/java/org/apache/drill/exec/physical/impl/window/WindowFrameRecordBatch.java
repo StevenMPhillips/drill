@@ -143,7 +143,7 @@ public class WindowFrameRecordBatch extends AbstractRecordBatch<WindowPOP> {
             this.schema = incoming.getSchema();
           }
         case OK:
-          batches.add(new RecordBatchData(incoming));
+          batches.add(new RecordBatchData(incoming, oContext.getAllocator()));
           break;
         default:
           throw new UnsupportedOperationException();

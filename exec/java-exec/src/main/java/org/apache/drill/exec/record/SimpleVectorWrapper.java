@@ -20,6 +20,7 @@ package org.apache.drill.exec.record;
 import org.apache.drill.common.expression.PathSegment;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos.DataMode;
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.AbstractContainerVector;
 import org.apache.drill.exec.vector.complex.AbstractMapVector;
@@ -62,8 +63,8 @@ public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper
 
   @SuppressWarnings("unchecked")
   @Override
-  public VectorWrapper<T> cloneAndTransfer() {
-    TransferPair tp = v.getTransferPair();
+  public VectorWrapper<T> cloneAndTransfer(BufferAllocator allocator) {
+    TransferPair tp = v.getTransferPair(allocator);
     tp.transfer();
     return new SimpleVectorWrapper<T>((T) tp.getTo());
   }

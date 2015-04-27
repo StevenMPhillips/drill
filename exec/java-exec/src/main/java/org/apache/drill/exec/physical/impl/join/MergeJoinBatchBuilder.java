@@ -40,12 +40,14 @@ public class MergeJoinBatchBuilder {
   private int runningBytes;
   private int runningBatches;
   private int recordCount;
+  private BufferAllocator allocator;
   private PreAllocator svAllocator;
   private JoinStatus status;
 
   public MergeJoinBatchBuilder(BufferAllocator allocator, JoinStatus status) {
     this.container = new VectorContainer();
     this.status = status;
+    this.allocator = allocator;
     this.svAllocator = allocator.getNewPreAllocator();
   }
 
@@ -70,7 +72,7 @@ public class MergeJoinBatchBuilder {
     }
 
     // transfer VVs to a new RecordBatchData
-    RecordBatchData bd = new RecordBatchData(batch);
+    RecordBatchData bd = new RecordBatchData(batch, allocator);
     runningBytes += batchBytes;
     queuedRightBatches.put(batch.getSchema(), bd);
     recordCount += bd.getRecordCount();

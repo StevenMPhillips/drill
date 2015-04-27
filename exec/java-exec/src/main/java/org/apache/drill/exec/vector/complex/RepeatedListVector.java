@@ -261,8 +261,8 @@ public class RepeatedListVector extends AbstractContainerVector implements Repea
   }
 
   @Override
-  public TransferPair getTransferPair() {
-    return new RepeatedListTransferPair(getField().getPath());
+  public TransferPair getTransferPair(BufferAllocator allocator) {
+    return new RepeatedListTransferPair(getField().getPath(), allocator);
   }
 
   public class RepeatedListTransferPair implements TransferPair{
@@ -279,9 +279,9 @@ public class RepeatedListVector extends AbstractContainerVector implements Repea
       this.vectorTransfer = vector.makeTransferPair(to.vector);
     }
 
-    private RepeatedListTransferPair(SchemaPath path) {
+    private RepeatedListTransferPair(SchemaPath path, BufferAllocator allocator) {
       this.to = new RepeatedListVector(path, allocator, callBack);
-      vectorTransfer = vector.getTransferPair();
+      vectorTransfer = vector.getTransferPair(allocator);
       this.to.vector = vectorTransfer.getTo();
     }
 
@@ -326,8 +326,8 @@ public class RepeatedListVector extends AbstractContainerVector implements Repea
   }
 
   @Override
-  public TransferPair getTransferPair(FieldReference ref) {
-    return new RepeatedListTransferPair(ref);
+  public TransferPair getTransferPair(FieldReference ref, BufferAllocator allocator) {
+    return new RepeatedListTransferPair(ref, allocator);
   }
 
   @Override

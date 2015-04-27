@@ -18,6 +18,7 @@
 package org.apache.drill.exec.record;
 
 import org.apache.drill.common.expression.SchemaPath;
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.vector.ValueVector;
 
 
@@ -31,7 +32,13 @@ public interface VectorWrapper<T extends ValueVector> {
   public T[] getValueVectors();
   public boolean isHyper();
   public void clear();
-  public VectorWrapper<T> cloneAndTransfer();
+
+  /**
+   *
+   * @param allocator The BufferAllocator to which the ownership of buffers will be transferred
+   * @return the new VectorWrapper
+   */
+  public VectorWrapper<T> cloneAndTransfer(BufferAllocator allocator);
   public VectorWrapper<?> getChildWrapper(int[] ids);
 
   /**
