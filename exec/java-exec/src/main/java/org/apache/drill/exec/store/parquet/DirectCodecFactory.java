@@ -133,7 +133,8 @@ public class DirectCodecFactory extends CodecFactory<BytesCompressor, DirectByte
     public void decompress(DrillBuf input, int compressedSize, DrillBuf output, int uncompressedSize)
         throws IOException {
       decompressor.reset();
-      byte[] inputBytes = input.array();
+      byte[] inputBytes = new byte[compressedSize];
+      input.getBytes(0, inputBytes);
       decompressor.setInput(inputBytes, 0, inputBytes.length);
       byte[] outputBytes = new byte[uncompressedSize];
       decompressor.decompress(outputBytes, 0, uncompressedSize);
