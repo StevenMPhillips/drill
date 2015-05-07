@@ -83,7 +83,7 @@ public class TestUnlimitedBatchBuffer extends ExecTest {
     Mockito.when(context.getConfig()).thenReturn(dc);
     Mockito.when(context.shouldContinue()).thenReturn(true);
 
-    rawBuffer = new UnlimitedRawBatchBuffer(context, FRAGMENT_COUNT);
+    rawBuffer = new UnlimitedRawBatchBuffer(context, FRAGMENT_COUNT, 0);
 
     batch = Mockito.mock(RawFragmentBatch.class);
 

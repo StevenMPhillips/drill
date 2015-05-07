@@ -23,10 +23,13 @@ import io.netty.buffer.DrillBuf;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Deque;
 import java.util.List;
+import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -77,6 +80,9 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
   private int incomingBatchCounter = 0;
   private int outgoingBatchCounter = 0;
   private int oppositeId;
+  private long streamTimeStamp;
+  private volatile Spooler spooler;
+  private Thread spoolingThread;
 
   public SpoolingRawBatchBuffer(FragmentContext context, int fragmentCount, int oppositeId) throws IOException, OutOfMemoryException {
     super(context, fragmentCount);
@@ -89,6 +95,10 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     this.fs = FileSystem.get(conf);
     this.oppositeId = oppositeId;
     this.path = new Path(getDir(), getFileName());
+    outputStream = fs.create(path);
+    spooler = new Spooler();
+    spoolingThread = new Thread(spooler);
+    spoolingThread.start();
   }
 
   public static List<String> DIRS = DrillConfig.create().getStringList(ExecConstants.TEMP_DIRECTORIES);
@@ -118,10 +128,7 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     wrapper = new RawFragmentBatchWrapper(batch, !spool);
     queueSize += wrapper.getBodySize();
     if (spool) {
-      if (outputStream == null) {
-        outputStream = fs.create(path);
-      }
-      wrapper.writeToStream(outputStream);
+      spooler.addBatchForSpooling(wrapper);
     }
     buffer.add(wrapper);
     if (!spool && queueSize > threshold) {
@@ -139,15 +146,23 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
   @Override
   public void kill(FragmentContext context) {
     allocator.close();
+    if (spooler != null) {
+      spooler.stop();
+    }
   }
 
   @Override
   protected void clearBufferWithBody() {
     try {
       while (!buffer.isEmpty()) {
-        final RawFragmentBatch batch = buffer.poll().get();
-        if (batch.getBody() != null) {
-          batch.getBody().release();
+        try {
+          final RawFragmentBatch batch = buffer.poll().get();
+          if (batch.getBody() != null) {
+            batch.getBody().release();
+          }
+        } catch (InterruptedException e) {
+          // keep trying until buffer is cleared
+          continue;
         }
       }
     } catch (IOException e) {
@@ -211,6 +226,9 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
       logger.warn("Tried cleanup twice");
       return;
     }
+    if (spooler != null) {
+      spooler.stop();
+    }
     closed = true;
     allocator.close();
     try {
@@ -234,28 +252,79 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     super.cleanup();
   }
 
+  private class Spooler implements Runnable {
+
+    private volatile LinkedBlockingDeque<RawFragmentBatchWrapper> spoolingQueue;
+    private volatile boolean shouldContinue = true;
+    private Thread spoolingThread;
+
+    public Spooler() {
+      spoolingQueue = Queues.newLinkedBlockingDeque();
+    }
+
+    public void run() {
+      this.spoolingThread = Thread.currentThread();
+      while (shouldContinue) {
+        try {
+          RawFragmentBatchWrapper batch = spoolingQueue.take();
+          batch.writeToStream(outputStream);
+        } catch (IOException e) {
+          context.fail(e);
+        } catch (InterruptedException e) {
+          if (shouldContinue) {
+            continue;
+          }
+        }
+      }
+    }
+
+    public void addBatchForSpooling(RawFragmentBatchWrapper batchWrapper) {
+      if (spoolingQueue != null) {
+        spoolingQueue.add(batchWrapper);
+      } else {
+        // will not spill this batch
+        batchWrapper.available = true;
+        batchWrapper.latch.countDown();
+      }
+    }
+
+    public void stop() {
+      spoolingQueue = null;
+      shouldContinue = false;
+      if (spoolingThread.isAlive()) {
+        spoolingThread.interrupt();
+      }
+    }
+  }
+
   private class RawFragmentBatchWrapper {
     private RawFragmentBatch batch;
     private volatile boolean available;
-    private CountDownLatch latch = new CountDownLatch(1);
+    private CountDownLatch latch;
     private int bodyLength;
     private boolean outOfMemory = false;
+    private long startMark;
+    private long endMark;
+    private long timestamp;
 
     public RawFragmentBatchWrapper(RawFragmentBatch batch, boolean available) {
       Preconditions.checkNotNull(batch);
       this.batch = batch;
       this.available = available;
+      this.latch = new CountDownLatch(available ? 0 : 1);
     }
 
     public boolean isNull() {
       return batch == null;
     }
 
-    public RawFragmentBatch get() throws IOException {
+    public RawFragmentBatch get() throws InterruptedException, IOException {
       if (available) {
         return batch;
       } else {
+        latch.await();
         if (inputStream == null) {
+          streamTimeStamp = System.nanoTime();
           inputStream = fs.open(path);
         }
         readFromStream(inputStream);
@@ -273,7 +342,6 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     }
 
     public void writeToStream(FSDataOutputStream stream) throws IOException {
-      assert batch.getHeader().getSendingMajorFragmentId() == oppositeId : String.format("oppositeId: %s headerOppositeId: %s", oppositeId, batch.getHeader().getSendingMajorFragmentId());
       Stopwatch watch = new Stopwatch();
       watch.start();
       available = false;
@@ -287,10 +355,9 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
       if (bodyLength > 0) {
         buf.getBytes(0, stream, bodyLength);
       }
-      stream.sync();
-      if (batch.getHeader().getIsLastBatch()) {
-        stream.close();
-      }
+      stream.hsync();
+      timestamp = System.nanoTime();
+      latch.countDown();
       long t = watch.elapsed(TimeUnit.MICROSECONDS);
       logger.debug("Took {} us to spool {} to disk. Rate {} mb/s", t, bodyLength, bodyLength / t);
       if (buf != null) {
@@ -299,6 +366,7 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     }
 
     public void readFromStream(FSDataInputStream stream) throws IOException {
+      checkTimeStampAndReOpenFile(timestamp, stream.getPos());
       Stopwatch watch = new Stopwatch();
       watch.start();
       BitData.FragmentRecordBatch header = BitData.FragmentRecordBatch.parseDelimitedFrom(stream);
@@ -320,6 +388,15 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     private void setOutOfMemory(boolean outOfMemory) {
       this.outOfMemory = outOfMemory;
     }
+  }
+
+  private void checkTimeStampAndReOpenFile(long timestamp, long currentPosition) throws IOException {
+    if (timestamp < streamTimeStamp) {
+      return;
+    }
+    inputStream.close();
+    inputStream = fs.open(path);
+    inputStream.seek(currentPosition);
   }
 
   private String getFileName() {

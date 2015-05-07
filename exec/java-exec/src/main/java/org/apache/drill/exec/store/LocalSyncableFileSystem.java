@@ -164,6 +164,7 @@ public class LocalSyncableFileSystem extends FileSystem {
   public class LocalInputStream extends InputStream implements Seekable, PositionedReadable {
 
     private BufferedInputStream input;
+    private long position = 0;
 
     public LocalInputStream(Path path)  throws IOException {
       input = new BufferedInputStream(new FileInputStream(path.toString()), 1024*1024);
@@ -188,11 +189,12 @@ public class LocalSyncableFileSystem extends FileSystem {
     public void seek(long l) throws IOException {
       input.reset();
       input.skip(l);
+      position = l;
     }
 
     @Override
     public long getPos() throws IOException {
-      throw new IOException("getPos not supported");
+      return position;
     }
 
     @Override
@@ -204,6 +206,7 @@ public class LocalSyncableFileSystem extends FileSystem {
     public int read() throws IOException {
       byte[] b = new byte[1];
       input.read(b);
+      position++;
       return (int) b[0] & 0xFF;
     }
   }
