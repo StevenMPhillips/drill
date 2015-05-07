@@ -87,8 +87,8 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
   public SpoolingRawBatchBuffer(FragmentContext context, int fragmentCount, int oppositeId) throws IOException, OutOfMemoryException {
     super(context, fragmentCount);
     this.allocator = context.getNewChildAllocator(ALLOCATOR_INITIAL_RESERVATION, ALLOCATOR_MAX_RESERVATION, true);
-//    this.threshold = context.getConfig().getLong(ExecConstants.SPOOLING_BUFFER_MEMORY);
-    this.threshold = 10000;
+    this.threshold = context.getConfig().getLong(ExecConstants.SPOOLING_BUFFER_MEMORY);
+//    this.threshold = 10000;
     Configuration conf = new Configuration();
     conf.set(FileSystem.FS_DEFAULT_NAME_KEY, context.getConfig().getString(ExecConstants.TEMP_FILESYSTEM));
     conf.set(DRILL_LOCAL_IMPL_STRING, LocalSyncableFileSystem.class.getName());
@@ -301,11 +301,10 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     private RawFragmentBatch batch;
     private volatile boolean available;
     private CountDownLatch latch;
-    private int bodyLength;
-    private boolean outOfMemory = false;
-    private long startMark;
-    private long endMark;
-    private long timestamp;
+    private volatile int bodyLength;
+    private volatile boolean outOfMemory = false;
+    private volatile long timestamp;
+    private long position = 0;
 
     public RawFragmentBatchWrapper(RawFragmentBatch batch, boolean available) {
       Preconditions.checkNotNull(batch);

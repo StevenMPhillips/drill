@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.apache.drill.exec.ExecConstants;
+import org.apache.drill.exec.memory.OutOfMemoryException;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.physical.MinorFragmentEndpoint;
 import org.apache.drill.exec.physical.base.Receiver;
@@ -74,14 +75,16 @@ public abstract class AbstractDataCollector implements DataCollector{
     remainingRequired = new AtomicInteger(numBuffers);
 
     try {
-      String bufferClassName = context.getConfig().getString(ExecConstants.INCOMING_BUFFER_IMPL);
-      Constructor<?> bufferConstructor = Class.forName(bufferClassName).getConstructor(FragmentContext.class, int.class, int.class);
+//      String bufferClassName = context.getConfig().getString(ExecConstants.INCOMING_BUFFER_IMPL);
+//      Constructor<?> bufferConstructor = Class.forName(bufferClassName).getConstructor(FragmentContext.class, int.class, int.class);
 
-      for(int i=0; i<numBuffers; i++) {
-        buffers[i] = (RawBatchBuffer) bufferConstructor.newInstance(context, bufferCapacity, receiver.getOppositeMajorFragmentId());
+      for (int i = 0; i < numBuffers; i++) {
+//        buffers[i] = (RawBatchBuffer) bufferConstructor.newInstance(context, bufferCapacity, receiver.getOppositeMajorFragmentId());
+        buffers[i] = new SpoolingRawBatchBuffer(context, bufferCapacity, receiver.getOppositeMajorFragmentId());
       }
-    } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
-            NoSuchMethodException | ClassNotFoundException e) {
+//    } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+//            NoSuchMethodException | ClassNotFoundException e) {
+    } catch (IOException | OutOfMemoryException e) {
       logger.error("Exception", e);
       context.fail(e);
     }
