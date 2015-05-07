@@ -83,7 +83,7 @@ public class TestUnlimitedBatchBuffer extends ExecTest {
     Mockito.when(context.getConfig()).thenReturn(dc);
     Mockito.when(context.shouldContinue()).thenReturn(true);
 
-    rawBuffer = new UnlimitedRawBatchBuffer(context, FRAGMENT_COUNT);
+    rawBuffer = new UnlimitedRawBatchBuffer(context, FRAGMENT_COUNT, 0);
 
     batch = Mockito.mock(RawFragmentBatch.class);
 
@@ -94,6 +94,12 @@ public class TestUnlimitedBatchBuffer extends ExecTest {
         return null;
       }
     }).when(batch).sendOk();
+
+    Mockito.doAnswer(new Answer<Boolean>() {
+      public Boolean answer(InvocationOnMock ignore) throws Throwable {
+        return true;
+      }
+    }).when(batch).isAckSent();
 
     FragmentRecordBatch header = FragmentRecordBatch.newBuilder().setIsOutOfMemory(false).setIsLastBatch(false).build();
     Mockito.when(batch.getHeader()).thenReturn(header);
