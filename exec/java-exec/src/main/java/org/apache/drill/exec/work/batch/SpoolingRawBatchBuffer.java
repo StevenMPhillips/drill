@@ -393,7 +393,7 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     if (timestamp < streamTimeStamp) {
       return;
     }
-    inputStream.close();
+//    inputStream.close();
     inputStream = fs.open(path);
     inputStream.seek(currentPosition);
   }
