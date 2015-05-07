@@ -25,9 +25,11 @@ import org.apache.drill.exec.rpc.data.AckSender;
 public class RawFragmentBatch {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RawFragmentBatch.class);
 
-  final FragmentRecordBatch header;
-  final DrillBuf body;
-  final AckSender sender;
+  private final FragmentRecordBatch header;
+  private final DrillBuf body;
+  private final AckSender sender;
+
+  private volatile boolean ackSent;
 
   public RawFragmentBatch(FragmentRecordBatch header, DrillBuf body, AckSender sender) {
     super();
@@ -64,11 +66,18 @@ public class RawFragmentBatch {
   }
 
   public void sendOk() {
-    sender.sendOk();
+    if (sender != null && !ackSent) {
+      sender.sendOk();
+      ackSent = true;
+    }
   }
 
   public long getByteCount() {
     return body == null ? 0 : body.readableBytes();
+  }
+
+  public boolean isAckSent() {
+    return ackSent;
   }
 
 }
