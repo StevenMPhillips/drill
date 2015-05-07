@@ -99,7 +99,7 @@ public class RecordBatchLoader implements VectorAccessible, Iterable<VectorWrapp
       newVectors.add(vector);
     }
 
-    Preconditions.checkArgument(buf == null || bufOffset == buf.capacity());
+    Preconditions.checkArgument(buf == null || bufOffset == buf.capacity(), String.format("Buf Offset != capacity. offset: %s, capacity: %s", bufOffset, buf != null ? buf.capacity() : null));
 
     if(!oldFields.isEmpty()){
       schemaChanged = true;

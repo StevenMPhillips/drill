@@ -75,13 +75,14 @@ public abstract class AbstractDataCollector implements DataCollector{
 
     try {
       String bufferClassName = context.getConfig().getString(ExecConstants.INCOMING_BUFFER_IMPL);
-      Constructor<?> bufferConstructor = Class.forName(bufferClassName).getConstructor(FragmentContext.class, int.class);
+      Constructor<?> bufferConstructor = Class.forName(bufferClassName).getConstructor(FragmentContext.class, int.class, int.class);
 
       for(int i=0; i<numBuffers; i++) {
-        buffers[i] = (RawBatchBuffer) bufferConstructor.newInstance(context, bufferCapacity);
+        buffers[i] = (RawBatchBuffer) bufferConstructor.newInstance(context, bufferCapacity, receiver.getOppositeMajorFragmentId());
       }
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
             NoSuchMethodException | ClassNotFoundException e) {
+      logger.error("Exception", e);
       context.fail(e);
     }
   }
