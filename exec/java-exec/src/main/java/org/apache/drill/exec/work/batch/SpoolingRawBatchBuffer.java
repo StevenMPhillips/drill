@@ -49,6 +49,7 @@ import org.apache.drill.exec.store.LocalSyncableFileSystem;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
@@ -93,18 +94,8 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     this.allocator = context.getNewChildAllocator(ALLOCATOR_INITIAL_RESERVATION, ALLOCATOR_MAX_RESERVATION, true);
     this.threshold = context.getConfig().getLong(ExecConstants.SPOOLING_BUFFER_MEMORY);
 //    this.threshold = 10000;
-    Configuration conf = new Configuration();
-    conf.set(FileSystem.FS_DEFAULT_NAME_KEY, context.getConfig().getString(ExecConstants.TEMP_FILESYSTEM));
-    conf.set(DRILL_LOCAL_IMPL_STRING, LocalSyncableFileSystem.class.getName());
-    this.fs = FileSystem.get(conf);
     this.oppositeId = oppositeId;
     this.bufferIndex = bufferIndex;
-    this.path = new Path(getDir(), getFileName());
-    outputStream = fs.create(path);
-    spoolingThreadName = QueryIdHelper.getExecutorThreadName(context.getHandle()).concat(":Spooler-" + oppositeId + "-" + bufferIndex);
-    spooler = new Spooler();
-    spoolingThread = new Thread(spooler);
-    spoolingThread.start();
   }
 
   public static List<String> DIRS = DrillConfig.create().getStringList(ExecConstants.TEMP_DIRECTORIES);
@@ -112,6 +103,24 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
   public static String getDir() {
     Random random = new Random();
     return DIRS.get(random.nextInt(DIRS.size()));
+  }
+
+  private synchronized void initSpooler() throws IOException {
+    if (spooler != null) {
+      return;
+    }
+
+    Configuration conf = new Configuration();
+    conf.set(FileSystem.FS_DEFAULT_NAME_KEY, context.getConfig().getString(ExecConstants.TEMP_FILESYSTEM));
+    conf.set(DRILL_LOCAL_IMPL_STRING, LocalSyncableFileSystem.class.getName());
+    fs = FileSystem.get(conf);
+    path = new Path(getDir(), getFileName());
+    outputStream = fs.create(path);
+    spoolingThreadName = QueryIdHelper.getExecutorThreadName(context.getHandle()).concat(":Spooler-" + oppositeId + "-" + bufferIndex);
+    Spooler s = new Spooler();
+    spoolingThread = new Thread(s);
+    spoolingThread.start();
+    spooler = s;
   }
 
   @Override
@@ -134,6 +143,9 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     wrapper = new RawFragmentBatchWrapper(batch, !spool);
     queueSize += wrapper.getBodySize();
     if (spool) {
+      if (spooler == null) {
+        initSpooler();
+      }
       spooler.addBatchForSpooling(wrapper);
     }
     buffer.add(wrapper);
@@ -425,7 +437,9 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
           logger.debug("Took {} us to read {} from disk. Rate {} mb/s", t, bodyLength, bodyLength / t);
           tryAgain = false;
         } catch (EOFException e) {
-          logger.warn("EOF reading from file {} at pos {}", path, pos);
+
+          FileStatus status = fs.getFileStatus(path);
+          logger.warn("EOF reading from file {} at pos {}. Current file size: {}", path, pos, status.getLen());
           if (buf != null) {
             buf.release();
           }
