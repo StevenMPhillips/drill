@@ -370,6 +370,7 @@ public class FragmentExecutor implements Runnable {
    *          The failure that occurred.
    */
   private void fail(final Throwable excep) {
+    logger.warn("Failing fragment {}", QueryIdHelper.getQueryIdentifier(fragmentContext.getHandle()), excep);
     deferredException.addThrowable(excep);
     updateState(FragmentState.FAILED);
   }

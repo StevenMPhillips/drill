@@ -80,7 +80,7 @@ public abstract class AbstractDataCollector implements DataCollector{
 
       for (int i = 0; i < numBuffers; i++) {
 //        buffers[i] = (RawBatchBuffer) bufferConstructor.newInstance(context, bufferCapacity, receiver.getOppositeMajorFragmentId());
-        buffers[i] = new SpoolingRawBatchBuffer(context, bufferCapacity, receiver.getOppositeMajorFragmentId());
+        buffers[i] = new SpoolingRawBatchBuffer(context, bufferCapacity, receiver.getOppositeMajorFragmentId(), i);
       }
 //    } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
 //            NoSuchMethodException | ClassNotFoundException e) {
