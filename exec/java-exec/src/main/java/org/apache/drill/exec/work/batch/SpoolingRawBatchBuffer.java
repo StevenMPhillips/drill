@@ -395,7 +395,27 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
         buf.getBytes(0, stream, bodyLength);
       }
       stream.hsync();
-      logger.info("After spooling batch, stream at position {}", stream.getPos());
+      FileStatus status = fs.getFileStatus(path);
+      long len = status.getLen();
+      long pos = stream.getPos();
+      logger.info("After spooling batch, stream at position {}. File length {}", stream.getPos(), len);
+      int duration = 1;
+      while (pos != len) {
+        try {
+          if (duration > 10000) {
+            throw new  IOException(String.format("Stream position and file length don't match. Pos: %d len: %d", stream.getPos(), len));
+          }
+          stream.hsync();
+          Thread.sleep(duration);
+          status = fs.getFileStatus(path);
+          len = status.getLen();
+          pos = stream.getPos();
+          duration *= 2;
+        } catch (InterruptedException e) {
+          throw new IOException(e);
+        }
+      }
+//      assert stream.getPos() == len : String.format("Stream position and file length don't match. Pos: %d len: %d", stream.getPos(), len);
       timestamp = System.nanoTime();
       latch.countDown();
       long t = watch.elapsed(TimeUnit.MICROSECONDS);
