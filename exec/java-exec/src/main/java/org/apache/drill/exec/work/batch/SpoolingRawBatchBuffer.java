@@ -399,22 +399,22 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
       long len = status.getLen();
       long pos = stream.getPos();
       logger.info("After spooling batch, stream at position {}. File length {}", stream.getPos(), len);
-      int duration = 1;
-      while (pos != len) {
-        try {
-          if (duration > 10000) {
-            throw new  IOException(String.format("Stream position and file length don't match. Pos: %d len: %d", stream.getPos(), len));
-          }
-          stream.hsync();
-          Thread.sleep(duration);
-          status = fs.getFileStatus(path);
-          len = status.getLen();
-          pos = stream.getPos();
-          duration *= 2;
-        } catch (InterruptedException e) {
-          throw new IOException(e);
-        }
-      }
+//      int duration = 1;
+//      while (pos != len) {
+//        try {
+//          if (duration > 30000) {
+//            throw new  IOException(String.format("Stream position and file length don't match. Pos: %d len: %d", stream.getPos(), len));
+//          }
+//          stream.hsync();
+//          Thread.sleep(duration);
+//          status = fs.getFileStatus(path);
+//          len = status.getLen();
+//          pos = stream.getPos();
+//          duration *= 2;
+//        } catch (InterruptedException e) {
+//          throw new IOException(e);
+//        }
+//      }
 //      assert stream.getPos() == len : String.format("Stream position and file length don't match. Pos: %d len: %d", stream.getPos(), len);
       timestamp = System.nanoTime();
       latch.countDown();
@@ -425,12 +425,13 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
       }
     }
 
-    public void readFromStream() throws IOException {
+    public void readFromStream() throws IOException, InterruptedException {
       long pos = start;
       boolean tryAgain = true;
-      int tryCount = 0;
       DrillBuf buf = null;
+      int duration = 0;
       while (tryAgain) {
+        Thread.sleep(duration);
         try {
           FSDataInputStream stream = fs.open(path);
           stream.seek(start);
@@ -457,14 +458,13 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
           logger.debug("Took {} us to read {} from disk. Rate {} mb/s", t, bodyLength, bodyLength / t);
           tryAgain = false;
         } catch (EOFException e) {
-
           FileStatus status = fs.getFileStatus(path);
           logger.warn("EOF reading from file {} at pos {}. Current file size: {}", path, pos, status.getLen());
           if (buf != null) {
             buf.release();
           }
-          if (tryCount < 1000) {
-            tryCount++;
+          duration = Math.max(1, duration * 2);
+          if (duration < 60000) {
             continue;
           } else {
             throw e;
