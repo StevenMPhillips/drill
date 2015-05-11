@@ -65,7 +65,12 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
   public static final long ALLOCATOR_INITIAL_RESERVATION = 1*1024*1024;
   public static final long ALLOCATOR_MAX_RESERVATION = 20L*1000*1000*1000;
 
+
+  PLEASE UPDATE WHAT IS FINAL HERE.
   private final LinkedBlockingDeque<RawFragmentBatchWrapper> buffer = Queues.newLinkedBlockingDeque();
+
+
+  ## RENAME VARIABLE AS memoryConsumedByMemoryBatches or similar
   private volatile long queueSize = 0;
   private long threshold;
   private BufferAllocator allocator;
@@ -73,6 +78,8 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
   private FileSystem fs;
   private Path path;
   private FSDataOutputStream outputStream;
+
+  SHOULD BE IN BASE CLASS
   private boolean outOfMemory = false;
   private boolean closed = false;
   private int incomingBatchCounter = 0;
@@ -91,6 +98,7 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     this.bufferIndex = bufferIndex;
   }
 
+  STOP CREATING CONFIG, use from FRAGMENTCONTEXT
   public static List<String> DIRS = DrillConfig.create().getStringList(ExecConstants.TEMP_DIRECTORIES);
 
   public static String getDir() {
@@ -116,6 +124,7 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     spooler = s;
   }
 
+  MOVE TO BASE
   @Override
   protected void handleOutOfMemory(RawFragmentBatch batch) {
     if (!outOfMemory && !buffer.peekFirst().isOutOfMemory()) {
@@ -130,8 +139,12 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
   @Override
   protected void enqueueInner(RawFragmentBatch batch) throws IOException {
     assert batch.getHeader().getSendingMajorFragmentId() == oppositeId;
+
+    REMOVE incomingBatchCounter incrementing from log
     logger.debug("Enqueue batch: {}. Current buffer size: {}. Last batch: {}. Sending fragment: {}", ++incomingBatchCounter, buffer.size(), batch.getHeader().getIsLastBatch(), batch.getHeader().getSendingMajorFragmentId());
     RawFragmentBatchWrapper wrapper;
+
+    CHANGE TO isCurrentlySpooling and spoolCurrentBatch
     boolean spool = spooling.get();
     wrapper = new RawFragmentBatchWrapper(batch, !spool);
     queueSize += wrapper.getBodySize();
@@ -161,6 +174,7 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     }
   }
 
+  MOVE TO BASE?
   @Override
   protected void clearBufferWithBody() {
     try {
@@ -180,10 +194,13 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     }
   }
 
+  ##REMOVE?
   @Override
   protected void outOfMemoryCase() {
     if (buffer.size() < 10) {
       outOfMemory = false;
+
+      LOG MESSAGE SEEMS OUT OF PLACE
       logger.debug("Setting autoRead true");
     }
   }
@@ -192,6 +209,8 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
   protected RawFragmentBatch getNextBatchInternal() throws InterruptedException, IOException {
     logger.debug("Getting batch: {}. Current buffer size: {}", ++outgoingBatchCounter, buffer.size());
     boolean spool = spooling.get();
+
+    ## can this be moved to base?
     RawFragmentBatchWrapper w = buffer.poll();
     RawFragmentBatch batch;
     if(w == null && (!isFinished() || !buffer.isEmpty())) {
@@ -205,6 +224,8 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
       queueSize -= w.getBodySize();
       return batch;
     }
+
+    ##POSSibly move upkeep stuff to upkeep method
     if (w == null) {
       return null;
     }
@@ -234,6 +255,8 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
   }
 
   public void cleanup() {
+
+    ## This should probably be in the base.
     if (closed) {
       logger.warn("Tried cleanup twice");
       return;
@@ -310,6 +333,7 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
       }
     }
 
+    ## Use top level state variable for avoiding queueing batches
     public void addBatchForSpooling(RawFragmentBatchWrapper batchWrapper) {
       if (spoolingQueue != null) {
         spoolingQueue.add(batchWrapper);

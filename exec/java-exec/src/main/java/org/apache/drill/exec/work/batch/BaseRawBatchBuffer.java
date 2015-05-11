@@ -24,13 +24,17 @@ import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.record.RawFragmentBatch;
 
-public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
+public abstract class BaseRawBatchBuffer<T extends MyNewInterface> implements RawBatchBuffer {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(BaseRawBatchBuffer.class);
 
   private static enum BufferState {
     INIT,
     FINISHED,
     KILLED
+  }
+
+  class MyNewInterface{
+
   }
 
   private volatile BufferState state = BufferState.INIT;
@@ -76,12 +80,14 @@ public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
 
   /**
    * handle the out of memory case
+   *
    * @param batch
    */
   protected abstract void handleOutOfMemory(final RawFragmentBatch batch);
 
   /**
    * implementation specific method to enqueue batch
+   *
    * @param batch
    * @throws IOException
    */
@@ -89,14 +95,17 @@ public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
 
   /**
    * implementation specific method to get the current number of enqueued batches
+   *
    * @return
    */
   protected abstract int getBufferSize();
 
+  ## Add assertion that all acks have been sent.
   @Override
   public void cleanup() {
     if (!isFinished() && context.shouldContinue()) {
-      final String msg = String.format("Cleanup before finished. " + (fragmentCount - streamCounter) + " out of " + fragmentCount + " streams have finished.");
+      final String msg = String.format("Cleanup before finished. " + (fragmentCount - streamCounter) + " out of "
+          + fragmentCount + " streams have finished.");
       final IllegalStateException e = new IllegalStateException(msg);
       throw e;
     }
@@ -117,16 +126,20 @@ public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
   }
 
   /**
-   * Helper method to clear buffer with request bodies release
-   * also flushes ack queue - in case there are still responses pending
+   * Helper method to clear buffer with request bodies release also flushes ack queue - in case there are still
+   * responses pending
    */
   protected abstract void clearBufferWithBody();
 
   @Override
+  // RENAME FINISHED to something like more descriptive, make it private.
   public void finished() {
     if (state != BufferState.KILLED) {
       state = BufferState.FINISHED;
     }
+
+    // we need to flushAcksIn this case.
+
     if (!isBufferEmpty()) {
       throw new IllegalStateException("buffer not empty when finished");
     }
@@ -147,31 +160,37 @@ public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
       // interruption and respond to it if it wants to.
       Thread.currentThread().interrupt();
 
+      // TODO: Add finished() call here.
+
       return null;
     }
 
-    if (b != null && b.getHeader().getIsOutOfMemory()) {
-      outOfMemory.set(true);
-      return b;
-    }
+    if (b != null) {
+      if (b != null && b.getHeader().getIsOutOfMemory()) {
+        outOfMemory.set(true);
+        return b;
+      }
 
-    upkeep();
+      upkeep();
 
-    if (b != null && b.getHeader().getIsLastBatch()) {
-      logger.debug("Got last batch from {}:{}", b.getHeader().getSendingMajorFragmentId(), b.getHeader().getSendingMinorFragmentId());
-      streamCounter--;
-      if (streamCounter == 0) {
-        logger.debug("Stream finished");
-        finished();
+      if (b != null && b.getHeader().getIsLastBatch()) {
+        logger.debug("Got last batch from {}:{}", b.getHeader().getSendingMajorFragmentId(), b.getHeader()
+            .getSendingMinorFragmentId());
+        streamCounter--;
+        if (streamCounter == 0) {
+          logger.debug("Stream finished");
+          finished();
+        }
+      }
+    } else {
+      if (b == null && !isBufferEmpty()) {
+        throw new IllegalStateException("Returning null when there are batches left in queue");
+      }
+      if (b == null && !isFinished()) {
+        throw new IllegalStateException("Returning null when not finished");
       }
     }
 
-    if (b == null && !isBufferEmpty()) {
-      throw new IllegalStateException("Returning null when there are batches left in queue");
-    }
-    if (b == null && !isFinished()) {
-      throw new IllegalStateException("Returning null when not finished");
-    }
     return b;
 
   }
@@ -183,6 +202,7 @@ public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
 
   /**
    * Retrieve the next batch from the queue
+   *
    * @return
    * @throws IOException
    * @throws InterruptedException

@@ -66,6 +66,9 @@ public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer {
   }
 
   protected void clearBufferWithBody() {
+
+    WE NEED TO FLUSH ACKS here.
+
     while (!buffer.isEmpty()) {
       final RawFragmentBatch batch = buffer.poll();
       if (batch.getBody() != null) {
