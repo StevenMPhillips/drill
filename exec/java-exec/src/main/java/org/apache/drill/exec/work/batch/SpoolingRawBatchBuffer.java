@@ -166,7 +166,7 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     try {
       while (!buffer.isEmpty()) {
         try {
-          final RawFragmentBatch batch = buffer.poll().get();
+          final RawFragmentBatch batch = buffer.poll().get(); // TODO(smp) should handle IOException here and continue to cleanup
           if (batch.getBody() != null) {
             batch.getBody().release();
           }
