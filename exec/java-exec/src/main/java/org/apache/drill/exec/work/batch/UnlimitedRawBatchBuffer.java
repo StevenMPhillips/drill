@@ -33,7 +33,6 @@ public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer {
   private final AtomicBoolean overlimit = new AtomicBoolean(false);
   private final int softlimit;
   private final int startlimit;
-  private final ResponseSenderQueue readController = new ResponseSenderQueue();
 
   public UnlimitedRawBatchBuffer(FragmentContext context, int fragmentCount, int oppositeId) {
     super(context, fragmentCount);
@@ -89,36 +88,18 @@ public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer {
   }
 
   protected void enqueueInner(final RawFragmentBatch batch) throws IOException {
-    bufferQueue.add(batch);
-    if (bufferQueue.size() >= softlimit) {
-      logger.trace("buffer.size: {}", bufferQueue.size());
-      overlimit.set(true);
-      readController.enqueueResponse(batch.getSender());
-    } else {
+    if (bufferQueue.size() < softlimit) {
       batch.sendOk();
     }
+    bufferQueue.add(batch);
   }
 
   @Override
   protected void flush() {
-    readController.flushResponses();
   }
 
 
   protected void upkeep(RawFragmentBatch batch) {
-    // try to flush the difference between softlimit and queue size, so every flush we are reducing backlog
-    // when queue size is lower then softlimit - the bigger the difference the more we can flush
-    if (!isTerminated() && overlimit.get()) {
-      final int flushCount = softlimit - bufferQueue.size();
-      if ( flushCount > 0 ) {
-        final int flushed = readController.flushResponses(flushCount);
-        logger.trace("flush {} entries, flushed {} entries ", flushCount, flushed);
-        if ( flushed == 0 ) {
-          // queue is empty - nothing to do for now
-          overlimit.set(false);
-        }
-      }
-    }
   }
 
   boolean isBufferEmpty() {
@@ -127,10 +108,5 @@ public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer {
 
   protected int getBufferSize() {
     return bufferQueue.size();
-  }
-
-  @VisibleForTesting
-  ResponseSenderQueue getReadController() {
-    return readController;
   }
 }
