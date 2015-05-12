@@ -29,6 +29,8 @@ public class RawFragmentBatch {
   final DrillBuf body;
   final AckSender sender;
 
+  public volatile boolean ackSent;
+
   public RawFragmentBatch(FragmentRecordBatch header, DrillBuf body, AckSender sender) {
     super();
     this.header = header;
@@ -64,7 +66,10 @@ public class RawFragmentBatch {
   }
 
   public void sendOk() {
-    sender.sendOk();
+    if (!ackSent && sender != null) {
+      sender.sendOk();
+      ackSent = true;
+    }
   }
 
   public long getByteCount() {

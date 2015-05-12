@@ -62,6 +62,15 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
     this.context = context;
   }
 
+  private void checkAndAck(RawFragmentBatch batch) {
+    if (batch == null) {
+      return;
+    }
+    if (buffer.size() < softlimit) {
+      batch.sendOk();
+    }
+  }
+
   @Override
   public void enqueue(final RawFragmentBatch batch) throws IOException {
 
@@ -92,6 +101,8 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
       return;
     }
     buffer.add(batch);
+    checkAndAck(batch);
+    /*
     if (buffer.size() >= softlimit) {
       logger.trace("buffer.size: {}", buffer.size());
       overlimit.set(true);
@@ -99,6 +110,7 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
     } else {
       batch.sendOk();
     }
+    */
   }
 
   @Override
@@ -176,7 +188,10 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
       return b;
     }
 
-
+    if (b != null) {
+      b.sendOk();
+    }
+    /*
     // try to flush the difference between softlimit and queue size, so every flush we are reducing backlog
     // when queue size is lower then softlimit - the bigger the difference the more we can flush
     if (!isFinished() && overlimit.get()) {
@@ -190,6 +205,7 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
         }
       }
     }
+    */
 
     if (b != null && b.getHeader().getIsLastBatch()) {
       streamCounter--;
@@ -204,6 +220,7 @@ public class UnlimitedRawBatchBuffer implements RawBatchBuffer{
     if (b == null && !isFinished()) {
       throw new IllegalStateException("Returning null when not finished");
     }
+    assert b == null || b.ackSent : "Ack not sent";
     return b;
 
   }
