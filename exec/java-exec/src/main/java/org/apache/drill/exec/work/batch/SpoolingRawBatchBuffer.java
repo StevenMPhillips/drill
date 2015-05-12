@@ -24,14 +24,11 @@ import io.netty.buffer.DrillBuf;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.drill.common.config.DrillConfig;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.memory.OutOfMemoryException;
@@ -65,30 +62,35 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
   public static final long ALLOCATOR_INITIAL_RESERVATION = 1*1024*1024;
   public static final long ALLOCATOR_MAX_RESERVATION = 20L*1000*1000*1000;
 
+  private enum SpoolingState {
+    NOT_SPOOLING,
+    SPOOLING,
+    PAUSE_SPOOLING,
+    STOP_SPOOLING
+  }
 
-  PLEASE UPDATE WHAT IS FINAL HERE.
-  private final LinkedBlockingDeque<RawFragmentBatchWrapper> buffer = Queues.newLinkedBlockingDeque();
+
+//  PLEASE UPDATE WHAT IS FINAL HERE.
 
 
-  ## RENAME VARIABLE AS memoryConsumedByMemoryBatches or similar
-  private volatile long queueSize = 0;
+//  ## RENAME VARIABLE AS memoryConsumedByMemoryBatches or similar
+  private volatile long currentSizeInMemory = 0;
   private long threshold;
   private BufferAllocator allocator;
-  private volatile AtomicBoolean spooling = new AtomicBoolean(false);
+  private volatile SpoolingState spoolingState;
   private FileSystem fs;
   private Path path;
   private FSDataOutputStream outputStream;
 
-  SHOULD BE IN BASE CLASS
+//  SHOULD BE IN BASE CLASS
   private boolean outOfMemory = false;
   private boolean closed = false;
-  private int incomingBatchCounter = 0;
-  private int outgoingBatchCounter = 0;
   private int oppositeId;
   private volatile Spooler spooler;
   private Thread spoolingThread;
   private String spoolingThreadName;
   private int bufferIndex;
+  private final FragmentContext fragmentContext;
 
   public SpoolingRawBatchBuffer(FragmentContext context, int fragmentCount, int oppositeId, int bufferIndex) throws IOException, OutOfMemoryException {
     super(context, fragmentCount);
@@ -96,14 +98,93 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     this.threshold = context.getConfig().getLong(ExecConstants.SPOOLING_BUFFER_MEMORY);
     this.oppositeId = oppositeId;
     this.bufferIndex = bufferIndex;
+    this.fragmentContext = context;
+    this.bufferQueue = new SpoolingBufferQueue();
   }
 
-  STOP CREATING CONFIG, use from FRAGMENTCONTEXT
-  public static List<String> DIRS = DrillConfig.create().getStringList(ExecConstants.TEMP_DIRECTORIES);
+  private class SpoolingBufferQueue implements BufferQueue<RawFragmentBatchWrapper> {
 
-  public static String getDir() {
-    Random random = new Random();
-    return DIRS.get(random.nextInt(DIRS.size()));
+    private final LinkedBlockingDeque<RawFragmentBatchWrapper> buffer = Queues.newLinkedBlockingDeque();
+
+    @Override
+    public void addOomBatch(RawFragmentBatch batch) {
+      RawFragmentBatchWrapper batchWrapper = new RawFragmentBatchWrapper(batch, true);
+      batchWrapper.setOutOfMemory(true);
+      buffer.addFirst(batchWrapper);
+    }
+
+    @Override
+    public RawFragmentBatch poll() throws IOException {
+      RawFragmentBatchWrapper batchWrapper = buffer.poll();
+      if (batchWrapper != null) {
+        try {
+          return batchWrapper.get();
+        } catch (InterruptedException e) {
+          return null;
+        }
+      }
+      return null;
+    }
+
+    @Override
+    public RawFragmentBatch take() throws IOException, InterruptedException {
+      return buffer.take().get();
+    }
+
+    @Override
+    public boolean checkForOutOfMemory() {
+      return buffer.peek().isOutOfMemory();
+    }
+
+    @Override
+    public int size() {
+      return buffer.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return buffer.size() == 0;
+    }
+
+    public void add(RawFragmentBatchWrapper batchWrapper) {
+      buffer.add(batchWrapper);
+    }
+  }
+
+  private synchronized void setSpoolingState(SpoolingState newState) {
+    SpoolingState currentState = spoolingState;
+    if (newState == SpoolingState.NOT_SPOOLING ||
+        currentState == SpoolingState.STOP_SPOOLING) {
+      return;
+    }
+    spoolingState = newState;
+  }
+
+  private static final String error = "Cannot change spooling state from %s to %s";
+
+  private boolean isCurrentlySpooling() {
+    return spoolingState == SpoolingState.SPOOLING;
+  }
+
+  private void setCurrentlySpooling() {
+    setSpoolingState(SpoolingState.SPOOLING);
+  }
+
+  private void setPauseSpooling() {
+    setSpoolingState(SpoolingState.PAUSE_SPOOLING);
+  }
+
+  private boolean isStopSpooling() {
+    return spoolingState == SpoolingState.STOP_SPOOLING;
+  }
+
+  private void setStopSpooling() {
+    setSpoolingState(SpoolingState.STOP_SPOOLING);
+  }
+
+  public String getDir() {
+    List<String> dirs = fragmentContext.getConfig().getStringList(ExecConstants.TEMP_DIRECTORIES);
+    return dirs.get(ThreadLocalRandom.current().nextInt(dirs.size()));
   }
 
   private synchronized void initSpooler() throws IOException {
@@ -124,46 +205,32 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     spooler = s;
   }
 
-  MOVE TO BASE
-  @Override
-  protected void handleOutOfMemory(RawFragmentBatch batch) {
-    if (!outOfMemory && !buffer.peekFirst().isOutOfMemory()) {
-      logger.debug("Adding OOM message to front of queue. Current queue size: {}", buffer.size());
-      buffer.addFirst(new RawFragmentBatchWrapper(batch, true));
-    } else {
-      logger.debug("ignoring duplicate OOM message");
-    }
-    batch.sendOk();
-  }
-
   @Override
   protected void enqueueInner(RawFragmentBatch batch) throws IOException {
     assert batch.getHeader().getSendingMajorFragmentId() == oppositeId;
 
-    REMOVE incomingBatchCounter incrementing from log
-    logger.debug("Enqueue batch: {}. Current buffer size: {}. Last batch: {}. Sending fragment: {}", ++incomingBatchCounter, buffer.size(), batch.getHeader().getIsLastBatch(), batch.getHeader().getSendingMajorFragmentId());
+    logger.debug("Enqueue batch. Current buffer size: {}. Last batch: {}. Sending fragment: {}", bufferQueue.size(), batch.getHeader().getIsLastBatch(), batch.getHeader().getSendingMajorFragmentId());
     RawFragmentBatchWrapper wrapper;
 
-    CHANGE TO isCurrentlySpooling and spoolCurrentBatch
-    boolean spool = spooling.get();
-    wrapper = new RawFragmentBatchWrapper(batch, !spool);
-    queueSize += wrapper.getBodySize();
-    if (spool) {
+    boolean spoolCurrentBatch = isCurrentlySpooling();
+    wrapper = new RawFragmentBatchWrapper(batch, !spoolCurrentBatch);
+    currentSizeInMemory += wrapper.getBodySize();
+    if (spoolCurrentBatch) {
       if (spooler == null) {
         initSpooler();
       }
       spooler.addBatchForSpooling(wrapper);
     }
-    buffer.add(wrapper);
-    if (!spool && queueSize > threshold) {
-      logger.debug("Buffer size {} greater than threshold {}. Start spooling to disk", queueSize, threshold);
-      spooling.set(true);
+    bufferQueue.add(wrapper);
+    if (!spoolCurrentBatch && currentSizeInMemory > threshold) {
+      logger.debug("Buffer size {} greater than threshold {}. Start spooling to disk", currentSizeInMemory, threshold);
+      setCurrentlySpooling();
     }
   }
 
   @Override
   protected int getBufferSize() {
-    return buffer.size();
+    return bufferQueue.size();
   }
 
   @Override
@@ -174,93 +241,35 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
     }
   }
 
-  MOVE TO BASE?
   @Override
-  protected void clearBufferWithBody() {
-    try {
-      while (!buffer.isEmpty()) {
-        try {
-          final RawFragmentBatch batch = buffer.poll().get(); // TODO(smp) should handle IOException here and continue to cleanup
-          if (batch.getBody() != null) {
-            batch.getBody().release();
-          }
-        } catch (InterruptedException e) {
-          // keep trying until buffer is cleared
-          continue;
-        }
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
+  protected void flush() {
 
-  ##REMOVE?
-  @Override
-  protected void outOfMemoryCase() {
-    if (buffer.size() < 10) {
-      outOfMemory = false;
-
-      LOG MESSAGE SEEMS OUT OF PLACE
-      logger.debug("Setting autoRead true");
-    }
   }
 
   @Override
-  protected RawFragmentBatch getNextBatchInternal() throws InterruptedException, IOException {
-    logger.debug("Getting batch: {}. Current buffer size: {}", ++outgoingBatchCounter, buffer.size());
-    boolean spool = spooling.get();
-
-    ## can this be moved to base?
-    RawFragmentBatchWrapper w = buffer.poll();
-    RawFragmentBatch batch;
-    if(w == null && (!isFinished() || !buffer.isEmpty())) {
-      w = buffer.take();
-      batch = w.get();
-      FragmentRecordBatch header = batch.getHeader();
-      if (header.getIsOutOfMemory()) {
-        outOfMemory = true;
-        return batch;
-      }
-      queueSize -= w.getBodySize();
-      return batch;
-    }
-
-    ##POSSibly move upkeep stuff to upkeep method
-    if (w == null) {
-      return null;
-    }
-    batch = w.get();
+  protected void upkeep(RawFragmentBatch batch) {
     FragmentRecordBatch header = batch.getHeader();
     if (header.getIsOutOfMemory()) {
       outOfMemory = true;
-      return batch;
+      return;
     }
-    queueSize -= w.getBodySize();
-    if (spool && queueSize < threshold * STOP_SPOOLING_FRACTION) {
-      logger.debug("buffer size {} less than {}x threshold. Stop spooling.", queueSize, STOP_SPOOLING_FRACTION);
-      spooling.set(false);
+    DrillBuf body = batch.getBody();
+    if (body != null) {
+      currentSizeInMemory -= body.capacity();
     }
-    logger.debug("Got batch: {}. Current buffer size: {}", outgoingBatchCounter, buffer.size());
-    return batch;
-  }
-
-  @Override
-  protected void upkeep() {
-
+    if (isCurrentlySpooling() && currentSizeInMemory < threshold * STOP_SPOOLING_FRACTION) {
+      logger.debug("buffer size {} less than {}x threshold. Stop spooling.", currentSizeInMemory, STOP_SPOOLING_FRACTION);
+      setPauseSpooling();
+    }
+    logger.debug("Got batch. Current buffer size: {}", bufferQueue.size());
   }
 
   @Override
   boolean isBufferEmpty() {
-    return buffer.isEmpty();
+    return bufferQueue.isEmpty();
   }
 
   public void cleanup() {
-
-    ## This should probably be in the base.
-    if (closed) {
-      logger.warn("Tried cleanup twice");
-      return;
-    }
     if (spooler != null) {
       spooler.stop();
       while (spoolingThread.isAlive()) {
@@ -272,7 +281,6 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
         }
       }
     }
-    closed = true;
     allocator.close();
     try {
       if (outputStream != null) {
@@ -333,14 +341,14 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
       }
     }
 
-    ## Use top level state variable for avoiding queueing batches
     public void addBatchForSpooling(RawFragmentBatchWrapper batchWrapper) {
-      if (spoolingQueue != null) {
+      if (isStopSpooling()) {
         spoolingQueue.add(batchWrapper);
       } else {
         // will not spill this batch
         batchWrapper.available = true;
         batchWrapper.latch.countDown();
+        batchWrapper.batch.sendOk();
       }
     }
 

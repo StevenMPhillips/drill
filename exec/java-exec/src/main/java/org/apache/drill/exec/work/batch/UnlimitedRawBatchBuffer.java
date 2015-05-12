@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UnlimitedRawBatchBuffer.class);
 
-  private final LinkedBlockingDeque<RawFragmentBatch> buffer;
   private final AtomicBoolean overlimit = new AtomicBoolean(false);
   private final int softlimit;
   private final int startlimit;
@@ -41,23 +40,52 @@ public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer {
     this.softlimit = bufferSizePerSocket * fragmentCount;
     this.startlimit = Math.max(softlimit/2, 1);
     logger.trace("softLimit: {}, startLimit: {}", softlimit, startlimit);
-    this.buffer = Queues.newLinkedBlockingDeque();
+    this.bufferQueue = new UnlimitedBufferQueue();
   }
 
-  protected void handleOutOfMemory(final RawFragmentBatch batch) {
-    logger.trace("Setting autoread false");
-    final RawFragmentBatch firstBatch = buffer.peekFirst();
-    final FragmentRecordBatch header = firstBatch == null ? null :firstBatch.getHeader();
-    if (!outOfMemory.get() && !(header == null) && header.getIsOutOfMemory()) {
+  private class UnlimitedBufferQueue implements BufferQueue<RawFragmentBatch> {
+    private final LinkedBlockingDeque<RawFragmentBatch> buffer = Queues.newLinkedBlockingDeque();;
+
+    @Override
+    public void addOomBatch(RawFragmentBatch batch) {
       buffer.addFirst(batch);
     }
-    outOfMemory.set(true);
+
+    @Override
+    public RawFragmentBatch poll() throws IOException {
+      return buffer.poll();
+    }
+
+    @Override
+    public RawFragmentBatch take() throws IOException, InterruptedException {
+      return buffer.take();
+    }
+
+    @Override
+    public boolean checkForOutOfMemory() {
+      return buffer.peekFirst().getHeader().getIsOutOfMemory();
+    }
+
+    @Override
+    public int size() {
+      return buffer.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return buffer.size() == 0;
+    }
+
+    @Override
+    public void add(RawFragmentBatch batch) {
+      buffer.add(batch);
+    }
   }
 
   protected void enqueueInner(final RawFragmentBatch batch) throws IOException {
-    buffer.add(batch);
-    if (buffer.size() >= softlimit) {
-      logger.trace("buffer.size: {}", buffer.size());
+    bufferQueue.add(batch);
+    if (bufferQueue.size() >= softlimit) {
+      logger.trace("buffer.size: {}", bufferQueue.size());
       overlimit.set(true);
       readController.enqueueResponse(batch.getSender());
     } else {
@@ -65,42 +93,17 @@ public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer {
     }
   }
 
-  protected void clearBufferWithBody() {
-
-    WE NEED TO FLUSH ACKS here.
-
-    while (!buffer.isEmpty()) {
-      final RawFragmentBatch batch = buffer.poll();
-      if (batch.getBody() != null) {
-        batch.getBody().release();
-      }
-    }
+  @Override
+  protected void flush() {
     readController.flushResponses();
   }
 
-  protected void outOfMemoryCase() {
-    if (buffer.size() < 10) {
-      logger.trace("Setting autoread true");
-      outOfMemory.set(false);
-      readController.flushResponses();
-    }
-  }
 
-  protected RawFragmentBatch getNextBatchInternal() throws InterruptedException {
-    RawFragmentBatch b = buffer.poll();
-
-    // if we didn't get a buffer, block on waiting for buffer.
-    if (b == null && (!isFinished() || !buffer.isEmpty())) {
-      b = buffer.take();
-    }
-    return b;
-  }
-
-  protected void upkeep() {
+  protected void upkeep(RawFragmentBatch batch) {
     // try to flush the difference between softlimit and queue size, so every flush we are reducing backlog
     // when queue size is lower then softlimit - the bigger the difference the more we can flush
-    if (!isFinished() && overlimit.get()) {
-      final int flushCount = softlimit - buffer.size();
+    if (!isTerminated() && overlimit.get()) {
+      final int flushCount = softlimit - bufferQueue.size();
       if ( flushCount > 0 ) {
         final int flushed = readController.flushResponses(flushCount);
         logger.trace("flush {} entries, flushed {} entries ", flushCount, flushed);
@@ -113,11 +116,11 @@ public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer {
   }
 
   boolean isBufferEmpty() {
-    return buffer.isEmpty();
+    return bufferQueue.isEmpty();
   }
 
   protected int getBufferSize() {
-    return buffer.size();
+    return bufferQueue.size();
   }
 
   @VisibleForTesting
