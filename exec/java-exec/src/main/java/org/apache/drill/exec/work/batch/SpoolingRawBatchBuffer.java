@@ -218,21 +218,11 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
   }
 
   @Override
-  protected int getBufferSize() {
-    return bufferQueue.size();
-  }
-
-  @Override
   public void kill(FragmentContext context) {
     allocator.close();
     if (spooler != null) {
       spooler.stop();
     }
-  }
-
-  @Override
-  protected void flush() {
-
   }
 
   @Override
@@ -331,8 +321,8 @@ public class SpoolingRawBatchBuffer extends BaseRawBatchBuffer {
       } else {
         // will not spill this batch
         batchWrapper.available = true;
-        batchWrapper.latch.countDown();
         batchWrapper.batch.sendOk();
+        batchWrapper.latch.countDown();
       }
     }
 

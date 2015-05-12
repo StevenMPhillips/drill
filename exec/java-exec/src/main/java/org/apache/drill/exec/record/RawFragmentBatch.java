@@ -29,7 +29,7 @@ public class RawFragmentBatch {
   private final DrillBuf body;
   private final AckSender sender;
 
-  private boolean ackSent;
+  private volatile boolean ackSent;
 
   public RawFragmentBatch(FragmentRecordBatch header, DrillBuf body, AckSender sender) {
     super();
@@ -65,7 +65,7 @@ public class RawFragmentBatch {
     return sender;
   }
 
-  public synchronized void sendOk() {
+  public void sendOk() {
     if (sender != null && !ackSent) {
       sender.sendOk();
       ackSent = true;

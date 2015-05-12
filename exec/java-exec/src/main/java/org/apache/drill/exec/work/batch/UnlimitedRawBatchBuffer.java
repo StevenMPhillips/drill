@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UnlimitedRawBatchBuffer.class);
 
-  private final AtomicBoolean overlimit = new AtomicBoolean(false);
   private final int softlimit;
   private final int startlimit;
 
@@ -94,19 +93,6 @@ public class UnlimitedRawBatchBuffer extends BaseRawBatchBuffer {
     bufferQueue.add(batch);
   }
 
-  @Override
-  protected void flush() {
-  }
-
-
   protected void upkeep(RawFragmentBatch batch) {
-  }
-
-  boolean isBufferEmpty() {
-    return bufferQueue.isEmpty();
-  }
-
-  protected int getBufferSize() {
-    return bufferQueue.size();
   }
 }

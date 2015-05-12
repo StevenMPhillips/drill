@@ -108,13 +108,6 @@ public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
    */
   protected abstract void enqueueInner(final RawFragmentBatch batch) throws IOException;
 
-  /**
-   * implementation specific method to get the current number of enqueued batches
-   *
-   * @return
-   */
-  protected abstract int getBufferSize();
-
 //  ## Add assertion that all acks have been sent. TODO
   @Override
   public void cleanup() {
@@ -127,7 +120,7 @@ public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
     if (!bufferQueue.isEmpty()) {
       if (context.shouldContinue()) {
         context.fail(new IllegalStateException("Batches still in queue during cleanup"));
-        logger.error("{} Batches in queue.", getBufferSize());
+        logger.error("{} Batches in queue.", bufferQueue.size());
       }
       clearBufferWithBody();
     }
@@ -144,7 +137,6 @@ public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
    * responses pending
    */
   private void clearBufferWithBody() {
-    flush();
     while (!bufferQueue.isEmpty()) {
       final RawFragmentBatch batch;
       try {
@@ -165,8 +157,6 @@ public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
       state = BufferState.STREAMS_FINISHED;
     }
 
-    flush();
-
     if (!bufferQueue.isEmpty()) {
       throw new IllegalStateException("buffer not empty when finished");
     }
@@ -178,7 +168,6 @@ public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
     if (outOfMemory.get()) {
       if (bufferQueue.size() < 10) {
         outOfMemory.set(false);
-        flush();
       }
     }
 
@@ -248,8 +237,6 @@ public abstract class BaseRawBatchBuffer implements RawBatchBuffer {
   private int completedStreams() {
     return fragmentCount - streamCounter;
   }
-
-  protected abstract void flush();
 
   /**
    * Handle miscellaneous tasks after batch retrieval
