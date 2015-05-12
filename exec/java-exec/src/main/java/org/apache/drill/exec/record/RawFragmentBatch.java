@@ -65,7 +65,7 @@ public class RawFragmentBatch {
     return sender;
   }
 
-  public void sendOk() {
+  public synchronized void sendOk() {
     if (sender != null && !ackSent) {
       sender.sendOk();
       ackSent = true;
