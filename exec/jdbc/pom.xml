@@ -140,7 +140,6 @@
               <artifactId>servlet-api-2.5</artifactId>
             </exclusion>
           </exclusions>
-          <scope>test</scope>
         </dependency>
       </dependencies>
     </profile>
