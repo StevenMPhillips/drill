@@ -1031,4 +1031,26 @@ public class TestExampleQueries extends BaseTestQuery {
         .baselineValues(1L, 1L, listOf(listOf(listOf("val1"), listOf("val2"))))
         .go();
   }
+
+  @Test
+  public void testPartitionCTAS() throws  Exception {
+    test("use dfs_test.tmp; " +
+        "create table mytable1  partition by (r_regionkey) as select r_regionkey, r_name from cp.`tpch/region.parquet`");
+
+    test("use dfs_test.tmp; " +
+        "create table mytable2  partition by (r_regionkey) as select * from cp.`tpch/region.parquet`");
+
+    test("use dfs_test.tmp; " +
+        "create table mytable3  partition by (r_regionkey) as " +
+        "  select r.r_regionkey, r.r_name, n.n_nationkey, n.n_name from cp.`tpch/nation.parquet` n, cp.`tpch/region.parquet` r " +
+        "  where n.n_regionkey = r.r_regionkey");
+
+    test("use dfs_test.tmp; " +
+        "create table mytable4  partition by (r_regionkey) as " +
+        "  select  r.* from cp.`tpch/nation.parquet` n, cp.`tpch/region.parquet` r " +
+        "  where n.n_regionkey = r.r_regionkey");
+
+
+  }
+
 }
