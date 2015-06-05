@@ -32,6 +32,11 @@ import static org.apache.drill.TestBuilder.listOf;
 public class TestExampleQueries extends BaseTestQuery {
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
+  @Test
+  public void q() throws Exception {
+    test("select n_regionkey, newValue(n_regionkey) as newValue from (select n_regionkey from cp.`tpch/nation.parquet` order by n_regionkey)");
+  }
+
   @Test // see DRILL-2328
   public void testConcatOnNull() throws Exception {
     try {

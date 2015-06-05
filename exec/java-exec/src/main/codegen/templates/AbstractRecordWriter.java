@@ -31,6 +31,16 @@ import java.lang.UnsupportedOperationException;
 
 public abstract class AbstractRecordWriter implements RecordWriter {
 
+  private Accessor newPartitionVector;
+
+  protected void setPartitionVector(IntVector newPartitionVector) {
+    this.newPartitionVector = newPartitionVector.getAccessor();
+  }
+
+  protected boolean newPartition(int index) {
+    return newPartitionVector.get(index) == 1;
+  }
+
   @Override
   public FieldConverter getNewMapConverter(int fieldId, String fieldName, FieldReader reader) {
     throw new UnsupportedOperationException("Doesn't support writing Map'");

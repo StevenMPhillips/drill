@@ -49,6 +49,11 @@ public interface RecordWriter {
   void updateSchema(BatchSchema schema) throws IOException;
 
   /**
+   * Check if the writer should start a new partition, and if so, start a new partition
+   */
+  public void checkForNewPartition();
+
+  /**
    * Called before starting writing fields in a record.
    * @throws IOException
    */
