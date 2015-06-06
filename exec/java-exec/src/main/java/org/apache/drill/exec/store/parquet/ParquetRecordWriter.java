@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos.DataMode;
 import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.exec.ExecConstants;
@@ -33,9 +34,12 @@ import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.MaterializedField;
+import org.apache.drill.exec.record.TypedFieldId;
+import org.apache.drill.exec.record.VectorAccessible;
 import org.apache.drill.exec.store.EventBasedRecordWriter;
 import org.apache.drill.exec.store.EventBasedRecordWriter.FieldConverter;
 import org.apache.drill.exec.store.ParquetOutputRecordWriter;
+import org.apache.drill.exec.vector.IntVector;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -132,13 +136,18 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
   }
 
   @Override
-  public void updateSchema(BatchSchema batchSchema) throws IOException {
-    if (this.batchSchema == null || !this.batchSchema.equals(batchSchema)) {
+  public void updateSchema(VectorAccessible batch) throws IOException {
+    if (this.batchSchema == null || !this.batchSchema.equals(batch.getSchema())) {
       if (this.batchSchema != null) {
         flush();
       }
-      this.batchSchema = batchSchema;
+      this.batchSchema = batch.getSchema();
       newSchema();
+    }
+    TypedFieldId fieldId = batch.getValueVectorId(SchemaPath.getSimplePath("newPartitionVector"));
+    IntVector v = (IntVector) batch.getValueAccessorById(IntVector.class, fieldId.getFieldIds()).getValueVector();
+    if (v != null) {
+      setPartitionVector(v);
     }
   }
 
@@ -187,6 +196,11 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
       default:
         return getPrimitiveType(field);
     }
+  }
+
+  @Override
+  public void checkForNewPartition(int index) {
+    boolean newPartition = newPartition(index);
   }
 
   private void flush() throws IOException {

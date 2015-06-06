@@ -54,7 +54,7 @@ public class EventBasedRecordWriter {
     int counter = 0;
 
     for (; counter < recordCount; counter++) {
-      recordWriter.checkForNewPartition();
+      recordWriter.checkForNewPartition(counter);
       recordWriter.startRecord();
       // write the current record
       for (FieldConverter converter : fieldConverters) {

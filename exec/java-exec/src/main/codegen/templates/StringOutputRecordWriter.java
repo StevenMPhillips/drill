@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+import org.apache.drill.exec.store.AbstractRecordWriter;
+
 import java.lang.Override;
 import java.lang.UnsupportedOperationException;
 
@@ -48,7 +50,7 @@ import java.util.Map;
  *
  * This is useful for text format writers such as CSV, TSV etc.
  */
-public abstract class StringOutputRecordWriter implements RecordWriter {
+public abstract class StringOutputRecordWriter extends AbstractRecordWriter {
 
   private final BufferAllocator allocator;
   protected StringOutputRecordWriter(BufferAllocator allocator){

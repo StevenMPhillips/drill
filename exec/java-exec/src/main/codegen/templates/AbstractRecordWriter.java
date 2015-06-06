@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+import java.lang.UnsupportedOperationException;
+
 <@pp.dropOutputFile />
 <@pp.changeOutputFile name="org/apache/drill/exec/store/AbstractRecordWriter.java" />
 <#include "/@includes/license.ftl" />
@@ -24,6 +26,8 @@ package org.apache.drill.exec.store;
 
 import org.apache.drill.exec.expr.holders.*;
 import org.apache.drill.exec.store.EventBasedRecordWriter.FieldConverter;
+import org.apache.drill.exec.vector.IntVector;
+import org.apache.drill.exec.vector.IntVector.Accessor;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
 import java.io.IOException;
@@ -39,6 +43,10 @@ public abstract class AbstractRecordWriter implements RecordWriter {
 
   protected boolean newPartition(int index) {
     return newPartitionVector.get(index) == 1;
+  }
+
+  public void checkForNewPartition(int index) {
+    // no op
   }
 
   @Override
