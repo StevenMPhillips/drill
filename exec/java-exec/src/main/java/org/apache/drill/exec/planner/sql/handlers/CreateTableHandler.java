@@ -18,16 +18,20 @@
 package org.apache.drill.exec.planner.sql.handlers;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import com.google.common.collect.Lists;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.RelConversionException;
 import org.apache.calcite.tools.ValidationException;
@@ -120,6 +124,9 @@ public class CreateTableHandler extends DefaultSqlHandler {
    * For CTAS : create table t1 partition by (con_A) select * from T1;
    *   A Project with Item expr will be inserted, in addition to *.  We need insert another Project to remove
    *   this additional expression.
+   *
+   * In addition, to make execution's implementation easier, we'll add a special field into project under
+   * writer, so that execution will use that field to check uniqueness.
    */
   private class ProjectForWriterVisitor extends BasePrelVisitor<Prel, Void, RuntimeException> {
 
@@ -148,29 +155,34 @@ public class CreateTableHandler extends DefaultSqlHandler {
 
       final RelDataType childRowType = child.getRowType();
 
-      if (! childRowType.equals(this.queryRowType)) {
-        final RelOptCluster cluster = prel.getCluster();
+      final RelOptCluster cluster = prel.getCluster();
 
-        final List<RexNode> refs =
-            new AbstractList<RexNode>() {
-              public int size() {
-                return queryRowType.getFieldCount();
-              }
+      final List<RexNode> exprs =
+          new AbstractList<RexNode>() {
+            public int size() {
+              return queryRowType.getFieldCount() + 1 ;
+            }
 
-              public RexNode get(int index) {
+            public RexNode get(int index) {
+              if (index < queryRowType.getFieldCount()) {
                 return RexInputRef.of(index, queryRowType);
+              } else {
+                return cluster.getRexBuilder().makeBigintLiteral(new BigDecimal(0));
               }
-            };
+            }
+          };
 
 
-        ProjectPrel projectUnderWriter = new ProjectPrel(cluster,
-            cluster.getPlanner().emptyTraitSet().plus(Prel.DRILL_PHYSICAL), child, refs, queryRowType);
+      final List<String> fieldnames = new ArrayList<String>(queryRowType.getFieldNames());
+      fieldnames.add(WriterPrel.PARTITION_COLUMN_IDENTIFIER);
 
-        return (Prel) prel.copy(projectUnderWriter.getTraitSet(),
-            Collections.singletonList( (RelNode) projectUnderWriter));
-      } else {
-        return (Prel) prel.copy(prel.getTraitSet(), Collections.singletonList( (RelNode) child));
-      }
+      final RelDataType rowTypeWithPCI = RexUtil.createStructType(cluster.getTypeFactory(), exprs, fieldnames);
+
+      ProjectPrel projectUnderWriter = new ProjectPrel(cluster,
+          cluster.getPlanner().emptyTraitSet().plus(Prel.DRILL_PHYSICAL), child, exprs, rowTypeWithPCI);
+
+      return (Prel) prel.copy(projectUnderWriter.getTraitSet(),
+          Collections.singletonList( (RelNode) projectUnderWriter));
     }
 
   }

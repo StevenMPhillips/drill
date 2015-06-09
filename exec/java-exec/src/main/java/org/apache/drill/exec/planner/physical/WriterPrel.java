@@ -32,7 +32,7 @@ import org.apache.calcite.plan.RelTraitSet;
 
 public class WriterPrel extends DrillWriterRelBase implements Prel {
 
-
+  public static final String PARTITION_COLUMN_IDENTIFIER = "PARTITION_COLUMN_IDENTIFIER";
 
   public WriterPrel(RelOptCluster cluster, RelTraitSet traits, RelNode child, CreateTableEntry createTableEntry) {
     super(Prel.DRILL_PHYSICAL, cluster, traits, child, createTableEntry);
