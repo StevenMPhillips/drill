@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.drill.exec.memory.BufferAllocator;
+import org.apache.drill.exec.record.VectorAccessible;
 import org.apache.drill.exec.store.EventBasedRecordWriter.FieldConverter;
 import org.apache.drill.exec.store.StringOutputRecordWriter;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
@@ -68,6 +69,11 @@ public class DrillTextRecordWriter extends StringOutputRecordWriter {
 
     this.currentRecord = new StringBuilder();
     this.index = 0;
+  }
+
+  @Override
+  public void updateSchema(VectorAccessible batch) {
+    // no op
   }
 
   @Override

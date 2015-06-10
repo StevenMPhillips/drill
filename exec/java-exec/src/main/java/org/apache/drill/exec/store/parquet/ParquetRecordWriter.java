@@ -36,6 +36,7 @@ import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorAccessible;
+import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.store.EventBasedRecordWriter;
 import org.apache.drill.exec.store.EventBasedRecordWriter.FieldConverter;
 import org.apache.drill.exec.store.ParquetOutputRecordWriter;
@@ -145,9 +146,9 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
       newSchema();
     }
     TypedFieldId fieldId = batch.getValueVectorId(SchemaPath.getSimplePath("newPartitionVector"));
-    IntVector v = (IntVector) batch.getValueAccessorById(IntVector.class, fieldId.getFieldIds()).getValueVector();
-    if (v != null) {
-      setPartitionVector(v);
+    if (fieldId != null) {
+      VectorWrapper w = batch.getValueAccessorById(IntVector.class, fieldId.getFieldIds());
+      setPartitionVector((IntVector) w.getValueVector());
     }
   }
 
