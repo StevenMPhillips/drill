@@ -201,7 +201,11 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
 
   @Override
   public void checkForNewPartition(int index) {
-    boolean newPartition = newPartition(index);
+    try {
+      boolean newPartition = newPartition(index);
+    } catch (Exception e) {
+      return;
+    }
   }
 
   private void flush() throws IOException {
