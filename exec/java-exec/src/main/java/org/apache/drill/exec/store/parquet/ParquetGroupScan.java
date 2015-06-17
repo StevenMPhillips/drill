@@ -26,11 +26,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Maps;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.logical.FormatPluginConfig;
 import org.apache.drill.common.logical.StoragePluginConfig;
+import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.metrics.DrillMetrics;
 import org.apache.drill.exec.physical.EndpointAffinity;
 import org.apache.drill.exec.physical.PhysicalOperatorSetupException;
@@ -54,10 +56,12 @@ import org.apache.drill.exec.store.schedule.BlockMapBuilder;
 import org.apache.drill.exec.store.schedule.CompleteWork;
 import org.apache.drill.exec.store.schedule.EndpointByteMap;
 import org.apache.drill.exec.util.ImpersonationUtil;
+import org.apache.drill.exec.vector.ValueVector;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 
 import org.apache.hadoop.security.UserGroupInformation;
+import parquet.column.statistics.Statistics;
 import parquet.hadoop.Footer;
 import parquet.hadoop.metadata.BlockMetaData;
 import parquet.hadoop.metadata.ColumnChunkMetaData;
@@ -74,6 +78,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import parquet.schema.PrimitiveType.PrimitiveTypeName;
+import parquet.schema.Type;
 
 @JsonTypeName("parquet-scan")
 public class ParquetGroupScan extends AbstractFileGroupScan {
@@ -227,6 +233,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     ColumnChunkMetaData columnChunkMetaData;
 
     List<Footer> footers = FooterGatherer.getFooters(formatPlugin.getFsConf(), statuses, 16);
+    boolean first = true;
     for (Footer footer : footers) {
       int index = 0;
       ParquetMetadata metadata = footer.getParquetMetadata();
@@ -264,6 +271,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
             columnValueCounts.put(path, GroupScan.NO_COLUMN_STATS);
           }
 
+          checkForPartitionColumn(path, columnChunkMetaData, first);
         }
 
         String filePath = footer.getFile().toUri().getPath();
@@ -272,6 +280,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
         index++;
 
         rowCount += rowGroup.getRowCount();
+        first = false;
       }
 
     }
@@ -281,12 +290,53 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     logger.debug("Took {} ms to get row group infos", watch.elapsed(TimeUnit.MILLISECONDS));
   }
 
+  @JsonIgnore
+  private Map<SchemaPath,PrimitiveTypeName> columnTypeMap = Maps.newHashMap();
+
+  private void checkForPartitionColumn(SchemaPath column, ColumnChunkMetaData columnChunkMetaData, boolean first) {
+    if (first) {
+      if (hasSingleValue(columnChunkMetaData)) {
+        columnTypeMap.put(column, getType(columnChunkMetaData));
+      }
+    } else {
+      if (!columnTypeMap.keySet().contains(column)) {
+        return;
+      } else {
+        if (!hasSingleValue(columnChunkMetaData)) {
+          columnTypeMap.remove(column);
+          return;
+        }
+        if (!getType(columnChunkMetaData).equals(columnTypeMap.get(column))) {
+          columnTypeMap.remove(column);
+          return;
+        }
+      }
+    }
+  }
+
+  private PrimitiveTypeName getType(ColumnChunkMetaData columnChunkMetaData) {
+    return columnChunkMetaData.getType();
+  }
+
+  private boolean hasSingleValue(ColumnChunkMetaData columnChunkMetaData) {
+    Statistics stats = columnChunkMetaData.getStatistics();
+    return stats != null && stats.genericGetMax() == stats.genericGetMin();
+  }
+
   @Override
   public void modifyFileSelection(FileSelection selection) {
     entries.clear();
     for (String fileName : selection.getAsFiles()) {
       entries.add(new ReadEntryWithPath(fileName));
     }
+  }
+
+  public MajorType getTypeForColumn(SchemaPath schemaPath) {
+
+  }
+
+  public void populatePruningVector(ValueVector v, int index, SchemaPath column, String file) {
+
   }
 
   public static class RowGroupInfo extends ReadEntryFromHDFS implements CompleteWork, FileWork {
