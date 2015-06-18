@@ -32,6 +32,7 @@ import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.memory.OutOfMemoryException;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.ops.OperatorContext;
+import org.apache.drill.exec.planner.physical.WriterPrel;
 import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.TypedFieldId;
@@ -40,6 +41,7 @@ import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.store.EventBasedRecordWriter;
 import org.apache.drill.exec.store.EventBasedRecordWriter.FieldConverter;
 import org.apache.drill.exec.store.ParquetOutputRecordWriter;
+import org.apache.drill.exec.vector.BitVector;
 import org.apache.drill.exec.vector.IntVector;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 import org.apache.hadoop.conf.Configuration;
@@ -145,16 +147,19 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
       this.batchSchema = batch.getSchema();
       newSchema();
     }
-    TypedFieldId fieldId = batch.getValueVectorId(SchemaPath.getSimplePath("newPartitionVector"));
+    TypedFieldId fieldId = batch.getValueVectorId(SchemaPath.getSimplePath(WriterPrel.PARTITION_COLUMN_IDENTIFIER));
     if (fieldId != null) {
-      VectorWrapper w = batch.getValueAccessorById(IntVector.class, fieldId.getFieldIds());
-      setPartitionVector((IntVector) w.getValueVector());
+      VectorWrapper w = batch.getValueAccessorById(BitVector.class, fieldId.getFieldIds());
+      setPartitionVector((BitVector) w.getValueVector());
     }
   }
 
   private void newSchema() throws IOException {
     List<Type> types = Lists.newArrayList();
     for (MaterializedField field : batchSchema) {
+      if (field.getPath().equals(SchemaPath.getSimplePath(WriterPrel.PARTITION_COLUMN_IDENTIFIER))) {
+        continue;
+      }
       types.add(getType(field));
     }
     schema = new MessageType("root", types);
@@ -203,6 +208,10 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
   public void checkForNewPartition(int index) {
     try {
       boolean newPartition = newPartition(index);
+      if (newPartition) {
+        flush();
+        newSchema();
+      }
     } catch (Exception e) {
       return;
     }

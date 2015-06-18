@@ -26,8 +26,8 @@ package org.apache.drill.exec.store;
 
 import org.apache.drill.exec.expr.holders.*;
 import org.apache.drill.exec.store.EventBasedRecordWriter.FieldConverter;
-import org.apache.drill.exec.vector.IntVector;
-import org.apache.drill.exec.vector.IntVector.Accessor;
+import org.apache.drill.exec.vector.BitVector;
+import org.apache.drill.exec.vector.BitVector.Accessor;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
 import java.io.IOException;
@@ -37,7 +37,7 @@ public abstract class AbstractRecordWriter implements RecordWriter {
 
   private Accessor newPartitionVector;
 
-  protected void setPartitionVector(IntVector newPartitionVector) {
+  protected void setPartitionVector(BitVector newPartitionVector) {
     this.newPartitionVector = newPartitionVector.getAccessor();
   }
 

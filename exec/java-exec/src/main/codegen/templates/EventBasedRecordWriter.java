@@ -25,6 +25,8 @@ package org.apache.drill.exec.store;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import org.apache.drill.common.expression.SchemaPath;
+import org.apache.drill.exec.planner.physical.WriterPrel;
 import org.apache.drill.exec.record.VectorAccessible;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
@@ -74,6 +76,9 @@ public class EventBasedRecordWriter {
     try {
       int fieldId = 0;
       for (VectorWrapper w : batch) {
+        if (w.getField().getPath().equals(SchemaPath.getSimplePath(WriterPrel.PARTITION_COLUMN_IDENTIFIER))) {
+          continue;
+        }
         FieldReader reader = w.getValueVector().getReader();
         FieldConverter converter = getConverter(recordWriter, fieldId++, w.getField().getLastName(), reader);
         fieldConverters.add(converter);

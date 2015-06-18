@@ -29,6 +29,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
@@ -38,8 +39,10 @@ import org.apache.calcite.tools.ValidationException;
 
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.expression.SchemaPath;
+import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.physical.PhysicalPlan;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
+import org.apache.drill.exec.planner.logical.CreateTableEntry;
 import org.apache.drill.exec.planner.logical.DrillRel;
 import org.apache.drill.exec.planner.logical.DrillScreenRel;
 import org.apache.drill.exec.planner.logical.DrillStoreRel;
@@ -48,6 +51,7 @@ import org.apache.drill.exec.planner.physical.Prel;
 import org.apache.drill.exec.planner.physical.ProjectPrel;
 import org.apache.drill.exec.planner.physical.WriterPrel;
 import org.apache.drill.exec.planner.physical.visitor.BasePrelVisitor;
+import org.apache.drill.exec.planner.sql.DrillSqlOperator;
 import org.apache.drill.exec.planner.sql.DrillSqlWorker;
 import org.apache.drill.exec.planner.sql.SchemaUtilites;
 import org.apache.drill.exec.planner.sql.parser.SqlCreateTable;
@@ -157,6 +161,8 @@ public class CreateTableHandler extends DefaultSqlHandler {
 
       final RelOptCluster cluster = prel.getCluster();
 
+      final List<String> partitionColumns = prel.getCreateTableEntry().getPartitionColumns();
+
       final List<RexNode> exprs =
           new AbstractList<RexNode>() {
             public int size() {
@@ -167,7 +173,7 @@ public class CreateTableHandler extends DefaultSqlHandler {
               if (index < queryRowType.getFieldCount()) {
                 return RexInputRef.of(index, queryRowType);
               } else {
-                return cluster.getRexBuilder().makeBigintLiteral(new BigDecimal(0));
+                return buildNewPartitionExpression(cluster.getRexBuilder(), partitionColumns);
               }
             }
           };
@@ -183,6 +189,29 @@ public class CreateTableHandler extends DefaultSqlHandler {
 
       return (Prel) prel.copy(projectUnderWriter.getTraitSet(),
           Collections.singletonList( (RelNode) projectUnderWriter));
+    }
+
+    private RexNode buildNewPartitionExpression(RexBuilder rexBuilder, List<String> partitionColumns) {
+      List<RexInputRef> inputRefs = Lists.newLinkedList();
+      int index = 0;
+      for (String field : queryRowType.getFieldNames()) {
+        if (partitionColumns.contains(field)) {
+          inputRefs.add(RexInputRef.of(index, queryRowType));
+        }
+        index++;
+      }
+      final DrillSqlOperator newValueFunc
+          = new DrillSqlOperator("newValue", 1, MajorType.getDefaultInstance(), true);
+      RexNode node = rexBuilder.makeCall(newValueFunc, inputRefs.get(0));
+      inputRefs.remove(0);
+
+      final DrillSqlOperator booleanOrFunc
+          = new DrillSqlOperator("booleanOr", 2, MajorType.getDefaultInstance(), true);
+      while (!inputRefs.isEmpty()) {
+        node = rexBuilder.makeCall(booleanOrFunc, node, rexBuilder.makeCall(newValueFunc, inputRefs.get(0)));
+        inputRefs.remove(0);
+      }
+      return node;
     }
 
   }

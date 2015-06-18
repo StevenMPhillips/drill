@@ -24,10 +24,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
@@ -36,6 +38,7 @@ import org.apache.drill.common.logical.StoragePluginConfig;
 import org.apache.drill.common.types.TypeProtos.DataMode;
 import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.common.types.TypeProtos.MinorType;
+import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.metrics.DrillMetrics;
 import org.apache.drill.exec.physical.EndpointAffinity;
 import org.apache.drill.exec.physical.PhysicalOperatorSetupException;
@@ -60,8 +63,11 @@ import org.apache.drill.exec.store.schedule.CompleteWork;
 import org.apache.drill.exec.store.schedule.EndpointByteMap;
 import org.apache.drill.exec.util.ImpersonationUtil;
 import org.apache.drill.exec.vector.BigIntVector;
+import org.apache.drill.exec.vector.Float4Vector;
+import org.apache.drill.exec.vector.Float8Vector;
 import org.apache.drill.exec.vector.IntVector;
 import org.apache.drill.exec.vector.ValueVector;
+import org.apache.drill.exec.vector.VarBinaryVector;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 
@@ -71,6 +77,7 @@ import parquet.hadoop.Footer;
 import parquet.hadoop.metadata.BlockMetaData;
 import parquet.hadoop.metadata.ColumnChunkMetaData;
 import parquet.hadoop.metadata.ParquetMetadata;
+import parquet.io.api.Binary;
 import parquet.org.codehaus.jackson.annotate.JsonCreator;
 
 import com.codahale.metrics.MetricRegistry;
@@ -182,6 +189,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     this.columnValueCounts = that.columnValueCounts;
     this.columnTypeMap = that.columnTypeMap;
     this.partitionValueMap = that.partitionValueMap;
+    this.fileSet = that.fileSet;
   }
 
 
@@ -227,6 +235,12 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     }
   }
 
+  public Set<String> getFileSet() {
+    return fileSet;
+  }
+
+  private Set<String> fileSet = Sets.newHashSet();
+
   private void readFooterHelper(List<FileStatus> statuses) throws IOException {
     watch.reset();
     watch.start();
@@ -245,6 +259,8 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
       int index = 0;
       ParquetMetadata metadata = footer.getParquetMetadata();
       for (BlockMetaData rowGroup : metadata.getBlocks()) {
+        String file = Path.getPathWithoutSchemeAndAuthority(footer.getFile()).toString();
+        fileSet.add(file);
         long valueCountInGrp = 0;
         // need to grab block information from HDFS
         columnChunkMetaData = rowGroup.getColumns().iterator().next();
@@ -278,16 +294,15 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
             columnValueCounts.put(schemaPath, GroupScan.NO_COLUMN_STATS);
           }
 
-          boolean partitionColumn = checkForPartitionColumn(schemaPath, columnChunkMetaData, first);
+          boolean partitionColumn = checkForPartitionColumn(schemaPath, col, first);
           if (partitionColumn) {
-            String file = Path.getPathWithoutSchemeAndAuthority(footer.getFile()).toString();
             Map<SchemaPath,Object> map = partitionValueMap.get(file);
             if (map == null) {
               map = Maps.newHashMap();
               partitionValueMap.put(file, map);
             }
             Object value = map.get(schemaPath);
-            Object currentValue = columnChunkMetaData.getStatistics().genericGetMax();
+            Object currentValue = col.getStatistics().genericGetMax();
             if (value != null) {
               if (value != currentValue) {
                 columnTypeMap.remove(schemaPath);
@@ -322,6 +337,8 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
       if (hasSingleValue(columnChunkMetaData)) {
         columnTypeMap.put(column, getType(columnChunkMetaData));
         return true;
+      } else {
+        return false;
       }
     } else {
       if (!columnTypeMap.keySet().contains(column)) {
@@ -346,7 +363,12 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
 
   private boolean hasSingleValue(ColumnChunkMetaData columnChunkMetaData) {
     Statistics stats = columnChunkMetaData.getStatistics();
-    return stats != null && stats.genericGetMax() == stats.genericGetMin();
+    if (stats != null) {
+      if (stats.genericGetMin() == null || stats.genericGetMax() == null) {
+        return false;
+      }
+    }
+    return stats.genericGetMax().equals(stats.genericGetMin());
   }
 
   @Override
@@ -361,12 +383,16 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     PrimitiveTypeName type = columnTypeMap.get(schemaPath);
     switch (type) {
     case INT32:
-      return MajorType.newBuilder().setMinorType(MinorType.INT).setMode(DataMode.REQUIRED).build();
+      return Types.required(MinorType.INT);
     case INT64:
-      return MajorType.newBuilder().setMinorType(MinorType.BIGINT).setMode(DataMode.REQUIRED).build();
+      return Types.required(MinorType.BIGINT);
+    case FLOAT:
+      return Types.repeated(MinorType.FLOAT4);
+    case DOUBLE:
+      return Types.repeated(MinorType.FLOAT8);
     case BINARY:
     case FIXED_LEN_BYTE_ARRAY:
-      return MajorType.newBuilder().setMinorType(MinorType.VARBINARY).setMode(DataMode.REQUIRED).build();
+      return Types.required(MinorType.VARBINARY);
     default:
       throw new UnsupportedOperationException("Unsupported type:" + type);
     }
@@ -390,10 +416,22 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
       bigIntVector.getMutator().setSafe(index, value);
       return;
     }
+    case FLOAT4: {
+      Float4Vector float4Vector = (Float4Vector) v;
+      Float value = (Float) partitionValueMap.get(f).get(column);
+      float4Vector.getMutator().setSafe(index, value);
+      return;
+    }
+    case FLOAT8: {
+      Float8Vector float8Vector = (Float8Vector) v;
+      Double value = (Double) partitionValueMap.get(f).get(column);
+      float8Vector.getMutator().setSafe(index, value);
+      return;
+    }
     case VARBINARY: {
-      BigIntVector bigIntVector = (BigIntVector) v;
-      Long value = (Long) partitionValueMap.get(f).get(column);
-      bigIntVector.getMutator().setSafe(index, value);
+      VarBinaryVector varBinaryVector = (VarBinaryVector) v;
+      Binary value = (Binary) partitionValueMap.get(f).get(column);
+      varBinaryVector.getMutator().setSafe(index, value.getBytes());
       return;
     }
     default:

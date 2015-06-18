@@ -17,40 +17,46 @@
  */
 package org.apache.drill.exec.store;
 
+import io.netty.buffer.DrillBuf;
 import org.apache.drill.exec.expr.DrillSimpleFunc;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.NullHandling;
 import org.apache.drill.exec.expr.annotations.Output;
 import org.apache.drill.exec.expr.annotations.Param;
 import org.apache.drill.exec.expr.annotations.Workspace;
+import org.apache.drill.exec.expr.holders.BitHolder;
 import org.apache.drill.exec.expr.holders.IntHolder;
+import org.apache.drill.exec.expr.holders.VarCharHolder;
+
+import javax.inject.Inject;
 
 public class NewValueFunction {
 
   @FunctionTemplate(name = "newValue",
       scope = FunctionTemplate.FunctionScope.SIMPLE,
       nulls = NullHandling.INTERNAL)
-  public static class NewValueInt implements DrillSimpleFunc {
+  public static class NewValueVarChar implements DrillSimpleFunc {
 
-    @Param IntHolder in;
-    @Workspace IntHolder previous;
+    @Param VarCharHolder in;
+    @Workspace String previous;
     @Workspace Boolean initialized;
-    @Output IntHolder out;
+    @Output BitHolder out;
 
     public void setup() {
       initialized = false;
     }
 
     public void eval() {
+      String value = org.apache.drill.exec.expr.fn.impl.StringFunctionHelpers.getStringFromVarCharHolder(in);
       if (initialized) {
-        if (in.value == previous.value) {
+        if (value.equals(previous)) {
           out.value = 0;
         } else {
-          previous.value = in.value;
+          previous = value;
           out.value = 1;
         }
       } else {
-        previous.value = in.value;
+        previous = value;
         out.value = 1;
         initialized = true;
       }
