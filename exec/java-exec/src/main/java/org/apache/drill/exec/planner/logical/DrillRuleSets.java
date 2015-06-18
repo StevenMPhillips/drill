@@ -32,6 +32,7 @@ import org.apache.calcite.tools.RuleSet;
 
 import org.apache.calcite.rel.rules.FilterMergeRule;
 import org.apache.drill.exec.ops.QueryContext;
+import org.apache.drill.exec.planner.logical.partition.ParquetPruneScanRule;
 import org.apache.drill.exec.planner.logical.partition.PruneScanRule;
 import org.apache.drill.exec.planner.physical.ConvertCountToDirectScan;
 import org.apache.drill.exec.planner.physical.FilterPrule;
@@ -151,6 +152,8 @@ public class DrillRuleSets {
 
       PruneScanRule.getFilterOnProject(context),
       PruneScanRule.getFilterOnScan(context),
+      ParquetPruneScanRule.getFilterOnProject(context),
+      ParquetPruneScanRule.getFilterOnScan(context),
 
       /*
        Convert from Calcite Logical to Drill Logical Rules.

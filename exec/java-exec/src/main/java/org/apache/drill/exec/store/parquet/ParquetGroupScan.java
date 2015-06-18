@@ -19,6 +19,7 @@ package org.apache.drill.exec.store.parquet;
 
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +33,9 @@ import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.logical.FormatPluginConfig;
 import org.apache.drill.common.logical.StoragePluginConfig;
+import org.apache.drill.common.types.TypeProtos.DataMode;
 import org.apache.drill.common.types.TypeProtos.MajorType;
+import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.exec.metrics.DrillMetrics;
 import org.apache.drill.exec.physical.EndpointAffinity;
 import org.apache.drill.exec.physical.PhysicalOperatorSetupException;
@@ -56,6 +59,8 @@ import org.apache.drill.exec.store.schedule.BlockMapBuilder;
 import org.apache.drill.exec.store.schedule.CompleteWork;
 import org.apache.drill.exec.store.schedule.EndpointByteMap;
 import org.apache.drill.exec.util.ImpersonationUtil;
+import org.apache.drill.exec.vector.BigIntVector;
+import org.apache.drill.exec.vector.IntVector;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -175,6 +180,8 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     this.rowGroupInfos = that.rowGroupInfos == null ? null : Lists.newArrayList(that.rowGroupInfos);
     this.selectionRoot = that.selectionRoot;
     this.columnValueCounts = that.columnValueCounts;
+    this.columnTypeMap = that.columnTypeMap;
+    this.partitionValueMap = that.partitionValueMap;
   }
 
 
@@ -249,29 +256,46 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
         for (ColumnChunkMetaData col : rowGroup.getColumns()) {
           length += col.getTotalSize();
           valueCountInGrp = Math.max(col.getValueCount(), valueCountInGrp);
-          SchemaPath path = SchemaPath.getSimplePath(col.getPath().toString().replace("[", "").replace("]", "").toLowerCase());
+          SchemaPath schemaPath = SchemaPath.getSimplePath(col.getPath().toString().replace("[", "").replace("]", "").toLowerCase());
 
           long previousCount = 0;
           long currentCount = 0;
 
-          if (! columnValueCounts.containsKey(path)) {
+          if (! columnValueCounts.containsKey(schemaPath)) {
             // create an entry for this column
-            columnValueCounts.put(path, previousCount /* initialize to 0 */);
+            columnValueCounts.put(schemaPath, previousCount /* initialize to 0 */);
           } else {
-            previousCount = columnValueCounts.get(path);
+            previousCount = columnValueCounts.get(schemaPath);
           }
 
           boolean statsAvail = (col.getStatistics() != null && !col.getStatistics().isEmpty());
 
           if (statsAvail && previousCount != GroupScan.NO_COLUMN_STATS) {
             currentCount = col.getValueCount() - col.getStatistics().getNumNulls(); // only count non-nulls
-            columnValueCounts.put(path, previousCount + currentCount);
+            columnValueCounts.put(schemaPath, previousCount + currentCount);
           } else {
             // even if 1 chunk does not have stats, we cannot rely on the value count for this column
-            columnValueCounts.put(path, GroupScan.NO_COLUMN_STATS);
+            columnValueCounts.put(schemaPath, GroupScan.NO_COLUMN_STATS);
           }
 
-          checkForPartitionColumn(path, columnChunkMetaData, first);
+          boolean partitionColumn = checkForPartitionColumn(schemaPath, columnChunkMetaData, first);
+          if (partitionColumn) {
+            String file = Path.getPathWithoutSchemeAndAuthority(footer.getFile()).toString();
+            Map<SchemaPath,Object> map = partitionValueMap.get(file);
+            if (map == null) {
+              map = Maps.newHashMap();
+              partitionValueMap.put(file, map);
+            }
+            Object value = map.get(schemaPath);
+            Object currentValue = columnChunkMetaData.getStatistics().genericGetMax();
+            if (value != null) {
+              if (value != currentValue) {
+                columnTypeMap.remove(schemaPath);
+              }
+            } else {
+              map.put(schemaPath, currentValue);
+            }
+          }
         }
 
         String filePath = footer.getFile().toUri().getPath();
@@ -293,25 +317,27 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
   @JsonIgnore
   private Map<SchemaPath,PrimitiveTypeName> columnTypeMap = Maps.newHashMap();
 
-  private void checkForPartitionColumn(SchemaPath column, ColumnChunkMetaData columnChunkMetaData, boolean first) {
+  private boolean checkForPartitionColumn(SchemaPath column, ColumnChunkMetaData columnChunkMetaData, boolean first) {
     if (first) {
       if (hasSingleValue(columnChunkMetaData)) {
         columnTypeMap.put(column, getType(columnChunkMetaData));
+        return true;
       }
     } else {
       if (!columnTypeMap.keySet().contains(column)) {
-        return;
+        return false;
       } else {
         if (!hasSingleValue(columnChunkMetaData)) {
           columnTypeMap.remove(column);
-          return;
+          return false;
         }
         if (!getType(columnChunkMetaData).equals(columnTypeMap.get(column))) {
           columnTypeMap.remove(column);
-          return;
+          return false;
         }
       }
     }
+    return true;
   }
 
   private PrimitiveTypeName getType(ColumnChunkMetaData columnChunkMetaData) {
@@ -332,11 +358,47 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
   }
 
   public MajorType getTypeForColumn(SchemaPath schemaPath) {
-
+    PrimitiveTypeName type = columnTypeMap.get(schemaPath);
+    switch (type) {
+    case INT32:
+      return MajorType.newBuilder().setMinorType(MinorType.INT).setMode(DataMode.REQUIRED).build();
+    case INT64:
+      return MajorType.newBuilder().setMinorType(MinorType.BIGINT).setMode(DataMode.REQUIRED).build();
+    case BINARY:
+    case FIXED_LEN_BYTE_ARRAY:
+      return MajorType.newBuilder().setMinorType(MinorType.VARBINARY).setMode(DataMode.REQUIRED).build();
+    default:
+      throw new UnsupportedOperationException("Unsupported type:" + type);
+    }
   }
 
-  public void populatePruningVector(ValueVector v, int index, SchemaPath column, String file) {
+  private Map<String,Map<SchemaPath,Object>> partitionValueMap = Maps.newHashMap();
 
+  public void populatePruningVector(ValueVector v, int index, SchemaPath column, String file) {
+    String f = Path.getPathWithoutSchemeAndAuthority(new Path(file)).toString();
+    MinorType type = getTypeForColumn(column).getMinorType();
+    switch (type) {
+    case INT: {
+      IntVector intVector = (IntVector) v;
+      Integer value = (Integer) partitionValueMap.get(f).get(column);
+      intVector.getMutator().setSafe(index, value);
+      return;
+    }
+    case BIGINT: {
+      BigIntVector bigIntVector = (BigIntVector) v;
+      Long value = (Long) partitionValueMap.get(f).get(column);
+      bigIntVector.getMutator().setSafe(index, value);
+      return;
+    }
+    case VARBINARY: {
+      BigIntVector bigIntVector = (BigIntVector) v;
+      Long value = (Long) partitionValueMap.get(f).get(column);
+      bigIntVector.getMutator().setSafe(index, value);
+      return;
+    }
+    default:
+      throw new UnsupportedOperationException("Unsupported type: " + type);
+    }
   }
 
   public static class RowGroupInfo extends ReadEntryFromHDFS implements CompleteWork, FileWork {
@@ -526,4 +588,8 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     return columnValueCounts.containsKey(column) ? columnValueCounts.get(column) : 0;
   }
 
+  @Override
+  public List<SchemaPath> getPartitionColumns() {
+    return new ArrayList(columnTypeMap.keySet());
+  }
 }

@@ -35,8 +35,8 @@ public class TestExampleQueries extends BaseTestQuery {
   @Test
   public void q() throws Exception {
 //    test("select n_regionkey, newValue(n_regionkey) as newValue from (select n_regionkey from cp.`tpch/nation.parquet` order by n_regionkey)");
-//    test("create table dfs_test.tmp.myTable as select 1 from cp.`tpch/nation.parquet`");
-    test("select * from dfs.tmp.myTable where dir0 = 'a' and `$EXPR0` = 1");
+//    test("create table dfs_test.tmp.myTable as select 2 as a from cp.`tpch/nation.parquet`");
+    test("select a from dfs.tmp.myTable where a = 1 and dir0 = 0");
   }
 
   @Test // see DRILL-2328
