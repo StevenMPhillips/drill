@@ -101,11 +101,15 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
   private String prefix;
   private int index = 0;
   private OperatorContext oContext;
+  private List<String> partitionColumns;
+  private boolean hasPartitions;
 
   public ParquetRecordWriter(FragmentContext context, ParquetWriter writer) throws OutOfMemoryException{
     super();
     this.oContext = context.newOperatorContext(writer, true);
     this.codecFactory = new DirectCodecFactory(writer.getFormatPlugin().getFsConf(), oContext.getAllocator());
+    this.partitionColumns = writer.getPartitionColumns();
+    this.hasPartitions = partitionColumns != null && partitionColumns.size() > 0;
   }
 
   @Override

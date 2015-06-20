@@ -182,7 +182,7 @@ public abstract class ParquetPruneScanRule extends RelOptRule {
       return;
     }
 
-    final BitVector output = new BitVector(MaterializedField.create("", Types.required(MinorType.BIT)), allocator);
+    final NullableBitVector output = new NullableBitVector(MaterializedField.create("", Types.optional(MinorType.BIT)), allocator);
     final VectorContainer container = new VectorContainer();
 
     try{
