@@ -26,6 +26,7 @@ import org.apache.drill.exec.expr.annotations.Param;
 import org.apache.drill.exec.expr.annotations.Workspace;
 import org.apache.drill.exec.expr.holders.BitHolder;
 import org.apache.drill.exec.expr.holders.IntHolder;
+import org.apache.drill.exec.expr.holders.VarBinaryHolder;
 import org.apache.drill.exec.expr.holders.VarCharHolder;
 
 import javax.inject.Inject;
@@ -38,25 +39,72 @@ public class NewValueFunction {
   public static class NewValueVarChar implements DrillSimpleFunc {
 
     @Param VarCharHolder in;
-    @Workspace String previous;
+    @Workspace DrillBuf previous;
+    @Workspace Integer previousLength;
     @Workspace Boolean initialized;
     @Output BitHolder out;
+    @Inject DrillBuf buf;
 
     public void setup() {
       initialized = false;
+      previous = buf;
     }
 
     public void eval() {
-      String value = org.apache.drill.exec.expr.fn.impl.StringFunctionHelpers.getStringFromVarCharHolder(in);
+      int length = in.end - in.start;
+
       if (initialized) {
-        if (value.equals(previous)) {
+        if (org.apache.drill.exec.expr.fn.impl.ByteFunctionHelpers.compare(previous, 0, previousLength, in.buffer, in.start, in.end) == 0) {
           out.value = 0;
         } else {
-          previous = value;
+          previous = buf.reallocIfNeeded(length);
+          previous.setBytes(0, in.buffer, in.start, in.end - in.start);
+          previousLength = in.end - in.start;
           out.value = 1;
         }
       } else {
-        previous = value;
+        previous = buf.reallocIfNeeded(length);
+        previous.setBytes(0, in.buffer, in.start, in.end - in.start);
+        previousLength = in.end - in.start;
+        out.value = 1;
+        initialized = true;
+      }
+    }
+  }
+
+  @FunctionTemplate(name = "newValue",
+      scope = FunctionTemplate.FunctionScope.SIMPLE,
+      nulls = NullHandling.INTERNAL)
+  public static class NewValueVarBinary implements DrillSimpleFunc {
+
+    @Param VarBinaryHolder in;
+    @Workspace DrillBuf previous;
+    @Workspace Integer previousLength;
+    @Workspace Boolean initialized;
+    @Output BitHolder out;
+    @Inject DrillBuf buf;
+
+    public void setup() {
+      initialized = false;
+      previous = buf;
+    }
+
+    public void eval() {
+      int length = in.end - in.start;
+
+      if (initialized) {
+        if (org.apache.drill.exec.expr.fn.impl.ByteFunctionHelpers.compare(previous, 0, previousLength, in.buffer, in.start, in.end) == 0) {
+          out.value = 0;
+        } else {
+          previous = buf.reallocIfNeeded(length);
+          previous.setBytes(0, in.buffer, in.start, in.end - in.start);
+          previousLength = in.end - in.start;
+          out.value = 1;
+        }
+      } else {
+        previous = buf.reallocIfNeeded(length);
+        previous.setBytes(0, in.buffer, in.start, in.end - in.start);
+        previousLength = in.end - in.start;
         out.value = 1;
         initialized = true;
       }

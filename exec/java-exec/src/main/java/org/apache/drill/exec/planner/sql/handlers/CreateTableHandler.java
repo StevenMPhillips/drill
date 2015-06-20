@@ -155,7 +155,7 @@ public class CreateTableHandler extends DefaultSqlHandler {
     @Override
     public Prel visitWriter(WriterPrel prel, Void value) throws RuntimeException {
 
-      final Prel child = ((Prel)prel.getInput()).accept(this, null);
+      final Prel child = ((Prel) prel.getInput()).accept(this, null);
 
       final RelDataType childRowType = child.getRowType();
 
@@ -163,21 +163,35 @@ public class CreateTableHandler extends DefaultSqlHandler {
 
       final List<String> partitionColumns = prel.getCreateTableEntry().getPartitionColumns();
 
-      final List<RexNode> exprs =
-          new AbstractList<RexNode>() {
-            public int size() {
-              return queryRowType.getFieldCount() + 1 ;
-            }
+      List<RexNode> exprs;
 
-            public RexNode get(int index) {
-              if (index < queryRowType.getFieldCount()) {
-                return RexInputRef.of(index, queryRowType);
-              } else {
-                return buildNewPartitionExpression(cluster.getRexBuilder(), partitionColumns);
+      if (partitionColumns == null || partitionColumns.size() == 0) {
+        exprs =
+            new AbstractList<RexNode>() {
+              public int size() {
+                return queryRowType.getFieldCount();
               }
-            }
-          };
 
+              public RexNode get(int index) {
+                return RexInputRef.of(index, queryRowType);
+              }
+            };
+      } else {
+        exprs =
+            new AbstractList<RexNode>() {
+              public int size() {
+                return queryRowType.getFieldCount() + 1;
+              }
+
+              public RexNode get(int index) {
+                if (index < queryRowType.getFieldCount()) {
+                  return RexInputRef.of(index, queryRowType);
+                } else {
+                  return buildNewPartitionExpression(cluster.getRexBuilder(), partitionColumns);
+                }
+              }
+            };
+      }
 
       final List<String> fieldnames = new ArrayList<String>(queryRowType.getFieldNames());
       fieldnames.add(WriterPrel.PARTITION_COLUMN_IDENTIFIER);
