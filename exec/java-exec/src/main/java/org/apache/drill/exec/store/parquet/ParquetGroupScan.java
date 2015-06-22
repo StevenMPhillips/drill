@@ -333,6 +333,8 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
             } else {
               map.put(schemaPath, currentValue);
             }
+          } else {
+            columnTypeMap.remove(schemaPath);
           }
         }
 
@@ -418,10 +420,13 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
 
   private boolean hasSingleValue(ColumnChunkMetaData columnChunkMetaData) {
     Statistics stats = columnChunkMetaData.getStatistics();
-    if (stats != null) {
+    boolean hasStats = stats != null && !stats.isEmpty();
+    if (hasStats) {
       if (stats.genericGetMin() == null || stats.genericGetMax() == null) {
         return false;
       }
+    } else {
+      return false;
     }
     return stats.genericGetMax().equals(stats.genericGetMin());
   }
