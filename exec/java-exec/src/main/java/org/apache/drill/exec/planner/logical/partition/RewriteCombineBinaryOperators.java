@@ -90,7 +90,15 @@ import java.util.List;
       }
       return RexUtil.composeDisjunction(builder, disjuncts, true);
     }
-    return call;
+    return builder.makeCall(op, visitChildren(call));
+  }
+
+  private List<RexNode> visitChildren(RexCall call) {
+    List<RexNode> children = Lists.newArrayList();
+    for (RexNode child : call.getOperands()) {
+      children.add(child.accept(this));
+    }
+    return children;
   }
 
   @Override

@@ -17,6 +17,7 @@
   */
 package org.apache.drill.exec.planner.logical.partition;
 
+import com.google.common.collect.Lists;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
@@ -75,29 +76,36 @@ import java.util.List;
     SqlOperator op = call.getOperator();
     SqlKind kind = op.getKind();
     if (kind == SqlKind.OR || kind == SqlKind.AND) {
-      if (call.getOperands().size() <= 2) {
-        return call;
+      if (call.getOperands().size() > 2) {
+        List<RexNode> children = new ArrayList(call.getOperands());
+        RexNode left = children.remove(0).accept(this);
+        RexNode right = builder.makeCall(op, children).accept(this);
+        return builder.makeCall(op, left, right);
       }
-      List<RexNode> children = new ArrayList(call.getOperands());
-      RexNode left = children.remove(0);
-      RexNode right = builder.makeCall(op, children).accept(this);
-      return builder.makeCall(op, left, right);
     }
-    return call;
+    return builder.makeCall(op, visitChildren(call));
+  }
+
+  private List<RexNode> visitChildren(RexCall call) {
+    List<RexNode> children = Lists.newArrayList();
+    for (RexNode child : call.getOperands()) {
+      children.add(child.accept(this));
+    }
+    return children;
   }
 
   @Override
-  public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
-    return dynamicParam;
-  }
+     public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
+       return dynamicParam;
+     }
 
   @Override
-  public RexNode visitRangeRef(RexRangeRef rangeRef) {
-    return rangeRef;
-  }
+     public RexNode visitRangeRef(RexRangeRef rangeRef) {
+       return rangeRef;
+     }
 
   @Override
-  public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
-    return fieldAccess;
-  }
+     public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
+       return fieldAccess;
+     }
 }
