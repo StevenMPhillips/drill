@@ -144,7 +144,15 @@ public abstract class AbstractRecordBatch<T extends PhysicalOperator> implements
           return IterOutcome.NONE;
         }
         default:
-          return innerNext();
+          IterOutcome outcome = innerNext();
+//          if (outcome == IterOutcome.OK || outcome == IterOutcome.OK_NEW_SCHEMA) {
+//            BatchSchema schema = container.getSchema();
+//            container.buildSchema(schema.getSelectionVectorMode());
+//            if (!schema.equals(container.getSchema())) {
+//              return IterOutcome.OK_NEW_SCHEMA;
+//            }
+//          }
+          return outcome;
       }
     } catch (final SchemaChangeException e) {
       throw new DrillRuntimeException(e);

@@ -451,15 +451,15 @@ public class TestValueVector extends ExecTest {
     fields[5] = MaterializedField.create(EMPTY_SCHEMA_PATH, RepeatedVarBinaryHolder.TYPE);
 
     fields[6] = MaterializedField.create(EMPTY_SCHEMA_PATH, MapVector.TYPE);
-    fields[6].addChild(fields[0] /*bit*/);
-    fields[6].addChild(fields[2] /*varchar*/);
+    fields[6] = fields[6].withChild(fields[0] /*bit*/);
+    fields[6] = fields[6].withChild(fields[2] /*varchar*/);
 
     fields[7] = MaterializedField.create(EMPTY_SCHEMA_PATH, RepeatedMapVector.TYPE);
-    fields[7].addChild(fields[1] /*int*/);
-    fields[7].addChild(fields[3] /*optional var16char*/);
+    fields[7] = fields[7].withChild(fields[1] /*int*/);
+    fields[7] = fields[7].withChild(fields[3] /*optional var16char*/);
 
     fields[8] = MaterializedField.create(EMPTY_SCHEMA_PATH, RepeatedListVector.TYPE);
-    fields[8].addChild(fields[1] /*int*/);
+    fields[8] = fields[8].withChild(fields[1] /*int*/);
 
     final int initialCapacity = 1024;
 

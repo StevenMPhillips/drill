@@ -32,6 +32,18 @@ import static org.apache.drill.TestBuilder.listOf;
 public class TestExampleQueries extends BaseTestQuery {
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
+  @Test
+  public void q() throws Exception {
+    testNoResult("alter session set `store.json.all_text_mode` = true");
+//    test("select log.event.attributes from `dfs`.tmp.`/3353.json` as log where log.event.attributes.ad = 'Teste-FB-Engagement-Puro-iOS-230615'");
+//    test("select log.event.attributes from dfs.tmp.`/3353.json` as log where log.si = '07A3F985-4B34-4A01-9B83-3B14548EF7BE' and log.type ='Opens App'");
+    test("use dfs_test.tmp");
+    test("create table t as select a from dfs.tmp.complex where e = true");
+    test("select t.a.d from t where t.a.d is not null");
+//    test("select a from dfs.tmp.complex c where c.a.b = 1");
+//    test("select * from dfs.tmp.complex c where c.a.b = 1");
+  }
+
   @Test // see DRILL-2328
   public void testConcatOnNull() throws Exception {
     try {

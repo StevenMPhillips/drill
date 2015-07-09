@@ -149,7 +149,7 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
       if (this.batchSchema != null) {
         flush();
       }
-      this.batchSchema = batch.getSchema();
+      this.batchSchema = batch.getSchema().clone();
       newSchema();
     }
     TypedFieldId fieldId = batch.getValueVectorId(SchemaPath.getSimplePath(WriterPrel.PARTITION_COMPARATOR_FIELD));

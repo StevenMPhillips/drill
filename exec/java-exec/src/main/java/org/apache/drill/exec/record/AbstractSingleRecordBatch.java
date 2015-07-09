@@ -105,6 +105,7 @@ public abstract class AbstractSingleRecordBatch<T extends PhysicalOperator> exte
 
       // Check if schema has changed
       if (callBack.getSchemaChange()) {
+        container.buildSchema(getSchema().getSelectionVectorMode());
         return IterOutcome.OK_NEW_SCHEMA;
       }
 

@@ -47,7 +47,7 @@ import org.apache.drill.exec.vector.ValueVector;
 public abstract class AbstractContainerVector implements ValueVector {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AbstractContainerVector.class);
 
-  protected final MaterializedField field;
+  protected MaterializedField field;
   protected final BufferAllocator allocator;
   protected final CallBack callBack;
 

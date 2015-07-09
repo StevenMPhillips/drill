@@ -179,7 +179,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
       vector = TypeHelper.getNewVector(field, allocator);
       // returned vector must have the same field
       assert field.equals(vector.getField());
-      getField().addChild(field);
+      this.field = field.withChild(field);
       created = true;
     }
 

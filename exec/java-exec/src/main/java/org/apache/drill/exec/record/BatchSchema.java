@@ -61,7 +61,9 @@ public class BatchSchema implements Iterable<MaterializedField> {
   @Override
   public BatchSchema clone() {
     List<MaterializedField> newFields = Lists.newArrayList();
-    newFields.addAll(fields);
+    for (MaterializedField field : fields) {
+      newFields.add(field.clone());
+    }
     return new BatchSchema(selectionVectorMode, newFields);
   }
 

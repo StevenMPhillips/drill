@@ -51,7 +51,7 @@ public class TestMaterializedField {
   public void initialize() {
     parent = MaterializedField.create(PARENT_NAME, PARENT_TYPE);
     child = MaterializedField.create(CHILD_NAME, CHILD_TYPE);
-    parent.addChild(child);
+    parent = parent.withChild(child);
   }
 
   @Test

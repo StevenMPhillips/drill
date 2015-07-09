@@ -162,7 +162,7 @@ public abstract class AbstractMapVector extends AbstractContainerVector {
    */
   protected void putChild(String name, ValueVector vector) {
     putVector(name, vector);
-    field.addChild(vector.getField());
+    field = field.withChild(vector.getField());
   }
 
   /**

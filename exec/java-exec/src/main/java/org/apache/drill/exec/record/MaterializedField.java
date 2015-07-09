@@ -45,10 +45,11 @@ public class MaterializedField {
   }
 
   public static MaterializedField create(SerializedField serField){
-    MaterializedField field = new MaterializedField(SchemaPath.create(serField.getNamePart()), serField.getMajorType());
+    LinkedHashSet<MaterializedField> childList = new LinkedHashSet<>();
     for (SerializedField sf:serField.getChildList()) {
-      field.addChild(MaterializedField.create(sf));
+      childList.add(MaterializedField.create(sf));
     }
+    MaterializedField field = new MaterializedField(SchemaPath.create(serField.getNamePart()), serField.getMajorType(), childList);
     return field;
   }
 
@@ -74,8 +75,10 @@ public class MaterializedField {
     return children;
   }
 
-  public void addChild(MaterializedField field){
-    children.add(field);
+  public MaterializedField withChild(MaterializedField field){
+    LinkedHashSet<MaterializedField> newChildren = new LinkedHashSet<>(children);
+    newChildren.add(field);
+    return new MaterializedField(key.path, key.type, newChildren);
   }
 
   public MaterializedField clone() {
@@ -231,6 +234,13 @@ public class MaterializedField {
     MaterializedField other = (MaterializedField) obj;
     // DRILL-1872: Compute equals only on key. See also the comment
     // in MapVector$MapTransferPair
+    if (children == null) {
+      if (other.children != null) {
+        return false;
+      }
+    } else if (!children.equals(other.children)) {
+      return false;
+    }
 
     if (key == null) {
       if (other.key != null) {
