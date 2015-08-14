@@ -11,10 +11,6 @@
         "tmp" : {
           location: "/tmp",
           writable: true
-        },
-        "drill" : {
-          location: "/tmp",
-          writable: true
         }
       },
       formats: {
