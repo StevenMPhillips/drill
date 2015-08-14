@@ -139,10 +139,10 @@ public class IteratorValidatorBatchIterator implements CloseableRecordBatch {
         VectorValidator.validate(incoming);
       }
 
-      if (incoming.getSchema().getSelectionVectorMode() != SelectionVectorMode.FOUR_BYTE) {
-        System.out.println(incoming.getClass().getName());
-        BatchPrinter.printBatch(incoming);
-      }
+//      if (incoming.getSchema().getSelectionVectorMode() != SelectionVectorMode.FOUR_BYTE) {
+//        System.out.println(incoming.getClass().getName());
+//        BatchPrinter.printBatch(incoming);
+//      }
     }
 
     return state;

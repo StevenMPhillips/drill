@@ -185,7 +185,7 @@ public class Metadata {
 
   public static void main(String[] args) throws Exception {
     FileSystem fs = FileSystem.get(new Configuration());
-    String file = "/tmp/nation";
+    String file = "/Users/sphillips/git/incubator-drill/exec/java-exec/target/1439567862989-0/parquet/";
     createMeta(fs, file);
   }
 

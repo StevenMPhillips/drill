@@ -134,6 +134,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import parquet.schema.OriginalType;
+import parquet.schema.PrimitiveType;
 import parquet.schema.PrimitiveType.PrimitiveTypeName;
 import parquet.schema.Type;
 
@@ -289,7 +290,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     return fileSet;
   }
 
-  private Set<String> fileSet = Sets.newHashSet();
+  private Set<String> fileSet;
 
   private void readFooterHelper(List<FileStatus> statuses) throws IOException {
     watch.reset();
@@ -356,7 +357,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
 
           // check if this column can be used for partition pruning
           SchemaElement se = schemaElements.get(schemaPath.getAsUnescapedPath());
-          boolean partitionColumn = checkForPartitionColumn(schemaPath, col, se, first);
+          boolean partitionColumn = checkForPartitionColumn(null, true);
           if (partitionColumn) {
             Map<SchemaPath,Object> map = partitionValueMap.get(file);
             if (map == null) {
@@ -401,30 +402,27 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
       * every column to see if it is single valued, and if so, add it to the list of potential partition columns. For the
       * remaining footers, we will not find any new partition columns, but we may discover that what was previously a
       * potential partition column now no longer qualifies, so it needs to be removed from the list.
-      * @param column
-      * @param columnChunkMetaData
-      * @param se
-      * @param first
       * @return whether column is a potential partition column
       */
-  private boolean checkForPartitionColumn(SchemaPath column, ColumnChunkMetaData columnChunkMetaData, SchemaElement se, boolean first) {
+  private boolean checkForPartitionColumn(ColumnMetadata columnMetadata, boolean first) {
+    SchemaPath schemaPath = SchemaPath.getSimplePath(columnMetadata.name);
     if (first) {
-      if (hasSingleValue(columnChunkMetaData)) {
-        columnTypeMap.put(column, getType(columnChunkMetaData, se));
+      if (hasSingleValue(columnMetadata)) {
+        columnTypeMap.put(schemaPath, getType(columnMetadata.primitiveType, columnMetadata.originalType));
         return true;
       } else {
         return false;
       }
     } else {
-      if (!columnTypeMap.keySet().contains(column)) {
+      if (!columnTypeMap.keySet().contains(schemaPath)) {
         return false;
       } else {
-        if (!hasSingleValue(columnChunkMetaData)) {
-          columnTypeMap.remove(column);
+        if (!hasSingleValue(columnMetadata)) {
+          columnTypeMap.remove(schemaPath);
           return false;
         }
-        if (!getType(columnChunkMetaData, se).equals(columnTypeMap.get(column))) {
-          columnTypeMap.remove(column);
+        if (!getType(columnMetadata.primitiveType, columnMetadata.originalType).equals(columnTypeMap.get(schemaPath))) {
+          columnTypeMap.remove(schemaPath);
           return false;
         }
       }
@@ -432,9 +430,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     return true;
   }
 
-  private MajorType getType(ColumnChunkMetaData columnChunkMetaData, SchemaElement schemaElement) {
-    ConvertedType originalType = schemaElement == null ? null : schemaElement.getConverted_type();
-
+  private MajorType getType(PrimitiveTypeName type, OriginalType originalType) {
     if (originalType != null) {
       switch (originalType) {
       case DECIMAL:
@@ -462,7 +458,6 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
       }
     }
 
-    PrimitiveTypeName type = columnChunkMetaData.getType();
     switch (type) {
     case BOOLEAN:
       return Types.optional(MinorType.BIT);
@@ -483,31 +478,24 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
     }
   }
 
-  private boolean hasSingleValue(ColumnChunkMetaData columnChunkMetaData) {
-    Statistics stats = columnChunkMetaData.getStatistics();
-    boolean hasStats = stats != null && !stats.isEmpty();
-    if (hasStats) {
-      if (stats.genericGetMin() == null || stats.genericGetMax() == null) {
-        return false;
-      }
-      return stats.genericGetMax().equals(stats.genericGetMin());
-    } else {
-      return false;
-    }
+  private boolean hasSingleValue(ColumnMetadata columnChunkMetaData) {
+    Object max = columnChunkMetaData.max;
+    Object min = columnChunkMetaData.min;
+    return max != null && max.equals(min);
   }
 
   @Override
   public void modifyFileSelection(FileSelection selection) {
     entries.clear();
-    Set<String> files = Sets.newHashSet();
+    fileSet = Sets.newHashSet();
     for (String fileName : selection.getAsFiles()) {
       entries.add(new ReadEntryWithPath(fileName));
-      files.add(fileName);
+      fileSet.add(fileName);
     }
 
     List<RowGroupInfo> newRowGroupList = Lists.newArrayList();
     for (RowGroupInfo rowGroupInfo : rowGroupInfos) {
-      if (files.contains(rowGroupInfo.getPath())) {
+      if (fileSet.contains(rowGroupInfo.getPath())) {
         newRowGroupList.add(rowGroupInfo);
       }
     }
@@ -689,6 +677,13 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
           }
         }
 
+        if (fileSet == null) {
+          fileSet = Sets.newHashSet();
+          for (ParquetFileMetadata file : parquetTableMetadata.files) {
+            fileSet.add(file.path);
+          }
+        }
+
         Map<String,DrillbitEndpoint> hostEndpointMap = Maps.newHashMap();
 
         for (DrillbitEndpoint endpoint : formatPlugin.getContext().getBits()) {
@@ -716,6 +711,7 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
 
         columnValueCounts = Maps.newHashMap();
         this.rowCount = 0;
+        boolean first = true;
         for (ParquetFileMetadata file : parquetTableMetadata.files) {
           for (RowGroupMetadata rowGroup : file.rowGroups) {
             long rowCount = rowGroup.rowCount;
@@ -739,9 +735,9 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
                   columnValueCounts.put(schemaPath, GroupScan.NO_COLUMN_STATS);
                 }
               }
-              boolean partitionColumn = column.max != null && column.max.equals(column.min);
+              boolean partitionColumn = checkForPartitionColumn(column, first);
               if (partitionColumn) {
-                Map<SchemaPath,Object> map = partitionValueMap.get(file);
+                Map<SchemaPath,Object> map = partitionValueMap.get(file.path);
                 if (map == null) {
                   map = Maps.newHashMap();
                   partitionValueMap.put(file.path, map);
@@ -760,9 +756,10 @@ public class ParquetGroupScan extends AbstractFileGroupScan {
               }
             }
             this.rowCount += rowGroup.rowCount;
+            first = false;
           }
         }
-        columns = new ArrayList(columnValueCounts.keySet());
+//        columns = new ArrayList(columnValueCounts.keySet());
       } catch (IOException e) {
         logger.warn("Failure while determining operator affinity.", e);
       }
