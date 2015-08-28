@@ -792,10 +792,16 @@ public class TypeCastRules {
   public static MinorType getLeastRestrictiveType(List<MinorType> types) {
     assert types.size() >= 2;
     MinorType result = types.get(0);
+    if (result == MinorType.EMBEDDED) {
+      return result;
+    }
     int resultPrec = ResolverTypePrecedence.precedenceMap.get(result);
 
     for (int i = 1; i < types.size(); i++) {
       MinorType next = types.get(i);
+      if (next == MinorType.EMBEDDED) {
+        return next;
+      }
       if (next == result) {
         // both args are of the same type; continue
         continue;
@@ -863,9 +869,9 @@ public class TypeCastRules {
 //          return -1;
       }
 
-      if (!TypeCastRules.isCastableWithNullHandling(argType, parmType, holder.getNullHandling())) {
-        return -1;
-      }
+//      if (!TypeCastRules.isCastableWithNullHandling(argType, parmType, holder.getNullHandling())) {
+//        return -1;
+//      }
 
       Integer parmVal = ResolverTypePrecedence.precedenceMap.get(parmType
           .getMinorType());

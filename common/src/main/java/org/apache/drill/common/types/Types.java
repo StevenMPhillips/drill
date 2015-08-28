@@ -340,6 +340,7 @@ public class Types {
     case VARBINARY:
     case VAR16CHAR:
     case VARCHAR:
+    case EMBEDDED:
       return false;
     default:
       return true;

@@ -20,17 +20,60 @@ package org.apache.drill;
 import static org.apache.drill.TestBuilder.listOf;
 import static org.junit.Assert.assertEquals;
 
-import java.math.BigDecimal;
-
+import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.common.util.FileUtils;
 import org.apache.drill.common.util.TestTools;
 import org.apache.drill.exec.ExecConstants;
+import org.apache.drill.exec.memory.TopLevelAllocator;
+import org.apache.drill.exec.record.TransferPair;
+import org.apache.drill.exec.vector.ValueVector;
+import org.apache.drill.exec.vector.complex.MapVector;
+import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
+import org.apache.drill.exec.vector.complex.impl.SingleMapWriter;
+import org.apache.drill.exec.vector.complex.writer.BaseWriter.MapWriter;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+
 public class TestExampleQueries extends BaseTestQuery {
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
+
+  @Test
+  public void q() throws Exception {
+    test("alter session set `store.format` = 'json'");
+//    test("create table dfs_test.tmp.t as select data from dfs.tmp.`lists.json`");
+//    test("select convert_from(a, 'json') from (select convert_to(a, 'json') a from dfs.`/tmp/a.json`)");
+//    test("select n, typeOf(n) as `type` from (select castToEmbedded(n_nationkey) n from cp.`tpch/nation.parquet`)");
+//    test("select castToEmbedded(a) as a from dfs.`/tmp/a.json`");
+//    test("select fromType(typeOf(a)) as `type`, 1 + cast(case typeOf(a) when toType('MAP') then t.a.b when toType('BIGINT') then a when toType('LIST') then a[0] end as bigint) as a from dfs.`/tmp/a.json` t");
+//    test("select t.a.b from dfs.`/tmp/a.json` t");
+//    test("select cast(a as bigint) from dfs.`/tmp/b.json`");
+//    test("select a from dfs.`/tmp/t` where case typeOf(a) when type('BIGINT') then asBigInt(a) when type('VARCHAR') then cast(asVarChar(a) as bigint) end = 2");
+//    test("select 1 + cast(case typeOf(a) when 1 then t.a.b when 6 then a when 40 then a[0] end as bigint) as a from dfs.`/tmp/a.json` t");
+//    test("select case typeOf(a) when 1 then castToEmbedded(a) when 6 then castToEmbedded(cast(a as bigint) + 1) else castToEmbedded(a) end as a from dfs.`/tmp/a.json`");
+//    test("select t.a[0] as a_0, t.a[1] as a_1 from dfs.tmp.t4 t");
+//    test("select  t.data.unhideous unhideous from dfs.tmp.`file.json` t where isBigInt(t.data.unhideous) = true");
+//    test("select unhideous, isBigInt(unhideous) as big_int from (select t.data.unhideous unhideous from dfs.tmp.`file.json` t)");
+//    test("select case typeOf(stir) when type('list') then stir[0] else stir end from dfs.tmp.`lists.json`");
+//    test("select case typeOf(stir) when type('list') then stir end from dfs.tmp.`lists.json`");
+//    test("select t.stir.gaen gaen, typeString(typeOf(t.stir.gaen)) as type from dfs.tmp.`lists.json` t where typeOf(stir) = type('map')");
+//    test("select fromType(typeOf(n_nationkey)) from cp.`tpch/nation.parquet`");
+//    test("select a from dfs.tmp.`a.json` where typeOf(a) = type('map')");
+//    test("create table dfs_test.tmp.t as select * from dfs.tmp.`lists2.json`");
+//    test("select * from dfs.tmp.`lists2.json`");
+    test("select o_orderkey, sum(t.l.l_extendedprice * (1 - t.l.l_discount)) as revenue,\n" +
+            "o_orderdate, o_shippriority from\n" +
+            "(select o.o_orderkey, o.o_orderdate, o.o_shippriority, o.o_customer.c_mktsegment c_mktsegment, flatten(o.o_lineitems) l from dfs.`/drill/lineorders` o) t\n" +
+            "where c_mktsegment = 'HOUSEHOLD'\n" +
+            "and o_orderdate < '1995-03-25'\n" +
+            "and t.l.l_shipdate > '1995-03-25'\n" +
+            "group by o_orderkey, o_orderdate, o_shippriority\n" +
+            "order by revenue desc, o_orderdate\n" +
+            "limit 10;");
+    System.out.println(getDfsTestTmpSchemaLocation());
+  }
 
   @Test // see DRILL-2328
   public void testConcatOnNull() throws Exception {
@@ -430,7 +473,7 @@ public class TestExampleQueries extends BaseTestQuery {
     int actualRecordCount = testSql("select N_NATIONKEY from cp.`tpch/nation.parquet` where N_NATIONKEY < 10 order by N_NATIONKEY limit 5");
     int expectedRecordCount = 5;
     assertEquals(String.format("Received unexpected number of rows in output: expected=%d, received=%s",
-        expectedRecordCount, actualRecordCount), expectedRecordCount, actualRecordCount);
+            expectedRecordCount, actualRecordCount), expectedRecordCount, actualRecordCount);
   }
 
   @Test
@@ -443,7 +486,7 @@ public class TestExampleQueries extends BaseTestQuery {
     int actualRecordCount = testSql("select id, name from cp.`jsoninput/specialchar.json` where name like '%#_%' ESCAPE '#'");
     int expectedRecordCount = 1;
     assertEquals(String.format("Received unexpected number of rows in output: expected=%d, received=%s",
-        expectedRecordCount, actualRecordCount), expectedRecordCount, actualRecordCount);
+            expectedRecordCount, actualRecordCount), expectedRecordCount, actualRecordCount);
 
   }
 
@@ -452,7 +495,7 @@ public class TestExampleQueries extends BaseTestQuery {
     int actualRecordCount = testSql("select id, name from cp.`jsoninput/specialchar.json` where name similar to '(N|S)%#_%' ESCAPE '#'");
     int expectedRecordCount = 1;
     assertEquals(String.format("Received unexpected number of rows in output: expected=%d, received=%s",
-        expectedRecordCount, actualRecordCount), expectedRecordCount, actualRecordCount);
+            expectedRecordCount, actualRecordCount), expectedRecordCount, actualRecordCount);
   }
 
   @Test
@@ -460,7 +503,7 @@ public class TestExampleQueries extends BaseTestQuery {
     int actualRecordCount = testSql("select o_totalprice from cp.`tpch/orders.parquet` where o_orderkey=60000 and o_totalprice=299402");
     int expectedRecordCount = 0;
     assertEquals(String.format("Received unexpected number of rows in output: expected=%d, received=%s",
-        expectedRecordCount, actualRecordCount), expectedRecordCount, actualRecordCount);
+            expectedRecordCount, actualRecordCount), expectedRecordCount, actualRecordCount);
   }
 
   @Test // DRILL-1470
@@ -643,7 +686,7 @@ public class TestExampleQueries extends BaseTestQuery {
         .sqlQuery(query)
         .ordered()
         .baselineColumns("l_suppkey", "avg_price")
-        .baselineValues(98, 1854.95)
+            .baselineValues(98, 1854.95)
         .build().run();
   }
 
@@ -659,8 +702,8 @@ public class TestExampleQueries extends BaseTestQuery {
         .optionSettingQueriesForTestQuery("alter session set `planner.slice_target` = 10; alter session set `planner.join.row_count_estimate_factor` = 0.1")  // Enforce exchange will be inserted.
         .sqlQuery(sql)
         .optionSettingQueriesForBaseline("alter session set `planner.slice_target` = 100000; alter session set `planner.join.row_count_estimate_factor` = 1.0") // Use default option setting.
-        .sqlBaselineQuery(sql)
-        .build().run();
+            .sqlBaselineQuery(sql)
+            .build().run();
 
   }
 
@@ -674,8 +717,8 @@ public class TestExampleQueries extends BaseTestQuery {
         .sqlQuery(query)
         .ordered()
         .jsonBaselineFile("project/complex/drill-2163-result.json")
-        .build()
-        .run();
+            .build()
+            .run();
   }
 
   @Test
@@ -700,8 +743,8 @@ public class TestExampleQueries extends BaseTestQuery {
   @Ignore("Move to TestParquetWriter. Have to ensure same file name does not exist on filesystem.")
   public void testCreateTableSameColumnNames() throws Exception {
     String creatTable = "CREATE TABLE CaseInsensitiveColumnNames as " +
-        "select cast(r_regionkey as BIGINT) BIGINT_col, cast(r_regionkey as DECIMAL) bigint_col \n" +
-        "FROM cp.`tpch/region.parquet`;\n";
+            "select cast(r_regionkey as BIGINT) BIGINT_col, cast(r_regionkey as DECIMAL) bigint_col \n" +
+            "FROM cp.`tpch/region.parquet`;\n";
 
     test("USE dfs_test.tmp");
     test(creatTable);
@@ -715,7 +758,7 @@ public class TestExampleQueries extends BaseTestQuery {
         .baselineValues((long) 2, new BigDecimal(2))
         .baselineValues((long) 3, new BigDecimal(3))
         .baselineValues((long) 4, new BigDecimal(4))
-        .build().run();
+            .build().run();
   }
 
   @Test // DRILL-1943, DRILL-1911
@@ -828,11 +871,11 @@ public class TestExampleQueries extends BaseTestQuery {
         .ordered()
         .baselineColumns("col")
         .baselineValues("AFRICA")
-        .baselineValues("AMERICA")
-        .baselineValues("ASIA")
-        .baselineValues("EUROPE")
-        .baselineValues("MIDDLE EAST")
-        .build().run();
+            .baselineValues("AMERICA")
+            .baselineValues("ASIA")
+            .baselineValues("EUROPE")
+            .baselineValues("MIDDLE EAST")
+            .build().run();
   }
 
   @Test // DRILL-2221
@@ -874,7 +917,7 @@ public class TestExampleQueries extends BaseTestQuery {
 
     String query3 = "select (case when (r_regionkey IN (0, 2, 3, 4)) then 0 else r_regionkey end) as col1, min(r_regionkey) as col2 \n" +
         "from cp.`tpch/region.parquet` \n" +
-        "group by (case when (r_regionkey IN (0, 2, 3, 4)) then 0 else r_regionkey end)";
+            "group by (case when (r_regionkey IN (0, 2, 3, 4)) then 0 else r_regionkey end)";
 
     testBuilder()
         .sqlQuery(query1)
@@ -929,9 +972,9 @@ public class TestExampleQueries extends BaseTestQuery {
         .sqlQuery(query1)
         .unOrdered()
         .csvBaselineFile("testframework/testExampleQueries/testHavingAggFunction/q1.tsv")
-        .baselineTypes(TypeProtos.MinorType.INT)
-        .baselineColumns("col")
-        .build()
+            .baselineTypes(TypeProtos.MinorType.INT)
+            .baselineColumns("col")
+            .build()
         .run();
 
     testBuilder()
@@ -946,7 +989,7 @@ public class TestExampleQueries extends BaseTestQuery {
     testBuilder()
         .sqlQuery(query3)
         .unOrdered()
-        .csvBaselineFile("testframework/testExampleQueries/testHavingAggFunction/q3.tsv")
+            .csvBaselineFile("testframework/testExampleQueries/testHavingAggFunction/q3.tsv")
         .baselineTypes(TypeProtos.MinorType.INT)
         .baselineColumns("col")
         .build()
@@ -993,7 +1036,7 @@ public class TestExampleQueries extends BaseTestQuery {
         .csvBaselineFile("testframework/testExampleQueries/testGroupByStarSchemaless.tsv")
         .baselineTypes(TypeProtos.MinorType.INT)
         .baselineColumns("nation_key")
-        .build()
+            .build()
         .run();
 
   }
@@ -1001,9 +1044,9 @@ public class TestExampleQueries extends BaseTestQuery {
   @Test  //DRILL_3004
   public void testDRILL_3004() throws Exception {
     final String query =
-        "SELECT\n" +
-        "  nations.N_NAME,\n" +
-        "  regions.R_NAME\n" +
+            "SELECT\n" +
+                    "  nations.N_NAME,\n" +
+                    "  regions.R_NAME\n" +
         "FROM\n" +
         "  cp.`tpch/nation.parquet` nations\n" +
         "JOIN\n" +
@@ -1016,7 +1059,7 @@ public class TestExampleQueries extends BaseTestQuery {
         .sqlQuery(query)
         .expectsEmptyResultSet()
         .optionSettingQueriesForTestQuery("ALTER SESSION SET `planner.enable_hashjoin` = false; " +
-                                          "ALTER SESSION SET `planner.disable_exchanges` = true")
+                "ALTER SESSION SET `planner.disable_exchanges` = true")
         .build()
         .run();
 
@@ -1040,17 +1083,17 @@ public class TestExampleQueries extends BaseTestQuery {
         "create table mytable1  partition by (r_regionkey, r_comment) as select r_regionkey, r_name, r_comment from cp.`tpch/region.parquet`");
 
     test("use dfs_test.tmp; " +
-        "create table mytable2  partition by (r_regionkey, r_comment) as select * from cp.`tpch/region.parquet` where r_name = 'abc' ");
+            "create table mytable2  partition by (r_regionkey, r_comment) as select * from cp.`tpch/region.parquet` where r_name = 'abc' ");
 
     test("use dfs_test.tmp; " +
-        "create table mytable3  partition by (r_regionkey, n_nationkey) as " +
-        "  select r.r_regionkey, r.r_name, n.n_nationkey, n.n_name from cp.`tpch/nation.parquet` n, cp.`tpch/region.parquet` r " +
-        "  where n.n_regionkey = r.r_regionkey");
+            "create table mytable3  partition by (r_regionkey, n_nationkey) as " +
+            "  select r.r_regionkey, r.r_name, n.n_nationkey, n.n_name from cp.`tpch/nation.parquet` n, cp.`tpch/region.parquet` r " +
+            "  where n.n_regionkey = r.r_regionkey");
 
     test("use dfs_test.tmp; " +
-        "create table mytable4  partition by (r_regionkey, r_comment) as " +
-        "  select  r.* from cp.`tpch/nation.parquet` n, cp.`tpch/region.parquet` r " +
-        "  where n.n_regionkey = r.r_regionkey");
+            "create table mytable4  partition by (r_regionkey, r_comment) as " +
+            "  select  r.* from cp.`tpch/nation.parquet` n, cp.`tpch/region.parquet` r " +
+            "  where n.n_regionkey = r.r_regionkey");
 
 
   }
@@ -1076,7 +1119,7 @@ public class TestExampleQueries extends BaseTestQuery {
     final String joinQuery =
         " select *, sum(n.n_nationkey) over (partition by r.r_regionkey order by r.r_name) as sumwin" +
         " from cp.`tpch/nation.parquet` n, cp.`tpch/region.parquet` r " +
-        " where n.n_regionkey = r.r_regionkey";
+                " where n.n_regionkey = r.r_regionkey";
     final String joinBaseQuery =
         " select n.n_nationkey, n.n_name, n.n_regionkey, n.n_comment, r.r_regionkey, r.r_name, r.r_comment, " +
         "   sum(n.n_nationkey) over (partition by r.r_regionkey order by r.r_name) as sumwin " +

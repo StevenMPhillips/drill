@@ -15,48 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.vector.complex.impl;
+package org.apache.drill.exec.physical.config;
 
-import org.apache.drill.exec.vector.complex.writer.FieldWriter;
+import org.apache.drill.exec.physical.base.AbstractSingle;
+import org.apache.drill.exec.physical.base.PhysicalOperator;
+import org.apache.drill.exec.physical.base.PhysicalVisitor;
 
+public class UnionTypeReducer extends AbstractSingle {
+  static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UnionTypeReducer.class);
 
-abstract class AbstractBaseWriter implements FieldWriter {
-  //private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AbstractBaseWriter.class);
-
-  final FieldWriter parent;
-  private int index;
-
-  public static final String CHECK_FOR_FIELD = "attributes";
-
-  public AbstractBaseWriter(FieldWriter parent) {
-    this.parent = parent;
+  public UnionTypeReducer(PhysicalOperator child) {
+    super(child);
+    setCost(child.getCost());
   }
 
   @Override
-  public FieldWriter getParent() {
-    return parent;
-  }
-
-  public boolean isRoot() {
-    return parent == null;
-  }
-
-  int idx() {
-    return index;
+  public <T, X, E extends Throwable> T accept(PhysicalVisitor<T, X, E> physicalVisitor, X value) throws E {
+    return physicalVisitor.visitUnionTypeReducer(this, value);
   }
 
   @Override
-  public void setPosition(int index) {
-    this.index = index;
+  protected PhysicalOperator getNewWithChild(PhysicalOperator child) {
+    return new UnionTypeReducer(child);
   }
 
   @Override
-  public void end() {
-  }
-
-  public static void check(String name) {
-    if (CHECK_FOR_FIELD.equals(name)) {
-      System.out.println(name);
-    }
+  public int getOperatorType() {
+    return -1;
   }
 }

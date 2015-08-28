@@ -21,6 +21,7 @@ import java.util.Iterator;
 
 import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.common.types.Types;
+import org.apache.drill.exec.expr.holders.EmbeddedHolder;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
@@ -70,5 +71,21 @@ abstract class AbstractBaseReader implements FieldReader{
   @Override
   public int size() {
     throw new IllegalStateException("The current reader doesn't support getting size information.");
+  }
+
+  @Override
+  public void read(EmbeddedHolder holder) {
+    holder.reader = this;
+    holder.isSet = this.isSet() ? 1 : 0;
+  }
+
+  @Override
+  public void read(int index, EmbeddedHolder holder) {
+    throw new IllegalStateException("The current reader doesn't support reading embedded type");
+  }
+
+  @Override
+  public void copyAsValue(EmbeddedWriter writer) {
+    throw new IllegalStateException("The current reader doesn't support reading embedded type");
   }
 }

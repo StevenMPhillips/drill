@@ -24,6 +24,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ObjectArrays;
 import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.types.TypeProtos;
+import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.exception.SchemaChangeRuntimeException;
 import org.apache.drill.exec.expr.TypeHelper;
@@ -32,6 +33,7 @@ import org.apache.drill.exec.proto.UserBitShared;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.vector.AddOrGetResult;
 import org.apache.drill.exec.vector.BaseValueVector;
+import org.apache.drill.exec.vector.UInt1Vector;
 import org.apache.drill.exec.vector.UInt4Vector;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.VectorDescriptor;
@@ -47,6 +49,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
       MaterializedField.create(OFFSETS_VECTOR_NAME, Types.required(TypeProtos.MinorType.UINT4));
 
   protected final UInt4Vector offsets;
+  protected final UInt1Vector bits;
   protected ValueVector vector;
 
   protected BaseRepeatedValueVector(MaterializedField field, BufferAllocator allocator) {
@@ -56,6 +59,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
   protected BaseRepeatedValueVector(MaterializedField field, BufferAllocator allocator, ValueVector vector) {
     super(field, allocator);
     this.offsets = new UInt4Vector(OFFSETS_FIELD, allocator);
+    this.bits = new UInt1Vector(MaterializedField.create("$bits$", Types.required(MinorType.UINT1)), allocator);
     this.vector = Preconditions.checkNotNull(vector, "data vector cannot be null");
   }
 
@@ -72,12 +76,14 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
         return false;
       }
       success = vector.allocateNewSafe();
+      success = success && bits.allocateNewSafe();
     } finally {
       if (!success) {
         clear();
       }
     }
     offsets.zeroVector();
+    bits.zeroVector();
     return success;
   }
 
@@ -111,6 +117,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
   protected UserBitShared.SerializedField.Builder getMetadataBuilder() {
     return super.getMetadataBuilder()
         .addChild(offsets.getMetadata())
+        .addChild(bits.getMetadata())
         .addChild(vector.getMetadata());
   }
 
@@ -119,7 +126,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
     if (getAccessor().getValueCount() == 0) {
       return 0;
     }
-    return offsets.getBufferSize() + vector.getBufferSize();
+    return offsets.getBufferSize() + bits.getBufferSize() + vector.getBufferSize();
   }
 
   @Override
@@ -131,12 +138,15 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
   public void clear() {
     offsets.clear();
     vector.clear();
+    bits.clear();
+    lastSet = 0;
     super.clear();
   }
 
   @Override
   public DrillBuf[] getBuffers(boolean clear) {
-    final DrillBuf[] buffers = ObjectArrays.concat(offsets.getBuffers(false), vector.getBuffers(false), DrillBuf.class);
+    final DrillBuf[] buffers = ObjectArrays.concat(offsets.getBuffers(false), ObjectArrays.concat(bits.getBuffers(false),
+            vector.getBuffers(false), DrillBuf.class), DrillBuf.class);
     if (clear) {
       for (DrillBuf buffer:buffers) {
         buffer.retain();
@@ -151,14 +161,18 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
     final UserBitShared.SerializedField offsetMetadata = metadata.getChild(0);
     offsets.load(offsetMetadata, buffer);
 
-    final UserBitShared.SerializedField vectorMetadata = metadata.getChild(1);
+    final int offsetLength = offsetMetadata.getBufferLength();
+    final UserBitShared.SerializedField bitMetadata = metadata.getChild(1);
+    final int bitLength = bitMetadata.getBufferLength();
+    bits.load(bitMetadata, buffer.slice(offsetLength, bitLength));
+
+    final UserBitShared.SerializedField vectorMetadata = metadata.getChild(2);
     if (getDataVector() == DEFAULT_DATA_VECTOR) {
       addOrGetVector(VectorDescriptor.create(vectorMetadata.getMajorType()));
     }
 
-    final int offsetLength = offsetMetadata.getBufferLength();
     final int vectorLength = vectorMetadata.getBufferLength();
-    vector.load(vectorMetadata, buffer.slice(offsetLength, vectorLength));
+    vector.load(vectorMetadata, buffer.slice(offsetLength + bitLength, vectorLength));
   }
 
   /**
@@ -212,7 +226,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
 
     @Override
     public boolean isNull(int index) {
-      return false;
+      return bits.getAccessor().get(index) == 0;
     }
 
     @Override
@@ -221,20 +235,39 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
     }
   }
 
+  protected int lastSet = 0;
+
   public abstract class BaseRepeatedMutator extends BaseValueVector.BaseMutator implements RepeatedMutator {
+
+    public void setNotNull(int index) {
+      bits.getMutator().setSafe(index, 1);
+    }
 
     @Override
     public void startNewValue(int index) {
-      offsets.getMutator().setSafe(index+1, offsets.getAccessor().get(index));
-      setValueCount(index+1);
+      for (int i = lastSet; i <= index; i++) {
+        offsets.getMutator().setSafe(i + 1, offsets.getAccessor().get(i));
+      }
+      lastSet = index + 1;
+//      offsets.getMutator().setSafe(index + 1, offsets.getAccessor().get(index));
+//      setValueCount(index+1);
     }
 
     @Override
     public void setValueCount(int valueCount) {
       // TODO: populate offset end points
-      offsets.getMutator().setValueCount(valueCount == 0 ? 0 : valueCount+1);
+      if (valueCount == 0) {
+        offsets.getMutator().setValueCount(0);
+      } else {
+        for (int i = lastSet; i < valueCount; i++) {
+          offsets.getMutator().setSafe(i + 1, offsets.getAccessor().get(i));
+        }
+        offsets.getMutator().setValueCount(valueCount + 1);
+      }
+//      offsets.getMutator().setValueCount(valueCount == 0 ? 0 : valueCount+1);
       final int childValueCount = valueCount == 0 ? 0 : offsets.getAccessor().get(valueCount);
       vector.getMutator().setValueCount(childValueCount);
+      bits.getMutator().setValueCount(valueCount);
     }
   }
 

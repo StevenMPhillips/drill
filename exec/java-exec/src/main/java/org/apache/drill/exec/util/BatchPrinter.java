@@ -63,7 +63,7 @@ public class BatchPrinter {
       vectors.add(vw.getValueVector());
     }
     int width = columns.size();
-    int rows = vectors.get(0).getMetadata().getValueCount();
+    int rows = batch.getRecordCount();
     for (int row = 0; row < rows; row++) {
       if (row%50 == 0) {
         System.out.println(StringUtils.repeat("-", width * 17 + 1));
@@ -75,6 +75,11 @@ public class BatchPrinter {
       }
       for (ValueVector vv : vectors) {
         Object o = vv.getAccessor().getObject(row);
+        if (o == null) {
+          String value = "null";
+          System.out.printf("| %-15s",value.length() <= 15 ? value : value.substring(0, 14));
+          continue;
+        }
         if (o instanceof byte[]) {
           String value = new String((byte[]) o);
           System.out.printf("| %-15s",value.length() <= 15 ? value : value.substring(0, 14));
