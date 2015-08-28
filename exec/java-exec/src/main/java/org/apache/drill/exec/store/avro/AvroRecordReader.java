@@ -101,6 +101,7 @@ public class AvroRecordReader extends AbstractRecordReader {
 
     try {
       reader = new DataFileReader<>(new FsInput(hadoop, fs.getConf()), new GenericDatumReader<GenericContainer>());
+      reader.sync(1);
     } catch (IOException e) {
       throw new ExecutionSetupException(e);
     }

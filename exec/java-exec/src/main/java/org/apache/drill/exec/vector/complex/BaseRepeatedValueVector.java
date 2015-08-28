@@ -223,16 +223,25 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
 
   public abstract class BaseRepeatedMutator extends BaseValueVector.BaseMutator implements RepeatedMutator {
 
+    private int lastSet = 0;
+
     @Override
     public void startNewValue(int index) {
       offsets.getMutator().setSafe(index+1, offsets.getAccessor().get(index));
+      lastSet = index;
       setValueCount(index+1);
     }
 
     @Override
     public void setValueCount(int valueCount) {
       // TODO: populate offset end points
-      offsets.getMutator().setValueCount(valueCount == 0 ? 0 : valueCount+1);
+      if (valueCount == 0) {
+        offsets.getMutator().setValueCount(0);
+      } else {
+        for (int i = lastSet; i < valueCount; i++) {
+          offsets.getMutator().setValueCount(valueCount + 1);
+        }
+      }
       final int childValueCount = valueCount == 0 ? 0 : offsets.getAccessor().get(valueCount);
       vector.getMutator().setValueCount(childValueCount);
     }

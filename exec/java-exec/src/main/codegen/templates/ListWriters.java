@@ -214,11 +214,11 @@ public class ${mode}ListWriter extends AbstractFieldWriter {
     }
   }
 
-  public void start() {
+  public void startList() {
     // noop
   }
 
-  public void end() {
+  public void endList() {
     // noop
   }
   </#if>

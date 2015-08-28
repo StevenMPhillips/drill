@@ -32,6 +32,24 @@ import static org.apache.drill.TestBuilder.listOf;
 public class TestExampleQueries extends BaseTestQuery {
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
+  @Test
+  public void q() throws Exception {
+//    test("select t.a.b as a_b from dfs.tmp.t3 t");
+//    test("select a from dfs.tmp.t3");
+//    test("select a from dfs.tmp.t3 t where t.a.b = 1 or t.a.b = 3");
+//    test("select a from dfs.tmp.t3 t where isBigInt(t.a.c) = true");
+//    test("select t.a from dfs.tmp.t5 t");
+//    test("select a_c, isBigInt(a_c) as big_int from (select case when isBigInt(t.a.c) then t.a.c else castBigInt(0) end a_c from dfs.tmp.t3 t)");
+//    test("select a, c from dfs.tmp.t6 t where t.c = t.a.b");
+//    test ("select case n_regionkey when 0 then 'zero' when 1 then 'one' else 'not' end from cp.`tpch/nation.parquet`");
+//    test("select n_nationkey + n_regionkey from cp.`tpch/nation.parquet`");
+//    test("select a from dfs.tmp.t7");
+    test("select a from dfs.tmp.t4");
+//    test("select a[0] b0, a[1] b1 from dfs.tmp.t4");
+//    test("select * from dfs.tmp.`2015-01-01-15.json`");
+//    test("select * from dfs.`/Users/stevenphillips/Downloads/vm-sample.json` limit 1");
+  }
+
   @Test // see DRILL-2328
   public void testConcatOnNull() throws Exception {
     try {

@@ -52,6 +52,8 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
   private final Map<String, FieldWriter> fields = Maps.newHashMap();
   <#if mode == "Repeated">private int currentChildIndex = 0;</#if>
 
+  public boolean embeddedVector = false;
+
   public ${mode}MapWriter(${containerClass} container, FieldWriter parent) {
     super(parent);
     this.container = container;
@@ -70,10 +72,15 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
   @Override
   public MapWriter map(String name) {
       FieldWriter writer = fields.get(name.toLowerCase());
-    if(writer == null) {
-      int vectorCount = container.size();
-      MapVector vector = container.addOrGet(name, MapVector.TYPE, MapVector.class);
-      writer = new SingleMapWriter(vector, this);
+    if(writer == null){
+        int vectorCount=container.size();
+        if(embeddedVector){
+        MapVector vector=container.addOrGet(name,MapVector.TYPE,MapVector.class);
+        writer=new SingleMapWriter(vector,this);
+        }else{
+        EmbeddedVector vector = container.addOrGet(name, Types.required(MinorType.EMBEDDED), EmbeddedVector.class);
+        writer = new EmbeddedWriter(vector);
+        }
       if(vectorCount != container.size()) {
         writer.allocate();
       }
@@ -108,8 +115,13 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
   @Override
   public ListWriter list(String name) {
     FieldWriter writer = fields.get(name.toLowerCase());
+    int vectorCount = container.size();
     if(writer == null) {
-      writer = new SingleListWriter(name, container, this);
+//      writer = new SingleListWriter(name, container, this);
+      writer = new EmbeddedWriter(container.addOrGet(name, Types.required(MinorType.EMBEDDED), EmbeddedVector.class));
+      if (container.size() > vectorCount) {
+        writer.allocate();
+      }
       writer.setPosition(${index});
       fields.put(name.toLowerCase(), writer);
     }
@@ -190,13 +202,21 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
   public ${minor.class}Writer ${lowerName}(String name) {
   </#if>
     FieldWriter writer = fields.get(name.toLowerCase());
-    if(writer == null) {
-      final ${vectName}Vector vector = container.addOrGet(name, ${upperName}_TYPE, ${vectName}Vector.class);
-      vector.allocateNewSafe();
-      writer = new ${vectName}WriterImpl(vector, this);
-      writer.setPosition(${index});
-      fields.put(name.toLowerCase(), writer);
-    }
+        if(writer == null) {
+        ValueVector vector;
+        if (!embeddedVector){
+        EmbeddedVector v = container.addOrGet(name, Types.required(MinorType.EMBEDDED), EmbeddedVector.class);
+        writer = new EmbeddedWriter(v);
+        vector = v;
+        } else {
+        ${vectName}Vector v = container.addOrGet(name, ${upperName}_TYPE, ${vectName}Vector.class);
+        writer = new ${vectName}WriterImpl(v, this);
+        vector = v;
+        }
+        vector.allocateNewSafe();
+        writer.setPosition(${index});
+        fields.put(name.toLowerCase(), writer);
+        }
     return writer;
   }
 

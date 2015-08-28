@@ -863,9 +863,9 @@ public class TypeCastRules {
 //          return -1;
       }
 
-      if (!TypeCastRules.isCastableWithNullHandling(argType, parmType, holder.getNullHandling())) {
-        return -1;
-      }
+//      if (!TypeCastRules.isCastableWithNullHandling(argType, parmType, holder.getNullHandling())) {
+//        return -1;
+//      }
 
       Integer parmVal = ResolverTypePrecedence.precedenceMap.get(parmType
           .getMinorType());

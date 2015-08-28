@@ -63,7 +63,7 @@ public class BatchPrinter {
       vectors.add(vw.getValueVector());
     }
     int width = columns.size();
-    int rows = vectors.get(0).getMetadata().getValueCount();
+    int rows = batch.getRecordCount();
     for (int row = 0; row < rows; row++) {
       if (row%50 == 0) {
         System.out.println(StringUtils.repeat("-", width * 17 + 1));

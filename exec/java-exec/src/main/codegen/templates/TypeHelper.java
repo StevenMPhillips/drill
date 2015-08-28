@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+import org.apache.drill.exec.vector.complex.EmbeddedVector;
+
 <@pp.dropOutputFile />
 <@pp.changeOutputFile name="/org/apache/drill/exec/expr/TypeHelper.java" />
 
@@ -100,8 +102,11 @@ public class TypeHelper {
   
   public static Class<?> getValueVectorClass(MinorType type, DataMode mode){
     switch (type) {
+    case EMBEDDED:
+      return EmbeddedVector.class;
     case MAP:
       switch (mode) {
+      case OPTIONAL:
       case REQUIRED:
         return MapVector.class;
       case REPEATED:
@@ -109,10 +114,11 @@ public class TypeHelper {
       }
       
     case LIST:
-      switch (mode) {
-      case REPEATED:
-        return RepeatedListVector.class;
-      }
+//      switch (mode) {
+//      case REPEATED:
+//        return RepeatedListVector.class;
+//      }
+    return ListVector.class;
     
 <#list vv.types as type>
   <#list type.minor as minor>
@@ -247,6 +253,8 @@ public class TypeHelper {
   
   public static JType getHolderType(JCodeModel model, MinorType type, DataMode mode){
     switch (type) {
+    case EMBEDDED:
+      return model._ref(EmbeddedHolder.class);
     case MAP:
     case LIST:
       return model._ref(ComplexHolder.class);
@@ -280,19 +288,23 @@ public class TypeHelper {
 
     switch (type.getMinorType()) {
     
-    
+    case EMBEDDED:
+      return new EmbeddedVector(field, allocator);
+
     case MAP:
       switch (type.getMode()) {
       case REQUIRED:
+      case OPTIONAL:
         return new MapVector(field, allocator, callBack);
       case REPEATED:
         return new RepeatedMapVector(field, allocator, callBack);
       }
     case LIST:
-      switch (type.getMode()) {
-      case REPEATED:
-        return new RepeatedListVector(field, allocator, callBack);
-      }    
+//      switch (type.getMode()) {
+//      case REPEATED:
+//        return new RepeatedListVector(field, allocator, callBack);
+//      }
+      return new ListVector(field, allocator);
 <#list vv.  types as type>
   <#list type.minor as minor>
     case ${minor.class?upper_case}:
