@@ -29,6 +29,7 @@ import org.apache.drill.exec.util.JsonStringArrayList;
 import org.apache.drill.exec.vector.IntVector;
 import org.apache.drill.exec.vector.UInt4Vector;
 import org.apache.drill.exec.vector.ValueVector;
+import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
 import org.apache.drill.exec.vector.complex.impl.EmbeddedWriter;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 import org.apache.drill.exec.vector.complex.writer.BaseWriter.MapWriter;
@@ -142,6 +143,7 @@ public class ListVector extends BaseRepeatedValueVector {
 
   public class Mutator extends BaseRepeatedMutator {
 
+    /*
     EmbeddedWriter writer;
 
     public void addSafe(int index, long value) {
@@ -164,5 +166,6 @@ public class ListVector extends BaseRepeatedValueVector {
       offsets.getMutator().setSafe(index + 1, nextOffset + 1);
     }
 
+*/
   }
 }

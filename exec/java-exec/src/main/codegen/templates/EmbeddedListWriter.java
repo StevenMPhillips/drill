@@ -1,5 +1,4 @@
-/*******************************************************************************
-
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,18 +14,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ */
+
+<@pp.dropOutputFile />
+<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/EmbeddedListWriter.java" />
+
+
+<#include "/@includes/license.ftl" />
+
 package org.apache.drill.exec.vector.complex.impl;
 
-import io.netty.buffer.DrillBuf;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.exec.record.MaterializedField;
-import org.apache.drill.exec.vector.UInt4Vector;
-import org.apache.drill.exec.vector.complex.EmbeddedVector;
-import org.apache.drill.exec.vector.complex.ListVector;
-import org.apache.drill.exec.vector.complex.writer.BigIntWriter;
-import org.apache.drill.exec.vector.complex.writer.VarCharWriter;
+<#include "/@includes/vv_imports.ftl" />
 
+/*
+ * This class is generated using freemarker and the ${.template_name} template.
+ */
+
+@SuppressWarnings("unused")
 public class EmbeddedListWriter extends AbstractFieldWriter {
 
   ListVector vector;
@@ -70,29 +74,27 @@ public class EmbeddedListWriter extends AbstractFieldWriter {
 
   }
 
+  <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
+  <#assign fields = minor.fields!type.fields />
+  <#assign uncappedName = name?uncap_first/>
+
+  <#if !minor.class?starts_with("Decimal")>
+
   @Override
-  public BigIntWriter bigInt() {
+  public ${name}Writer <#if uncappedName == "int">integer<#else>${uncappedName}</#if>() {
     return this;
   }
 
   @Override
-  public BigIntWriter bigInt(String name) {
+  public ${name}Writer <#if uncappedName == "int">integer<#else>${uncappedName}</#if>(String name) {
     assert inMap;
     mapName = name;
     return this;
   }
 
-  @Override
-  public VarCharWriter varChar() {
-    return this;
-  }
+  </#if>
 
-  @Override
-  public VarCharWriter varChar(String name) {
-    assert inMap;
-    mapName = name;
-    return this;
-  }
+  </#list></#list>
 
   @Override
   public MapWriter map() {
@@ -103,10 +105,20 @@ public class EmbeddedListWriter extends AbstractFieldWriter {
   @Override
   public ListWriter list() {
     final int nextOffset = offsets.getAccessor().get(idx() + 1);
-    data.getMutator().setType(nextOffset, MinorType.MAP);
+//    data.getMutator().setType(nextOffset, MinorType.MAP);
     offsets.getMutator().setSafe(idx() + 1, nextOffset + 1);
     writer.setPosition(nextOffset);
     return writer;
+  }
+
+  @Override
+  public ListWriter list(String name) {
+    final int nextOffset = offsets.getAccessor().get(idx() + 1);
+    data.getMutator().setType(nextOffset, MinorType.MAP);
+    writer.setPosition(nextOffset);
+    ListWriter listWriter = writer.list(name);
+    offsets.getMutator().setSafe(idx() + 1, nextOffset + 1);
+    return listWriter;
   }
 
   @Override
@@ -117,10 +129,7 @@ public class EmbeddedListWriter extends AbstractFieldWriter {
 
   @Override
   public void startList() {
-//    for (int i = lastIndex + 1; i <= idx(); i++) {
-      vector.getMutator().startNewValue(idx());
-//    }
-//    lastIndex = idx();
+    vector.getMutator().startNewValue(idx());
   }
 
   @Override
@@ -133,7 +142,7 @@ public class EmbeddedListWriter extends AbstractFieldWriter {
     assert inMap;
     final int nextOffset = offsets.getAccessor().get(idx() + 1);
     data.getMutator().setType(nextOffset, MinorType.MAP);
-    offsets.getMutator().setSafe(idx() + 1, nextOffset + 1);
+    offsets.getMutator().setSafe(idx() + 1, nextOffset);
     writer.setPosition(nextOffset);
   }
 
@@ -144,32 +153,31 @@ public class EmbeddedListWriter extends AbstractFieldWriter {
     }
   }
 
+  <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
+  <#assign fields = minor.fields!type.fields />
+  <#assign uncappedName = name?uncap_first/>
+
+  <#if !minor.class?starts_with("Decimal")>
+
   @Override
-  public void writeBigInt(long value) {
+  public void write${name}(<#list fields as field>${field.type} ${field.name}<#if field_has_next>, </#if></#list>) {
     if (inMap) {
       final int nextOffset = offsets.getAccessor().get(idx() + 1);
       data.getMutator().setType(nextOffset, MinorType.MAP);
       writer.setPosition(nextOffset);
-      BigIntWriter bigIntWriter = writer.bigInt(mapName);
-      bigIntWriter.writeBigInt(value);
+      ${name}Writer ${uncappedName}Writer = writer.<#if uncappedName == "int">integer<#else>${uncappedName}</#if>(mapName);
+      ${uncappedName}Writer.write${name}(<#list fields as field>${field.name}<#if field_has_next>, </#if></#list>);
       offsets.getMutator().setSafe(idx() + 1, nextOffset + 1);
     } else {
-      vector.getMutator().addSafe(idx(), value);
+      final int nextOffset = offsets.getAccessor().get(idx() + 1);
+      writer.setPosition(nextOffset);
+      writer.write${name}(<#list fields as field>${field.name}<#if field_has_next>, </#if></#list>);
+      offsets.getMutator().setSafe(idx() + 1, nextOffset + 1);
     }
   }
 
-  @Override
-  public void writeVarChar(int start, int end, DrillBuf buf) {
-    if (inMap) {
-      VarCharWriter varCharWriter = writer.varChar(mapName);
-      final int nextOffset = offsets.getAccessor().get(idx() + 1);
-      data.getMutator().setType(nextOffset, MinorType.MAP);
-      varCharWriter.setPosition(nextOffset);
-      varCharWriter.writeVarChar(start, end, buf);
-      offsets.getMutator().setSafe(idx() + 1, nextOffset + 1);
-    } else {
-      vector.getMutator().addSafe(idx(), start, end, buf);
-    }
-  }
+  </#if>
+
+  </#list></#list>
 
 }

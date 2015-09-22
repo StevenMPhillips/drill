@@ -15,33 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.vector.complex;
 
-import io.netty.buffer.DrillBuf;
-import org.apache.drill.common.expression.FieldReference;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.Types;
-import org.apache.drill.exec.expr.holders.ComplexHolder;
-import org.apache.drill.exec.expr.holders.EmbeddedHolder;
-import org.apache.drill.exec.expr.holders.NullableBigIntHolder;
-import org.apache.drill.exec.memory.BufferAllocator;
-import org.apache.drill.exec.memory.OutOfMemoryRuntimeException;
-import org.apache.drill.exec.proto.UserBitShared;
-import org.apache.drill.exec.proto.UserBitShared.SerializedField;
-import org.apache.drill.exec.record.MaterializedField;
-import org.apache.drill.exec.record.TransferPair;
-import org.apache.drill.exec.vector.BaseValueVector;
-import org.apache.drill.exec.vector.NullableBigIntVector;
-import org.apache.drill.exec.vector.NullableBitVector;
-import org.apache.drill.exec.vector.NullableVarCharVector;
-import org.apache.drill.exec.vector.UInt1Vector;
-import org.apache.drill.exec.vector.ValueVector;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedReader;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedWriter;
-import org.apache.drill.exec.vector.complex.impl.SingleMapWriter;
-import org.apache.drill.exec.vector.complex.reader.FieldReader;
+<@pp.dropOutputFile />
+<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/EmbeddedVector.java" />
 
+
+<#include "/@includes/license.ftl" />
+
+package org.apache.drill.exec.vector.complex.impl;
+
+<#include "/@includes/vv_imports.ftl" />
 import java.util.Iterator;
+
+/*
+ * This class is generated using freemarker and the ${.template_name} template.
+ */
+@SuppressWarnings("unused")
+
 
 public class EmbeddedVector implements ValueVector {
 
@@ -84,38 +74,27 @@ public class EmbeddedVector implements ValueVector {
     return mapVector;
   }
 
-  public NullableBigIntVector getBigInt() {
-    if (bigInt == null) {
+  <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
+  <#assign fields = minor.fields!type.fields />
+  <#assign uncappedName = name?uncap_first/>
+  <#if !minor.class?starts_with("Decimal")>
+
+  private Nullable${name}Vector ${uncappedName}Vector;
+
+  public Nullable${name}Vector get${name}Vector() {
+    if (${uncappedName}Vector == null) {
       int vectorCount = internalMap.size();
-      bigInt = internalMap.addOrGet("bigInt", Types.optional(MinorType.BIGINT), NullableBigIntVector.class);
+      ${uncappedName}Vector = internalMap.addOrGet("${uncappedName}", Types.optional(MinorType.${name?upper_case}), Nullable${name}Vector.class);
       if (internalMap.size() > vectorCount) {
-        bigInt.allocateNew();
+        ${uncappedName}Vector.allocateNew();
       }
     }
-    return bigInt;
+    return ${uncappedName}Vector;
   }
 
-  public NullableBitVector getBit() {
-    if (bit == null) {
-      int vectorCount = internalMap.size();
-      bit = internalMap.addOrGet("bit", Types.optional(MinorType.BIT), NullableBitVector.class);
-      if (internalMap.size() > vectorCount) {
-        bit.allocateNew();
-      }
-    }
-    return bit;
-  }
+  </#if>
 
-  public NullableVarCharVector getVarChar() {
-    if (varChar == null) {
-      int vectorCount = internalMap.size();
-      varChar = internalMap.addOrGet("varChar", Types.optional(MinorType.VARCHAR), NullableVarCharVector.class);
-      if (internalMap.size() > vectorCount) {
-        varChar.allocateNew();
-      }
-    }
-    return varChar;
-  }
+  </#list></#list>
 
   public ListVector getList() {
     if (listVector == null) {
@@ -286,12 +265,15 @@ public class EmbeddedVector implements ValueVector {
       switch (type) {
       case 0:
         return null;
-      case MinorType.BIGINT_VALUE:
-        return getBigInt().getAccessor().getObject(index);
-      case MinorType.BIT_VALUE:
-        return getBit().getAccessor().getObject(index);
-      case MinorType.VARCHAR_VALUE:
-        return getVarChar().getAccessor().getObject(index);
+      <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
+      <#assign fields = minor.fields!type.fields />
+      <#assign uncappedName = name?uncap_first/>
+      <#if !minor.class?starts_with("Decimal")>
+      case MinorType.${name?upper_case}_VALUE:
+        return get${name}Vector().getAccessor().getObject(index);
+      </#if>
+
+      </#list></#list>
       case MinorType.MAP_VALUE:
         return getMap().getAccessor().getObject(index);
       case MinorType.LIST_VALUE:
@@ -303,11 +285,6 @@ public class EmbeddedVector implements ValueVector {
 
     public byte[] get(int index) {
       return null;
-    }
-
-    public void get(int index, NullableBigIntHolder holder) {
-      getBigInt().getAccessor().get(index, holder);
-//      ((NullableBigIntVector) internalMap.getChild("bigInt")).getAccessor().get(index, holder);
     }
 
     public void get(int index, ComplexHolder holder) {
@@ -350,20 +327,14 @@ public class EmbeddedVector implements ValueVector {
       MinorType type = reader.getType().getMinorType();
       switch (type) {
       case BIGINT:
-//        BigIntWriter bigIntWriter = new NullableBigIntWriterImpl(bigInt, null);
-//        bigIntWriter.setPosition(index);
         reader.copyAsValue(writer.asBigInt());
         break;
       case BIT:
         reader.copyAsValue(writer.asBit());
       case VARCHAR:
-//        VarCharWriter varCharWriter = new NullableVarCharWriterImpl(varChar, null);
-//        varCharWriter.setPosition(index);
         reader.copyAsValue(writer.asVarChar());
         break;
       case MAP:
-//        MapWriter mapWriter = new SingleMapWriter(mapVector, null);
-//        mapWriter.setPosition(index);
         reader.copyAsValue(writer.asMap());
         break;
       default:

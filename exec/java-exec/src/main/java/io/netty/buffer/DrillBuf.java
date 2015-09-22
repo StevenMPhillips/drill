@@ -168,7 +168,7 @@ public final class DrillBuf extends AbstractByteBuf implements AutoCloseable {
 
   }
 
-  public long addr(int index) {
+  private long addr(int index) {
     return addr + index;
   }
 

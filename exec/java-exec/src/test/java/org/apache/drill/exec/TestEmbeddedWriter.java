@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.config.DrillConfig;
+import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.exec.expr.holders.EmbeddedHolder;
 import org.apache.drill.exec.expr.holders.NullableBigIntHolder;
@@ -31,16 +32,18 @@ import org.apache.drill.exec.memory.TopLevelAllocator;
 import org.apache.drill.exec.physical.impl.OutputMutator;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.exec.record.TransferPair;
+import org.apache.drill.exec.record.VectorAccessible;
 import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.WritableBatch;
 import org.apache.drill.exec.store.TestOutputMutator;
 import org.apache.drill.exec.store.easy.json.JsonProcessor.ReadState;
+import org.apache.drill.exec.util.VectorUtil;
 import org.apache.drill.exec.vector.NullableBigIntVector;
 import org.apache.drill.exec.vector.UInt1Vector;
-import org.apache.drill.exec.vector.complex.EmbeddedVector;
 import org.apache.drill.exec.vector.complex.fn.JsonReader;
 import org.apache.drill.exec.vector.complex.impl.EmbeddedReader;
+import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
 import org.apache.drill.exec.vector.complex.impl.EmbeddedWriter;
 import org.apache.drill.exec.vector.complex.impl.VectorContainerWriter;
 import org.apache.drill.exec.vector.complex.writer.BaseWriter.MapWriter;
@@ -65,13 +68,14 @@ import java.util.Map;
 
 public class TestEmbeddedWriter {
 
+  /*
   @Test
   public void test() throws Exception {
     BufferAllocator allocator = new TopLevelAllocator(DrillConfig.create());
     EmbeddedWriter writer = new EmbeddedWriter(allocator);
     writer.allocate();
 
-    MapWriter rootWriter = writer.rootAsMap();
+    MapWriter rootWriter = writer.asMap();
     rootWriter.start();
     {
 
@@ -125,27 +129,27 @@ public class TestEmbeddedWriter {
       rootWriter.end();
     }
 
-    writer.setValueCount(3);
+//    writer.setValueCount(3);
 
-    EmbeddedVector vector = writer.getData();
+//    EmbeddedVector vector = writer.getData();
 
     {
-      Object obj = vector.getAccessor().getObject(0);
+//      Object obj = vector.getAccessor().getObject(0);
+
+//      System.out.println(obj);
+    }
+    {
+//      Object obj = vector.getAccessor().getObject(1);
 
       System.out.println(obj);
     }
     {
-      Object obj = vector.getAccessor().getObject(1);
-
-      System.out.println(obj);
-    }
-    {
-      Object obj = vector.getAccessor().getObject(2);
+//      Object obj = vector.getAccessor().getObject(2);
 
       System.out.println(obj);
     }
 
-    EmbeddedReader reader = new EmbeddedReader(vector);
+//    EmbeddedReader reader = new EmbeddedReader(vector);
 
     reader.setPosition(0);
 
@@ -182,9 +186,10 @@ public class TestEmbeddedWriter {
     System.out.println(tp.getTo().getAccessor().getObject(2));
   }
 
+  */
   @Test
   public void q() throws IOException {
-    FileInputStream input = new FileInputStream("/tmp/a.json");
+    FileInputStream input = new FileInputStream("/Users/stevenphillips/git/drill/exec/java-exec/src/test/resources/jsoninput/input2.json");
     BufferAllocator allocator = new TopLevelAllocator(DrillConfig.create());
     TestOutputMutator mutator = new TestOutputMutator(allocator);
     VectorContainerWriter writer = new VectorContainerWriter(mutator);
@@ -200,11 +205,21 @@ public class TestEmbeddedWriter {
     } while (state == ReadState.WRITE_SUCCEED);
 
     final int cnt = count;
-    final EmbeddedVector v = (EmbeddedVector) mutator.iterator().next().getValueVector();
-    final EmbeddedReader r = new EmbeddedReader(v);
+    VectorContainer container = mutator.getContainer();
+    container.setRecordCount(cnt);
+//    String name = "graph";
+//    final EmbeddedVector v = (EmbeddedVector) container.getValueAccessorById(EmbeddedVector.class, container.getValueVectorId(SchemaPath.getSimplePath(name)).getFieldIds()).getValueVector();
+//    final EmbeddedReader r = new EmbeddedReader(v);
+
+    VectorUtil.showVectorAccessibleContent(container, "  |---|  ");
+
+//    for (int i = 0; i < cnt; i++) {
+//      System.out.println(v.getAccessor().getObject(i));
+//    }
+
 //    final NullableBigIntVector v = ((EmbeddedVector) mutator.iterator().next().getValueVector()).getBigInt();
 
-
+/*
     long t1 = System.nanoTime();
     int sum = 0;
     final NullableBigIntHolder holder = new NullableBigIntHolder();
@@ -222,5 +237,6 @@ public class TestEmbeddedWriter {
 
     long t = (t2 - t1) / cnt;
     System.out.println(t);
+    */
   }
 }
