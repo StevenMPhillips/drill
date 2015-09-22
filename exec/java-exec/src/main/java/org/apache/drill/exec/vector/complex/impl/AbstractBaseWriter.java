@@ -26,6 +26,8 @@ abstract class AbstractBaseWriter implements FieldWriter{
   final FieldWriter parent;
   private int index;
 
+  public static final String CHECK_FOR_FIELD = "attributes";
+
   public AbstractBaseWriter(FieldWriter parent) {
     super();
     this.parent = parent;
@@ -48,5 +50,11 @@ abstract class AbstractBaseWriter implements FieldWriter{
   }
 
   public void end(){
+  }
+
+  public static void check(String name) {
+    if (CHECK_FOR_FIELD.equals(name)) {
+      System.out.println(name);
+    }
   }
 }

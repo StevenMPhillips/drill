@@ -240,7 +240,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
   public abstract class BaseRepeatedMutator extends BaseValueVector.BaseMutator implements RepeatedMutator {
 
     public void setNotNull(int index) {
-      bits.getMutator().set(index, 1);
+      bits.getMutator().setSafe(index, 1);
     }
 
     @Override

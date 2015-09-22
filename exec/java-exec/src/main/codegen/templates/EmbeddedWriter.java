@@ -58,10 +58,13 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
 
   @Override
   public void start() {
+    data.getMutator().setType(idx(), MinorType.MAP);
+    getMapWriter(true).start();
   }
 
   @Override
   public void end() {
+    getMapWriter(false).end();
   }
 
   @Override
@@ -189,6 +192,7 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
 
   @Override
   public ${capName}Writer ${lowerName}(String name) {
+    AbstractBaseWriter.check(name);
     data.getMutator().setType(idx(), MinorType.MAP);
     getMapWriter(true).setPosition(idx());
     return getMapWriter(true).${lowerName}(name);

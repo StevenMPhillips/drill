@@ -189,7 +189,8 @@ public class TestEmbeddedWriter {
   */
   @Test
   public void q() throws IOException {
-    FileInputStream input = new FileInputStream("/tmp/t4/a.json");
+//    FileInputStream input = new FileInputStream("/tmp/t4/a.json");
+    FileInputStream input = new FileInputStream("/Users/stevenphillips/yelp_dataset_challenge_academic_dataset/yelp_academic_dataset_business.json");
     BufferAllocator allocator = new TopLevelAllocator(DrillConfig.create());
     TestOutputMutator mutator = new TestOutputMutator(allocator);
     VectorContainerWriter writer = new VectorContainerWriter(mutator);
@@ -207,6 +208,7 @@ public class TestEmbeddedWriter {
     final int cnt = count;
     VectorContainer container = mutator.getContainer();
     container.setRecordCount(cnt);
+    writer.setValueCount(cnt);
 //    String name = "graph";
 //    final EmbeddedVector v = (EmbeddedVector) container.getValueAccessorById(EmbeddedVector.class, container.getValueVectorId(SchemaPath.getSimplePath(name)).getFieldIds()).getValueVector();
 //    final EmbeddedReader r = new EmbeddedReader(v);

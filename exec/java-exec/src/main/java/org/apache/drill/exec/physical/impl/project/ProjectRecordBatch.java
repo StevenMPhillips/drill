@@ -170,7 +170,6 @@ public class ProjectRecordBatch extends AbstractSingleRecordBatch<Project> {
       return IterOutcome.OUT_OF_MEMORY;
     }
 
-    BatchPrinter.printBatch(incoming);
     final int outputRecords = projector.projectRecords(0, incomingRecordCount, 0);
     if (outputRecords < incomingRecordCount) {
       setValueCount(outputRecords);
@@ -184,7 +183,6 @@ public class ProjectRecordBatch extends AbstractSingleRecordBatch<Project> {
       }
       this.recordCount = outputRecords;
     }
-    BatchPrinter.printBatch(this);
     // In case of complex writer expression, vectors would be added to batch run-time.
     // We have to re-build the schema.
     if (complexWriters != null) {
