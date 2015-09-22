@@ -82,6 +82,7 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
   private MapWriter getMapWriter(boolean create) {
     if (create && mapWriter == null) {
       mapWriter = new SingleMapWriter(data.getMap(), null);
+      mapWriter.setPosition(idx());
       writers.add(mapWriter);
     }
     return mapWriter;
@@ -95,6 +96,7 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
   private ListWriter getListWriter(boolean create) {
     if (create && listWriter == null) {
       listWriter = new EmbeddedListWriter(data.getList());
+      listWriter.setPosition(idx());
       writers.add(listWriter);
     }
     return listWriter;

@@ -165,7 +165,8 @@ public class EmbeddedVector implements ValueVector {
 
   public void transferTo(EmbeddedVector target) {
     internalMap.makeTransferPair(target.internalMap).transfer();
-    target.getMutator().setValueCount(this.valueCount);
+    target.valueCount = valueCount;
+//    target.getMutator().setValueCount(this.valueCount);
   }
 
   public void copyFrom(int inIndex, int outIndex, EmbeddedVector from) {

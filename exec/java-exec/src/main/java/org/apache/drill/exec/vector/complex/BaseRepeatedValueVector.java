@@ -117,6 +117,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
   protected UserBitShared.SerializedField.Builder getMetadataBuilder() {
     return super.getMetadataBuilder()
         .addChild(offsets.getMetadata())
+        .addChild(bits.getMetadata())
         .addChild(vector.getMetadata());
   }
 
@@ -125,7 +126,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
     if (getAccessor().getValueCount() == 0) {
       return 0;
     }
-    return offsets.getBufferSize() + vector.getBufferSize();
+    return offsets.getBufferSize() + bits.getBufferSize() + vector.getBufferSize();
   }
 
   @Override
@@ -144,7 +145,8 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
 
   @Override
   public DrillBuf[] getBuffers(boolean clear) {
-    final DrillBuf[] buffers = ObjectArrays.concat(offsets.getBuffers(false), vector.getBuffers(false), DrillBuf.class);
+    final DrillBuf[] buffers = ObjectArrays.concat(offsets.getBuffers(false), ObjectArrays.concat(bits.getBuffers(false),
+            vector.getBuffers(false), DrillBuf.class), DrillBuf.class);
     if (clear) {
       for (DrillBuf buffer:buffers) {
         buffer.retain();
@@ -159,14 +161,18 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
     final UserBitShared.SerializedField offsetMetadata = metadata.getChild(0);
     offsets.load(offsetMetadata, buffer);
 
-    final UserBitShared.SerializedField vectorMetadata = metadata.getChild(1);
+    final int offsetLength = offsetMetadata.getBufferLength();
+    final UserBitShared.SerializedField bitMetadata = metadata.getChild(1);
+    final int bitLength = bitMetadata.getBufferLength();
+    bits.load(bitMetadata, buffer.slice(offsetLength, bitLength));
+
+    final UserBitShared.SerializedField vectorMetadata = metadata.getChild(2);
     if (getDataVector() == DEFAULT_DATA_VECTOR) {
       addOrGetVector(VectorDescriptor.create(vectorMetadata.getMajorType()));
     }
 
-    final int offsetLength = offsetMetadata.getBufferLength();
     final int vectorLength = vectorMetadata.getBufferLength();
-    vector.load(vectorMetadata, buffer.slice(offsetLength, vectorLength));
+    vector.load(vectorMetadata, buffer.slice(offsetLength + bitLength, vectorLength));
   }
 
   /**
@@ -233,6 +239,9 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
 
   public abstract class BaseRepeatedMutator extends BaseValueVector.BaseMutator implements RepeatedMutator {
 
+    public void setNotNull(int index) {
+      bits.getMutator().set(index, 1);
+    }
 
     @Override
     public void startNewValue(int index) {
@@ -258,6 +267,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
 //      offsets.getMutator().setValueCount(valueCount == 0 ? 0 : valueCount+1);
       final int childValueCount = valueCount == 0 ? 0 : offsets.getAccessor().get(valueCount);
       vector.getMutator().setValueCount(childValueCount);
+      bits.getMutator().setValueCount(valueCount);
     }
   }
 

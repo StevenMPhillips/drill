@@ -189,7 +189,7 @@ public class TestEmbeddedWriter {
   */
   @Test
   public void q() throws IOException {
-    FileInputStream input = new FileInputStream("/Users/stevenphillips/git/drill/exec/java-exec/src/test/resources/jsoninput/input2.json");
+    FileInputStream input = new FileInputStream("/tmp/t4/a.json");
     BufferAllocator allocator = new TopLevelAllocator(DrillConfig.create());
     TestOutputMutator mutator = new TestOutputMutator(allocator);
     VectorContainerWriter writer = new VectorContainerWriter(mutator);

@@ -40,31 +40,37 @@ import java.util.List;
 public class ListVector extends BaseRepeatedValueVector {
 
   UInt4Vector offsets;
-  EmbeddedVector data;
   Mutator mutator = new Mutator();
   Accessor accessor = new Accessor();
 
   public ListVector(MaterializedField field, BufferAllocator allocator) {
     super(field, allocator, new EmbeddedVector(field, allocator));
     offsets = getOffsetVector();
-    data = (EmbeddedVector) getDataVector();
-    this.field.addChild(data.getField());
+    this.field.addChild(getDataVector().getField());
   }
 
   @Override
   public void allocateNew() throws OutOfMemoryRuntimeException {
     offsets.allocateNew();
-    data.allocateNew();
+    getDataVector().allocateNew();
+    bits.allocateNew();
   }
 
   public void transferTo(ListVector target) {
     offsets.makeTransferPair(target.offsets).transfer();
-    data.makeTransferPair(target.data).transfer();
+    bits.makeTransferPair(target.bits).transfer();
+    getDataVector().makeTransferPair(target.getDataVector()).transfer();
   }
 
   public void copyFrom(int inIndex, int outIndex, ListVector from) {
     offsets.copyFrom(inIndex, outIndex, from.offsets);
-    data.copyFrom(inIndex, outIndex, from.data);
+    bits.copyFrom(inIndex, outIndex, from.bits);
+    getDataVector().copyFrom(inIndex, outIndex, from.getDataVector());
+  }
+
+  @Override
+  public EmbeddedVector getDataVector() {
+    return (EmbeddedVector) vector;
   }
 
   @Override
@@ -129,11 +135,14 @@ public class ListVector extends BaseRepeatedValueVector {
 
     @Override
     public Object getObject(int index) {
+      if (bits.getAccessor().isNull(index)) {
+        return null;
+      }
       final List<Object> vals = new JsonStringArrayList<>();
       final UInt4Vector.Accessor offsetsAccessor = offsets.getAccessor();
       final int start = offsetsAccessor.get(index);
       final int end = offsetsAccessor.get(index + 1);
-      final EmbeddedVector.Accessor valuesAccessor = data.getAccessor();
+      final EmbeddedVector.Accessor valuesAccessor = getDataVector().getAccessor();
       for(int i = start; i < end; i++) {
         vals.add(valuesAccessor.getObject(i));
       }

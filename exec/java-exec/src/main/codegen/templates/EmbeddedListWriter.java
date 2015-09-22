@@ -106,6 +106,7 @@ public class EmbeddedListWriter extends AbstractFieldWriter {
   public ListWriter list() {
     final int nextOffset = offsets.getAccessor().get(idx() + 1);
 //    data.getMutator().setType(nextOffset, MinorType.MAP);
+    vector.getMutator().setNotNull(idx());
     offsets.getMutator().setSafe(idx() + 1, nextOffset + 1);
     writer.setPosition(nextOffset);
     return writer;
@@ -114,6 +115,7 @@ public class EmbeddedListWriter extends AbstractFieldWriter {
   @Override
   public ListWriter list(String name) {
     final int nextOffset = offsets.getAccessor().get(idx() + 1);
+    vector.getMutator().setNotNull(idx());
     data.getMutator().setType(nextOffset, MinorType.MAP);
     writer.setPosition(nextOffset);
     ListWriter listWriter = writer.list(name);
@@ -141,6 +143,7 @@ public class EmbeddedListWriter extends AbstractFieldWriter {
   public void start() {
     assert inMap;
     final int nextOffset = offsets.getAccessor().get(idx() + 1);
+    vector.getMutator().setNotNull(idx());
     data.getMutator().setType(nextOffset, MinorType.MAP);
     offsets.getMutator().setSafe(idx() + 1, nextOffset);
     writer.setPosition(nextOffset);
@@ -163,6 +166,7 @@ public class EmbeddedListWriter extends AbstractFieldWriter {
   public void write${name}(<#list fields as field>${field.type} ${field.name}<#if field_has_next>, </#if></#list>) {
     if (inMap) {
       final int nextOffset = offsets.getAccessor().get(idx() + 1);
+      vector.getMutator().setNotNull(idx());
       data.getMutator().setType(nextOffset, MinorType.MAP);
       writer.setPosition(nextOffset);
       ${name}Writer ${uncappedName}Writer = writer.<#if uncappedName == "int">integer<#else>${uncappedName}</#if>(mapName);
@@ -170,6 +174,7 @@ public class EmbeddedListWriter extends AbstractFieldWriter {
       offsets.getMutator().setSafe(idx() + 1, nextOffset + 1);
     } else {
       final int nextOffset = offsets.getAccessor().get(idx() + 1);
+      vector.getMutator().setNotNull(idx());
       writer.setPosition(nextOffset);
       writer.write${name}(<#list fields as field>${field.name}<#if field_has_next>, </#if></#list>);
       offsets.getMutator().setSafe(idx() + 1, nextOffset + 1);
