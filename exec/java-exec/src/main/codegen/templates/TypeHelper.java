@@ -181,6 +181,7 @@ public class TypeHelper {
   
   public static Class<?> getWriterInterface( MinorType type, DataMode mode){
     switch (type) {
+    case EMBEDDED: return EmbeddedWriter.class;
     case MAP: return MapWriter.class;
     case LIST: return ListWriter.class;
 <#list vv.types as type>
@@ -196,6 +197,8 @@ public class TypeHelper {
   
   public static Class<?> getWriterImpl( MinorType type, DataMode mode){
     switch (type) {
+    case EMBEDDED:
+      return EmbeddedWriter.class;
     case MAP:
       switch (mode) {
       case REQUIRED:
