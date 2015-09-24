@@ -38,6 +38,7 @@ import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.util.CallBack;
 import org.apache.drill.exec.vector.ValueVector;
+import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
 
 /**
  * Base class for composite vectors.
@@ -146,6 +147,12 @@ public abstract class AbstractContainerVector implements ValueVector {
     }
 
     ValueVector v = vord.vector;
+    if (v instanceof EmbeddedVector) {
+      EmbeddedVector embeddedVector = (EmbeddedVector) v;
+      if (embeddedVector.isSingleType()) {
+        v = embeddedVector.getSingleVector();
+      }
+    }
     if (addToBreadCrumb) {
       builder.intermediateType(v.getField().getType());
       builder.addId(vord.ordinal);

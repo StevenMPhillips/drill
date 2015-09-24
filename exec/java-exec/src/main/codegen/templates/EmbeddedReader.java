@@ -16,6 +16,9 @@
  * limitations under the License.
  */
 
+import org.apache.drill.common.types.TypeProtos.MinorType;
+import org.apache.drill.exec.vector.complex.impl.NullReader;
+
 <@pp.dropOutputFile />
 <@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/EmbeddedReader.java" />
 
@@ -29,11 +32,15 @@ package org.apache.drill.exec.vector.complex.impl;
 @SuppressWarnings("unused")
 public class EmbeddedReader extends AbstractFieldReader {
 
-  private List<BaseReader> readers = Lists.newArrayList();
+  private BaseReader[] readers = new BaseReader[43];
   public EmbeddedVector data;
   
   public EmbeddedReader(EmbeddedVector data) {
     this.data = data;
+  }
+
+  public MajorType getType() {
+    return Types.required(MinorType.valueOf(data.getTypeValue(idx())));
   }
 
   public boolean isSet(){
@@ -44,15 +51,75 @@ public class EmbeddedReader extends AbstractFieldReader {
     holder.reader = this;
   }
 
+  private FieldReader getReaderForIndex(int index) {
+    int typeValue = data.getTypeValue(index);
+    FieldReader reader = (FieldReader) readers[typeValue];
+    if (reader != null) {
+      return reader;
+    }
+    switch (typeValue) {
+    case 0:
+      return NullReader.INSTANCE;
+    case MinorType.MAP_VALUE:
+      return (FieldReader) getMap();
+    case MinorType.LIST_VALUE:
+      return (FieldReader) getList();
+    <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
+    <#assign uncappedName = name?uncap_first/>
+    <#if !minor.class?starts_with("Decimal")>
+    case MinorType.${name?upper_case}_VALUE:
+      return (FieldReader) get${name}();
+    </#if>
+    </#list></#list>
+    default:
+      throw new UnsupportedOperationException("Unsupported type: " + MinorType.valueOf(typeValue));
+    }
+  }
+
   private SingleMapReaderImpl mapReader;
 
   private MapReader getMap() {
     if (mapReader == null) {
-      this.mapReader = (SingleMapReaderImpl) data.getMap().getReader();
-      readers.add(mapReader);
+      mapReader = (SingleMapReaderImpl) data.getMap().getReader();
+      mapReader.setPosition(idx());
+      readers[MinorType.MAP_VALUE] = mapReader;
     }
     return mapReader;
   }
+
+  private EmbeddedListReader listReader;
+
+  private FieldReader getList() {
+    if (listReader == null) {
+      listReader = new EmbeddedListReader(data.getList());
+      listReader.setPosition(idx());
+      readers[MinorType.LIST_VALUE] = listReader;
+    }
+    return listReader;
+  }
+
+  @Override
+  public java.util.Iterator<String> iterator() {
+    return getMap().iterator();
+  }
+
+  @Override
+  public void copyAsValue(EmbeddedWriter writer) {
+    writer.data.copyFrom(idx(), writer.idx(), data);
+  }
+
+  <#list ["Object", "BigDecimal", "Integer", "Long", "Boolean",
+          "Character", "DateTime", "Period", "Double", "Float",
+          "Text", "String", "Byte", "Short", "byte[]"] as friendlyType>
+  <#assign safeType=friendlyType />
+  <#if safeType=="byte[]"><#assign safeType="ByteArray" /></#if>
+
+  @Override
+  public ${friendlyType} read${safeType}() {
+    return getReaderForIndex(idx()).read${safeType}();
+  }
+
+  </#list>
 
   <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
           <#assign uncappedName = name?uncap_first/>
@@ -68,7 +135,8 @@ public class EmbeddedReader extends AbstractFieldReader {
   private Nullable${name}ReaderImpl get${name}() {
     if (${uncappedName}Reader == null) {
       ${uncappedName}Reader = new Nullable${name}ReaderImpl(data.get${name}Vector());
-      readers.add(${uncappedName}Reader);
+      ${uncappedName}Reader.setPosition(idx());
+      readers[MinorType.${name?upper_case}_VALUE] = ${uncappedName}Reader;
     }
     return ${uncappedName}Reader;
   }
@@ -112,13 +180,22 @@ public class EmbeddedReader extends AbstractFieldReader {
   public void setPosition(int index) {
     super.setPosition(index);
     for (BaseReader reader : readers) {
-      reader.setPosition(index);
+      if (reader != null) {
+        reader.setPosition(index);
+      }
     }
   }
   
   public FieldReader reader(String name){
-    mapReader.setPosition(idx());
-    return mapReader.reader(name);
+    return getMap().reader(name);
+  }
+
+  public FieldReader reader() {
+    return getList().reader();
+  }
+
+  public boolean next() {
+    return getReaderForIndex(idx()).next();
   }
 }
 

@@ -246,7 +246,8 @@ public class MaterializedField {
   @Override
   public String toString() {
     final int maxLen = 10;
-    String childStr = children != null && !children.isEmpty() ? toString(children, maxLen) : "";
+//    String childStr = children != null && !children.isEmpty() ? toString(children, maxLen) : "";
+    String childStr = "";
     return key.path + "(" + key.type.getMinorType().name() + ":" + key.type.getMode().name() + ")" + childStr;
   }
 

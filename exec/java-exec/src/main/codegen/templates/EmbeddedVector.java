@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+import org.apache.drill.common.types.TypeProtos.MinorType;
+
 <@pp.dropOutputFile />
 <@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/EmbeddedVector.java" />
 
@@ -53,6 +55,14 @@ public class EmbeddedVector implements ValueVector {
   private FieldReader reader;
   private NullableBitVector bit;
 
+  private State state = State.INIT;
+  private int singleType = 0;
+  private ValueVector singleVector;
+
+  private enum State {
+    INIT, SINGLE, MULTI
+  }
+
   public EmbeddedVector(MaterializedField field, BufferAllocator allocator) {
     this.field = field;
     this.allocator = allocator;
@@ -63,10 +73,32 @@ public class EmbeddedVector implements ValueVector {
     this.field.addChild(internalMap.getField());
   }
 
+  private void updateState(ValueVector v) {
+    if (state == State.INIT) {
+      state = State.SINGLE;
+      singleVector = v;
+      singleType = v.getField().getType().getMinorType().getNumber();
+    } else {
+      state = State.MULTI;
+      singleVector = null;
+    }
+  }
+
+  public boolean isSingleType() {
+    return state == State.SINGLE && singleType != MinorType.LIST_VALUE;
+  }
+
+  public ValueVector getSingleVector() {
+    assert state != State.MULTI : "Cannot get single vector when there are multiple types";
+    assert state != State.INIT : "Cannot get single vector when there are no types";
+    return singleVector;
+  }
+
   public MapVector getMap() {
     if (mapVector == null) {
       int vectorCount = internalMap.size();
       mapVector = internalMap.addOrGet("map", Types.optional(MinorType.MAP), MapVector.class);
+      updateState(mapVector);
       if (internalMap.size() > vectorCount) {
         mapVector.allocateNew();
       }
@@ -85,6 +117,7 @@ public class EmbeddedVector implements ValueVector {
     if (${uncappedName}Vector == null) {
       int vectorCount = internalMap.size();
       ${uncappedName}Vector = internalMap.addOrGet("${uncappedName}", Types.optional(MinorType.${name?upper_case}), Nullable${name}Vector.class);
+      updateState(${uncappedName}Vector);
       if (internalMap.size() > vectorCount) {
         ${uncappedName}Vector.allocateNew();
       }
@@ -100,6 +133,7 @@ public class EmbeddedVector implements ValueVector {
     if (listVector == null) {
       int vectorCount = internalMap.size();
       listVector = internalMap.addOrGet("list", Types.optional(MinorType.LIST), ListVector.class);
+      updateState(listVector);
       if (internalMap.size() > vectorCount) {
         listVector.allocateNew();
       }
@@ -118,11 +152,20 @@ public class EmbeddedVector implements ValueVector {
   @Override
   public void allocateNew() throws OutOfMemoryRuntimeException {
     internalMap.allocateNew();
+    if (typeVector != null) {
+      typeVector.zeroVector();
+    }
   }
 
   @Override
   public boolean allocateNewSafe() {
-    return internalMap.allocateNewSafe();
+    boolean safe = internalMap.allocateNewSafe();
+    if (safe) {
+      if (typeVector != null) {
+        typeVector.zeroVector();
+      }
+    }
+    return safe;
   }
 
   @Override
@@ -169,6 +212,10 @@ public class EmbeddedVector implements ValueVector {
   }
 
   public void copyFrom(int inIndex, int outIndex, EmbeddedVector from) {
+    internalMap.copyFromSafe(inIndex, outIndex, from.internalMap);
+  }
+
+  public void copyFromSafe(int inIndex, int outIndex, EmbeddedVector from) {
     internalMap.copyFromSafe(inIndex, outIndex, from.internalMap);
   }
 
@@ -279,7 +326,7 @@ public class EmbeddedVector implements ValueVector {
       case MinorType.LIST_VALUE:
         return getList().getAccessor().getObject(index);
       default:
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Cannot support type: " + MinorType.valueOf(type));
       }
     }
 
@@ -301,6 +348,11 @@ public class EmbeddedVector implements ValueVector {
     @Override
     public int getValueCount() {
       return valueCount;
+    }
+
+    @Override
+    public boolean isNull(int index) {
+      return typeVector.getAccessor().get(index) == 0;
     }
 
   }

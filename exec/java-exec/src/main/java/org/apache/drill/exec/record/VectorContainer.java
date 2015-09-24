@@ -36,6 +36,7 @@ import org.apache.drill.exec.vector.ValueVector;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
 
 public class VectorContainer implements Iterable<VectorWrapper<?>>, VectorAccessible {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(VectorContainer.class);
@@ -237,7 +238,15 @@ public class VectorContainer implements Iterable<VectorWrapper<?>>, VectorAccess
       return null;
     }
 
-    if (fieldIds.length == 1 && clazz != null && !clazz.isAssignableFrom(va.getVectorClass())) {
+    Class vectorClass = va.getVectorClass();
+    if (vectorClass.equals(EmbeddedVector.class)) {
+      EmbeddedVector embeddedVector = (EmbeddedVector) va.getValueVector();
+      if (embeddedVector.isSingleType()) {
+        vectorClass = embeddedVector.getSingleVector().getClass();
+      }
+    }
+
+    if (fieldIds.length == 1 && clazz != null && !clazz.isAssignableFrom(vectorClass)) {
       throw new IllegalStateException(String.format(
           "Failure while reading vector.  Expected vector class of %s but was holding vector class %s.",
           clazz.getCanonicalName(), va.getVectorClass().getCanonicalName()));

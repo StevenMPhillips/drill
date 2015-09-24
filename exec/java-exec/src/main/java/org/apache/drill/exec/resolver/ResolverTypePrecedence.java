@@ -45,7 +45,6 @@ public class ResolverTypePrecedence {
     int i = 0;
     precedenceMap = new HashMap<MinorType, Integer>();
     precedenceMap.put(MinorType.NULL, i += 2);       // NULL is legal to implicitly be promoted to any other type
-    precedenceMap.put(MinorType.EMBEDDED, i += 2);
     precedenceMap.put(MinorType.FIXEDBINARY, i += 2); // Fixed-length is promoted to var length
     precedenceMap.put(MinorType.VARBINARY, i += 2);
     precedenceMap.put(MinorType.FIXEDCHAR, i += 2);
@@ -78,6 +77,7 @@ public class ResolverTypePrecedence {
     precedenceMap.put(MinorType.INTERVALDAY, i+= 2);
     precedenceMap.put(MinorType.INTERVALYEAR, i+= 2);
     precedenceMap.put(MinorType.INTERVAL, i+= 2);
+    precedenceMap.put(MinorType.EMBEDDED, i += 2);
 
     MAX_IMPLICIT_CAST_COST = i;
 

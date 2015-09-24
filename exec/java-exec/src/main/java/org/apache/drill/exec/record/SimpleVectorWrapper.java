@@ -84,17 +84,30 @@ public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper
 
   @Override
   public VectorWrapper<?> getChildWrapper(int[] ids) {
-    if (ids.length == 1) {
-      return this;
+    ValueVector vector = v;
+    if (vector instanceof EmbeddedVector) {
+      EmbeddedVector embeddedVector = (EmbeddedVector) getValueVector();
+      if (embeddedVector.isSingleType()) {
+        vector = embeddedVector.getSingleVector();
+      }
     }
 
-    ValueVector vector = v;
+    if (ids.length == 1) {
+      return new SimpleVectorWrapper<>(vector);
+    }
+
     for (int i = 1; i < ids.length; i++) {
       final AbstractMapVector mapLike = AbstractMapVector.class.cast(vector);
       if (mapLike == null) {
         return null;
       }
       vector = mapLike.getChildByOrdinal(ids[i]);
+      if (vector instanceof EmbeddedVector) {
+        EmbeddedVector embeddedVector = (EmbeddedVector) vector;
+        if (embeddedVector.isSingleType()) {
+          vector = embeddedVector.getSingleVector();
+        }
+      }
     }
 
     return new SimpleVectorWrapper<>(vector);
@@ -107,26 +120,39 @@ public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper
     }
     PathSegment seg = expectedPath.getRootSegment();
 
+    ValueVector vector;
+
     if (v instanceof EmbeddedVector) {
+      EmbeddedVector embeddedVector = (EmbeddedVector) v;
+      if (embeddedVector.isSingleType()) {
+        vector = embeddedVector.getSingleVector();
+      } else {
+        vector = v;
+      }
+    } else {
+      vector = v;
+    }
+
+    if (vector instanceof EmbeddedVector) {
       TypedFieldId.Builder builder = TypedFieldId.newBuilder();
       builder.addId(id).remainder(expectedPath.getRootSegment().getChild());
       builder.finalType(Types.required(TypeProtos.MinorType.EMBEDDED));
       builder.intermediateType(Types.required(TypeProtos.MinorType.EMBEDDED));
       return builder.build();
     } else
-    if (v instanceof AbstractContainerVector) {
+    if (vector instanceof AbstractContainerVector) {
       // we're looking for a multi path.
-      AbstractContainerVector c = (AbstractContainerVector) v;
+      AbstractContainerVector c = (AbstractContainerVector) vector;
       TypedFieldId.Builder builder = TypedFieldId.newBuilder();
-      builder.intermediateType(v.getField().getType());
+      builder.intermediateType(vector.getField().getType());
       builder.addId(id);
       return c.getFieldIdIfMatches(builder, true, expectedPath.getRootSegment().getChild());
 
     } else {
       TypedFieldId.Builder builder = TypedFieldId.newBuilder();
-      builder.intermediateType(v.getField().getType());
+      builder.intermediateType(vector.getField().getType());
       builder.addId(id);
-      builder.finalType(v.getField().getType());
+      builder.finalType(vector.getField().getType());
       if (seg.isLastPath()) {
         return builder.build();
       } else {
@@ -134,7 +160,7 @@ public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper
         if (child.isArray() && child.isLastPath()) {
           builder.remainder(child);
           builder.withIndex();
-          builder.finalType(v.getField().getType().toBuilder().setMode(DataMode.OPTIONAL).build());
+          builder.finalType(vector.getField().getType().toBuilder().setMode(DataMode.OPTIONAL).build());
           return builder.build();
         } else {
           return null;

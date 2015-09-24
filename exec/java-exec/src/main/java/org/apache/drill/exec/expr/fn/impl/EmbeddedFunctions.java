@@ -40,7 +40,7 @@ public class EmbeddedFunctions {
   public static class EqualsEmbeddedVsBigInt implements DrillSimpleFunc {
 
     @Param
-    EmbeddedHolder left;
+    FieldReader left;
     @Param BigIntHolder right;
     @Output
     BitHolder out;
@@ -49,7 +49,7 @@ public class EmbeddedFunctions {
 
     public void eval() {
 
-      out.value = org.apache.drill.exec.expr.fn.impl.EmbeddedFunctions.equalsBigInt(left.reader, right.value);
+      out.value = org.apache.drill.exec.expr.fn.impl.EmbeddedFunctions.equalsBigInt(left, right.value);
 
     }
   }
@@ -81,7 +81,7 @@ public class EmbeddedFunctions {
   @FunctionTemplate(name = "add", scope = FunctionScope.SIMPLE, nulls = NullHandling.NULL_IF_NULL)
   public static class EmbeddedBigIntAdd implements DrillSimpleFunc {
 
-    @Param EmbeddedHolder in1;
+    @Param FieldReader in1;
     @Param BigIntHolder in2;
     @Output BigIntHolder out;
 
@@ -99,7 +99,7 @@ public class EmbeddedFunctions {
   public static class EqualsEmbeddedVsInt implements DrillSimpleFunc {
 
     @Param
-    EmbeddedHolder left;
+    FieldReader left;
     @Param
     IntHolder right;
     @Output
@@ -109,7 +109,7 @@ public class EmbeddedFunctions {
 
     public void eval() {
 
-      out.value = org.apache.drill.exec.expr.fn.impl.EmbeddedFunctions.equalsInt(left.reader, right.value);
+      out.value = org.apache.drill.exec.expr.fn.impl.EmbeddedFunctions.equalsInt(left, right.value);
 
     }
   }
@@ -144,7 +144,7 @@ public class EmbeddedFunctions {
   public static class IsBigInt implements DrillSimpleFunc {
 
     @Param
-    EmbeddedHolder input;
+    FieldReader input;
     @Output
     BitHolder out;
 
@@ -152,11 +152,31 @@ public class EmbeddedFunctions {
 
     public void eval() {
 
-      out.value = input.reader.getType().getMinorType() == org.apache.drill.common.types.TypeProtos.MinorType.BIGINT ? 1 : 0;
+      out.value = input.getType().getMinorType() == org.apache.drill.common.types.TypeProtos.MinorType.BIGINT ? 1 : 0;
 
     }
   }
 
+  @FunctionTemplate(names = {"typeOf"},
+          scope = FunctionTemplate.FunctionScope.SIMPLE,
+          nulls = NullHandling.NULL_IF_NULL)
+  public static class GetType implements DrillSimpleFunc {
+
+    @Param
+    FieldReader input;
+    @Output
+    IntHolder out;
+
+    public void setup() {}
+
+    public void eval() {
+
+      out.value = input.getType().getMinorType().getNumber();
+
+    }
+  }
+
+  /*
   @FunctionTemplate(names = {"isBigInt"},
           scope = FunctionTemplate.FunctionScope.SIMPLE,
           nulls = NullHandling.NULL_IF_NULL)
@@ -175,19 +195,20 @@ public class EmbeddedFunctions {
 
     }
   }
+  */
 
   @SuppressWarnings("unused")
   @FunctionTemplate(name = "castBIGINT", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
   public static class CastBigIntInt implements DrillSimpleFunc{
 
-    @Param EmbeddedHolder in;
+    @Param FieldReader in;
     @Output
     BigIntHolder out;
 
     public void setup() {}
 
     public void eval() {
-      out.value = org.apache.drill.exec.expr.fn.impl.EmbeddedFunctions.castBigInt(in.reader);
+      out.value = org.apache.drill.exec.expr.fn.impl.EmbeddedFunctions.castBigInt(in);
     }
   }
 

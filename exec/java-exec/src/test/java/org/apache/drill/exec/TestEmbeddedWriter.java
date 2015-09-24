@@ -189,8 +189,8 @@ public class TestEmbeddedWriter {
   */
   @Test
   public void q() throws IOException {
-//    FileInputStream input = new FileInputStream("/tmp/t4/a.json");
-    FileInputStream input = new FileInputStream("/Users/stevenphillips/yelp_dataset_challenge_academic_dataset/yelp_academic_dataset_business.json");
+    FileInputStream input = new FileInputStream("/tmp/file.json");
+//    FileInputStream input = new FileInputStream("/Users/stevenphillips/yelp_dataset_challenge_academic_dataset/yelp_academic_dataset_business.json");
     BufferAllocator allocator = new TopLevelAllocator(DrillConfig.create());
     TestOutputMutator mutator = new TestOutputMutator(allocator);
     VectorContainerWriter writer = new VectorContainerWriter(mutator);

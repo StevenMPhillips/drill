@@ -32,7 +32,7 @@ package org.apache.drill.exec.vector.complex.impl;
 @SuppressWarnings("unused")
 public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
 
-  private EmbeddedVector data;
+  EmbeddedVector data;
   private MapWriter mapWriter;
   private EmbeddedListWriter listWriter;
   private List<BaseWriter> writers = Lists.newArrayList();
@@ -43,6 +43,11 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
   }
 
   public EmbeddedWriter(EmbeddedVector vector) {
+    super(null);
+    data = vector;
+  }
+
+  public EmbeddedWriter(EmbeddedVector vector, FieldWriter parent) {
     super(null);
     data = vector;
   }
