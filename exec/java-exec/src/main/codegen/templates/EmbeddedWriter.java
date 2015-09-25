@@ -39,7 +39,7 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
 
   public EmbeddedWriter(BufferAllocator allocator) {
     super(null);
-    data = new EmbeddedVector(MaterializedField.create("root", Types.required(MinorType.EMBEDDED)), allocator);
+    data = new EmbeddedVector(MaterializedField.create("root", Types.optional(MinorType.EMBEDDED)), allocator);
   }
 
   public EmbeddedWriter(EmbeddedVector vector) {
@@ -126,6 +126,7 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
   private ${name}Writer get${name}Writer(boolean create) {
     if (create && ${uncappedName}Writer == null) {
       ${uncappedName}Writer = new Nullable${name}WriterImpl(data.get${name}Vector(), null);
+      ${uncappedName}Writer.setPosition(idx());
       writers.add(${uncappedName}Writer);
     }
     return ${uncappedName}Writer;

@@ -29,9 +29,12 @@ import org.apache.drill.exec.expr.holders.BitHolder;
 import org.apache.drill.exec.expr.holders.EmbeddedHolder;
 import org.apache.drill.exec.expr.holders.IntHolder;
 import org.apache.drill.exec.expr.holders.NullableBigIntHolder;
+import org.apache.drill.exec.expr.holders.VarCharHolder;
 import org.apache.drill.exec.vector.complex.impl.BigIntHolderReaderImpl;
 import org.apache.drill.exec.vector.complex.impl.EmbeddedReader;
+import org.apache.drill.exec.vector.complex.reader.BigIntReader;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
+import org.apache.drill.exec.vector.complex.writer.BaseWriter.ComplexWriter;
 
 public class EmbeddedFunctions {
   @FunctionTemplate(names = {"equal", "==", "="},
@@ -221,6 +224,65 @@ public class EmbeddedFunctions {
       return reader.readLong();
     default:
       return 0;
+    }
+  }
+  @SuppressWarnings("unused")
+  @FunctionTemplate(names = {"castEMBEDDED", "castToEmbedded"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
+  public static class CastVarCharToEmbedded implements DrillSimpleFunc{
+
+    @Param VarCharHolder in;
+    @Output EmbeddedHolder out;
+
+    public void setup() {}
+
+    public void eval() {
+      out.reader = new org.apache.drill.exec.vector.complex.impl.VarCharHolderReaderImpl(in);
+      out.isSet = 1;
+    }
+  }
+
+  @SuppressWarnings("unused")
+  @FunctionTemplate(names = {"castEMBEDDED", "castToEmbedded"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
+  public static class CastBigIntToEmbedded implements DrillSimpleFunc{
+
+    @Param BigIntHolder in;
+    @Output EmbeddedHolder out;
+
+    public void setup() {}
+
+    public void eval() {
+      out.reader = new org.apache.drill.exec.vector.complex.impl.BigIntHolderReaderImpl(in);
+      out.isSet = 1;
+    }
+  }
+
+  @SuppressWarnings("unused")
+  @FunctionTemplate(names = {"castEMBEDDED", "castToEmbedded"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
+  public static class CastIntToEmbedded implements DrillSimpleFunc{
+
+    @Param IntHolder in;
+    @Output EmbeddedHolder out;
+
+    public void setup() {}
+
+    public void eval() {
+      out.reader = new org.apache.drill.exec.vector.complex.impl.IntHolderReaderImpl(in);
+      out.isSet = 1;
+    }
+  }
+
+  @SuppressWarnings("unused")
+  @FunctionTemplate(names = {"castEMBEDDED", "castToEmbedded"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
+  public static class CastEmbeddedToEmbedded implements DrillSimpleFunc{
+
+    @Param FieldReader in;
+    @Output EmbeddedHolder out;
+
+    public void setup() {}
+
+    public void eval() {
+      out.reader = in;
+      out.isSet = in.isSet() ? 1 : 0;
     }
   }
 }

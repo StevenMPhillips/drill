@@ -110,8 +110,8 @@ public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper
     if (v instanceof EmbeddedVector) {
       TypedFieldId.Builder builder = TypedFieldId.newBuilder();
       builder.addId(id).remainder(expectedPath.getRootSegment().getChild());
-      builder.finalType(Types.required(TypeProtos.MinorType.EMBEDDED));
-      builder.intermediateType(Types.required(TypeProtos.MinorType.EMBEDDED));
+      builder.finalType(Types.optional(TypeProtos.MinorType.EMBEDDED));
+      builder.intermediateType(Types.optional(TypeProtos.MinorType.EMBEDDED));
       return builder.build();
     } else
     if (v instanceof AbstractContainerVector) {

@@ -24,7 +24,11 @@ import org.apache.drill.exec.vector.complex.impl.EmbeddedReader;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
 public class EmbeddedHolder implements ValueHolder {
-  public static final MajorType TYPE = Types.required(MinorType.EMBEDDED);
+  public static final MajorType TYPE = Types.optional(MinorType.EMBEDDED);
   public FieldReader reader;
   public int isSet;
+
+  public MajorType getType() {
+    return reader.getType();
+  }
 }

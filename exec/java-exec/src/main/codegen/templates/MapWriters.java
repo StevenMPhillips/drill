@@ -78,7 +78,7 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
         MapVector vector=container.addOrGet(name,MapVector.TYPE,MapVector.class);
         writer=new SingleMapWriter(vector,this);
         }else{
-        EmbeddedVector vector = container.addOrGet(name, Types.required(MinorType.EMBEDDED), EmbeddedVector.class);
+        EmbeddedVector vector = container.addOrGet(name, Types.optional(MinorType.EMBEDDED), EmbeddedVector.class);
         writer = new EmbeddedWriter(vector);
         }
       if(vectorCount != container.size()) {
@@ -118,7 +118,7 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
     int vectorCount = container.size();
     if(writer == null) {
 //      writer = new SingleListWriter(name, container, this);
-      writer = new EmbeddedWriter(container.addOrGet(name, Types.required(MinorType.EMBEDDED), EmbeddedVector.class));
+      writer = new EmbeddedWriter(container.addOrGet(name, Types.optional(MinorType.EMBEDDED), EmbeddedVector.class));
       if (container.size() > vectorCount) {
         writer.allocate();
       }
@@ -205,7 +205,7 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
         if(writer == null) {
         ValueVector vector;
         if (!embeddedVector){
-        EmbeddedVector v = container.addOrGet(name, Types.required(MinorType.EMBEDDED), EmbeddedVector.class);
+        EmbeddedVector v = container.addOrGet(name, Types.optional(MinorType.EMBEDDED), EmbeddedVector.class);
         writer = new EmbeddedWriter(v);
         vector = v;
         } else {

@@ -262,6 +262,11 @@ public class ${holderMode}${name}HolderReaderImpl extends AbstractFieldReader {
 </#if>
   }
 
+<#if holderMode != "Repeated" && nullMode != "Nullable">
+public void copyAsValue(${minor.class?cap_first}Writer writer){
+        writer.write(holder);
+        }
+</#if>
 }
 
 </#list>

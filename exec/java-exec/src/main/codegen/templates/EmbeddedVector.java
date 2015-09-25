@@ -28,6 +28,7 @@ package org.apache.drill.exec.vector.complex.impl;
 
 <#include "/@includes/vv_imports.ftl" />
 import java.util.Iterator;
+import org.apache.drill.exec.vector.complex.fn.ComplexCopier;
 
 /*
  * This class is generated using freemarker and the ${.template_name} template.
@@ -386,9 +387,16 @@ public class EmbeddedVector implements ValueVector {
       case VARCHAR:
         reader.copyAsValue(writer.asVarChar());
         break;
-      case MAP:
-        reader.copyAsValue(writer.asMap());
+      case MAP: {
+        ComplexCopier copier = new ComplexCopier(reader, writer);
+        copier.write();
         break;
+      }
+      case LIST: {
+        ComplexCopier copier = new ComplexCopier(reader, writer);
+        copier.write();
+        break;
+      }
       default:
         throw new UnsupportedOperationException();
       }
