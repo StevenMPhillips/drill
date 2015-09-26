@@ -39,7 +39,7 @@ public class TestExampleQueries extends BaseTestQuery {
 //    test("select convert_from(a, 'json') from (select convert_to(a, 'json') a from dfs.`/tmp/a.json`)");
 //    test("select n, typeOf(n) as `type` from (select castToEmbedded(n_nationkey) n from cp.`tpch/nation.parquet`)");
 //    test("select castToEmbedded(a) as a from dfs.`/tmp/a.json`");
-    test("select case typeOf(a) when 1 then a when 6 then cast(a as bigint) + 1 else a end as a from dfs.`/tmp/a.json`");
+    test("select 1 + cast(case typeOf(a) when 1 then t.a.b when 6 then a when 40 then a[0] end as bigint) as a from dfs.`/tmp/a.json` t");
 //    test("select case typeOf(a) when 1 then castToEmbedded(a) when 6 then castToEmbedded(cast(a as bigint) + 1) else castToEmbedded(a) end as a from dfs.`/tmp/a.json`");
 //    test("select t.a[0] as a_0, t.a[1] as a_1 from dfs.tmp.t4 t");
 //    test("select  t.data.unhideous unhideous from dfs.tmp.`file.json` t where isBigInt(t.data.unhideous) = true");

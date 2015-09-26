@@ -202,16 +202,16 @@ public class EmbeddedFunctions {
 
   @SuppressWarnings("unused")
   @FunctionTemplate(name = "castBIGINT", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
-  public static class CastBigIntInt implements DrillSimpleFunc{
+  public static class CastEmbeddedBigInt implements DrillSimpleFunc{
 
-    @Param FieldReader in;
+    @Param EmbeddedHolder in;
     @Output
     BigIntHolder out;
 
     public void setup() {}
 
     public void eval() {
-      out.value = org.apache.drill.exec.expr.fn.impl.EmbeddedFunctions.castBigInt(in);
+      out.value = org.apache.drill.exec.expr.fn.impl.EmbeddedFunctions.castBigInt(in.reader);
     }
   }
 
@@ -245,13 +245,13 @@ public class EmbeddedFunctions {
   @FunctionTemplate(names = {"castEMBEDDED", "castToEmbedded"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
   public static class CastBigIntToEmbedded implements DrillSimpleFunc{
 
-    @Param BigIntHolder in;
+    @Param NullableBigIntHolder in;
     @Output EmbeddedHolder out;
 
     public void setup() {}
 
     public void eval() {
-      out.reader = new org.apache.drill.exec.vector.complex.impl.BigIntHolderReaderImpl(in);
+      out.reader = new org.apache.drill.exec.vector.complex.impl.NullableBigIntHolderReaderImpl(in);
       out.isSet = 1;
     }
   }

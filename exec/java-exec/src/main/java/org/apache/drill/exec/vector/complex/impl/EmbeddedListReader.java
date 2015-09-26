@@ -18,6 +18,7 @@
  ******************************************************************************/
 package org.apache.drill.exec.vector.complex.impl;
 
+import org.apache.drill.exec.expr.holders.EmbeddedHolder;
 import org.apache.drill.exec.vector.UInt4Vector;
 import org.apache.drill.exec.vector.complex.ListVector;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
@@ -54,6 +55,16 @@ public class EmbeddedListReader extends AbstractFieldReader {
   @Override
   public FieldReader reader() {
     return reader;
+  }
+
+  @Override
+  public void read(int index, EmbeddedHolder holder) {
+    setPosition(idx());
+    for (int i = -1; i < index; i++) {
+      next();
+    }
+    holder.reader = reader;
+    holder.isSet = reader.isSet() ? 1 : 0;
   }
 
   @Override

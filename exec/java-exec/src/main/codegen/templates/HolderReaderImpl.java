@@ -30,6 +30,7 @@
 <#assign friendlyType = (minor.friendlyType!minor.boxedType!type.boxedType) />
 <#assign safeType=friendlyType />
 <#if safeType=="byte[]"><#assign safeType="ByteArray" /></#if>
+<#assign fields = minor.fields!type.fields />
 
 <@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/${holderMode}${name}HolderReaderImpl.java" />
 <#include "/@includes/license.ftl" />
@@ -115,6 +116,15 @@ public class ${holderMode}${name}HolderReaderImpl extends AbstractFieldReader {
     </#if>
     
   }
+
+<#if holderMode != "Repeated">
+  @Override
+  public void read(Nullable${name}Holder h) {
+<#list fields as field>
+h.${field.name} = holder.${field.name};
+        </#list>
+        }
+</#if>
 
 <#if holderMode == "Repeated">
   @Override

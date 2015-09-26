@@ -356,6 +356,9 @@ public class EmbeddedVector implements ValueVector {
       return typeVector.getAccessor().get(index) == 0;
     }
 
+    public int isSet(int index) {
+      return isNull(index) ? 0 : 1;
+    }
   }
 
   public class Mutator extends BaseValueVector.BaseMutator {
@@ -379,14 +382,19 @@ public class EmbeddedVector implements ValueVector {
       writer.setPosition(index);
       MinorType type = reader.getType().getMinorType();
       switch (type) {
-      case BIGINT:
-        reader.copyAsValue(writer.asBigInt());
+      <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
+      <#assign fields = minor.fields!type.fields />
+      <#assign uncappedName = name?uncap_first/>
+      <#if !minor.class?starts_with("Decimal")>
+      case ${name?upper_case}:
+        Nullable${name}Holder ${uncappedName}Holder = new Nullable${name}Holder();
+        reader.read(${uncappedName}Holder);
+        if (holder.isSet == 1) {
+          writer.write${name}(<#list fields as field>${uncappedName}Holder.${field.name}<#if field_has_next>, </#if></#list>);
+        }
         break;
-      case BIT:
-        reader.copyAsValue(writer.asBit());
-      case VARCHAR:
-        reader.copyAsValue(writer.asVarChar());
-        break;
+      </#if>
+      </#list></#list>
       case MAP: {
         ComplexCopier copier = new ComplexCopier(reader, writer);
         copier.write();

@@ -79,6 +79,11 @@ abstract class AbstractBaseReader implements FieldReader{
   }
 
   @Override
+  public void read(int index, EmbeddedHolder holder) {
+    throw new IllegalStateException("The current reader doesn't support reading embedded type");
+  }
+
+  @Override
   public void copyAsValue(EmbeddedWriter writer) {
     throw new IllegalStateException("The current reader doesn't support reading embedded type");
   }

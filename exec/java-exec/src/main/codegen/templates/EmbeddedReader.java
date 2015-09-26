@@ -49,6 +49,11 @@ public class EmbeddedReader extends AbstractFieldReader {
 
   public void read(EmbeddedHolder holder) {
     holder.reader = this;
+    holder.isSet = this.isSet() ? 1 : 0;
+  }
+
+  public void read(int index, EmbeddedHolder holder) {
+    getList().read(index, holder);
   }
 
   private FieldReader getReaderForIndex(int index) {
