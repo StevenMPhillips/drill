@@ -292,7 +292,7 @@ public class TypeHelper {
     switch (type.getMinorType()) {
     
     case EMBEDDED:
-      return new EmbeddedVector(field, allocator);
+      return new EmbeddedVector(field, allocator, callBack);
 
     case MAP:
       switch (type.getMode()) {
@@ -307,7 +307,7 @@ public class TypeHelper {
 //      case REPEATED:
 //        return new RepeatedListVector(field, allocator, callBack);
 //      }
-      return new ListVector(field, allocator);
+      return new ListVector(field, allocator, callBack);
 <#list vv.  types as type>
   <#list type.minor as minor>
     case ${minor.class?upper_case}:

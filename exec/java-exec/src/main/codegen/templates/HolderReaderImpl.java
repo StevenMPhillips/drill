@@ -118,12 +118,19 @@ public class ${holderMode}${name}HolderReaderImpl extends AbstractFieldReader {
   }
 
 <#if holderMode != "Repeated">
+@Override
+  public void read(${name}Holder h) {
+  <#list fields as field>
+    h.${field.name} = holder.${field.name};
+  </#list>
+  }
+
   @Override
   public void read(Nullable${name}Holder h) {
-<#list fields as field>
-h.${field.name} = holder.${field.name};
-        </#list>
-        }
+  <#list fields as field>
+    h.${field.name} = holder.${field.name};
+  </#list>
+  }
 </#if>
 
 <#if holderMode == "Repeated">

@@ -25,6 +25,7 @@ import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.memory.OutOfMemoryRuntimeException;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.TransferPair;
+import org.apache.drill.exec.util.CallBack;
 import org.apache.drill.exec.util.JsonStringArrayList;
 import org.apache.drill.exec.vector.IntVector;
 import org.apache.drill.exec.vector.UInt4Vector;
@@ -43,8 +44,8 @@ public class ListVector extends BaseRepeatedValueVector {
   Mutator mutator = new Mutator();
   Accessor accessor = new Accessor();
 
-  public ListVector(MaterializedField field, BufferAllocator allocator) {
-    super(field, allocator, new EmbeddedVector(field, allocator));
+  public ListVector(MaterializedField field, BufferAllocator allocator, CallBack callBack) {
+    super(field, allocator, new EmbeddedVector(field, allocator, callBack));
     offsets = getOffsetVector();
     this.field.addChild(getDataVector().getField());
   }
@@ -88,7 +89,7 @@ public class ListVector extends BaseRepeatedValueVector {
     ListVector to;
 
     public TransferImpl(MaterializedField field) {
-      to = new ListVector(field, allocator);
+      to = new ListVector(field, allocator, null);
     }
 
     public TransferImpl(ListVector to) {

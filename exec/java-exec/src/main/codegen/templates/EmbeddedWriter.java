@@ -39,7 +39,7 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
 
   public EmbeddedWriter(BufferAllocator allocator) {
     super(null);
-    data = new EmbeddedVector(MaterializedField.create("root", Types.optional(MinorType.EMBEDDED)), allocator);
+//    data = new EmbeddedVector(MaterializedField.create("root", Types.optional(MinorType.EMBEDDED)), allocator);
   }
 
   public EmbeddedWriter(EmbeddedVector vector) {

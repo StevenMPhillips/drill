@@ -58,11 +58,15 @@ public class NullReader extends AbstractBaseReader implements FieldReader{
 
   public void copyAsValue(EmbeddedWriter writer) {}
 
-  <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first /> 
+  <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
+  public void read(${name}Holder holder){
+    throw new UnsupportedOperationException("NullReader cannot read into non-nullable holder");
+  }
+
   public void read(Nullable${name}Holder holder){
     holder.isSet = 0;
   }
-  
+
   public void read(int arrayIndex, ${name}Holder holder){
     throw new ArrayIndexOutOfBoundsException();
   }

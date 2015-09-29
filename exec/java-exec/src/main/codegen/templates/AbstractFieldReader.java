@@ -64,12 +64,17 @@ abstract class AbstractFieldReader extends AbstractBaseReader implements FieldRe
     fail("CopyAsFieldList");
   }
 
-  public void read(EmbeddedHolder holder) {
-    holder.reader = this;
-  }
+//  public void read(EmbeddedHolder holder) {
+//    holder.reader = this;
+//    holder.isSet = this.isSet() ? 1 : 0;
+//  }
 
   <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
   <#assign boxedType = (minor.boxedType!type.boxedType) />
+
+  public void read(${name}Holder holder){
+    fail("${name}");
+  }
 
   public void read(Nullable${name}Holder holder){
     fail("${name}");

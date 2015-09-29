@@ -75,7 +75,8 @@ abstract class AbstractBaseReader implements FieldReader{
 
   @Override
   public void read(EmbeddedHolder holder) {
-    throw new IllegalStateException("The current reader doesn't support reading embedded type");
+    holder.reader = this;
+    holder.isSet = this.isSet() ? 1 : 0;
   }
 
   @Override

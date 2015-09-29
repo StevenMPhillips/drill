@@ -29,6 +29,7 @@ package org.apache.drill.exec.vector.complex.impl;
 <#include "/@includes/vv_imports.ftl" />
 import java.util.Iterator;
 import org.apache.drill.exec.vector.complex.fn.ComplexCopier;
+import org.apache.drill.exec.util.CallBack;
 
 /*
  * This class is generated using freemarker and the ${.template_name} template.
@@ -64,14 +65,14 @@ public class EmbeddedVector implements ValueVector {
     INIT, SINGLE, MULTI
   }
 
-  public EmbeddedVector(MaterializedField field, BufferAllocator allocator) {
-    this.field = field;
+  public EmbeddedVector(MaterializedField field, BufferAllocator allocator, CallBack callBack) {
+    this.field = field.clone();
     this.allocator = allocator;
-    internalMap = new MapVector("internal", allocator, null);
+    internalMap = new MapVector("internal", allocator, callBack);
     internalMapWriter = new SingleMapWriter(internalMap, null);
     internalMapWriter.embeddedVector = true;
     this.typeVector = internalMap.addOrGet("types", Types.required(MinorType.UINT1), UInt1Vector.class);
-    this.field.addChild(internalMap.getField());
+    this.field.addChild(internalMap.getField().clone());
   }
 
   private void updateState(ValueVector v) {
@@ -225,7 +226,7 @@ public class EmbeddedVector implements ValueVector {
     EmbeddedVector to;
 
     public TransferImpl(MaterializedField field) {
-      to = new EmbeddedVector(field, allocator);
+      to = new EmbeddedVector(field, allocator, null);
     }
 
     public TransferImpl(EmbeddedVector to) {

@@ -42,7 +42,6 @@ public class Types {
     switch(type.getMinorType()) {
     case LIST:
     case MAP:
-    case EMBEDDED:
       return true;
     }
 

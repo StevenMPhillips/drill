@@ -19,10 +19,18 @@ package org.apache.drill;
 
 import static org.junit.Assert.assertEquals;
 
+import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.common.util.FileUtils;
 import org.apache.drill.common.util.TestTools;
 import org.apache.drill.exec.ExecConstants;
+import org.apache.drill.exec.memory.TopLevelAllocator;
+import org.apache.drill.exec.record.TransferPair;
+import org.apache.drill.exec.vector.ValueVector;
+import org.apache.drill.exec.vector.complex.MapVector;
+import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
+import org.apache.drill.exec.vector.complex.impl.SingleMapWriter;
+import org.apache.drill.exec.vector.complex.writer.BaseWriter.MapWriter;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -39,7 +47,11 @@ public class TestExampleQueries extends BaseTestQuery {
 //    test("select convert_from(a, 'json') from (select convert_to(a, 'json') a from dfs.`/tmp/a.json`)");
 //    test("select n, typeOf(n) as `type` from (select castToEmbedded(n_nationkey) n from cp.`tpch/nation.parquet`)");
 //    test("select castToEmbedded(a) as a from dfs.`/tmp/a.json`");
-    test("select 1 + cast(case typeOf(a) when 1 then t.a.b when 6 then a when 40 then a[0] end as bigint) as a from dfs.`/tmp/a.json` t");
+//    test("select fromType(typeOf(a)) as `type`, 1 + cast(case typeOf(a) when toType('MAP') then t.a.b when toType('BIGINT') then a when toType('LIST') then a[0] end as bigint) as a from dfs.`/tmp/a.json` t");
+//    test("select t.a.b from dfs.`/tmp/a.json` t");
+//    test("select cast(a as bigint) from dfs.`/tmp/b.json`");
+    test("select a from dfs.`/tmp/t` where case typeOf(a) when toType('BIGINT') then asBigInt(a) when toType('VARCHAR') then cast(asVarChar(a) as bigint) end = 2");
+//    test("select 1 + cast(case typeOf(a) when 1 then t.a.b when 6 then a when 40 then a[0] end as bigint) as a from dfs.`/tmp/a.json` t");
 //    test("select case typeOf(a) when 1 then castToEmbedded(a) when 6 then castToEmbedded(cast(a as bigint) + 1) else castToEmbedded(a) end as a from dfs.`/tmp/a.json`");
 //    test("select t.a[0] as a_0, t.a[1] as a_1 from dfs.tmp.t4 t");
 //    test("select  t.data.unhideous unhideous from dfs.tmp.`file.json` t where isBigInt(t.data.unhideous) = true");
@@ -54,6 +66,20 @@ public class TestExampleQueries extends BaseTestQuery {
 //            "\t\tend as unhideous, t.data.unhideous\n" +
 //            "from\n" +
 //            "\tdfs.tmp.`file.json` t");
+
+  }
+
+  @Test
+  public void f() throws Exception {
+    TopLevelAllocator allocator = new TopLevelAllocator();
+    MapVector a = new MapVector("a", allocator, null);
+    SingleMapWriter writer = new SingleMapWriter(a, null);
+    MapWriter b = writer.map("b");
+    b.integer("c").writeInt(1);
+    writer.setValueCount(1);
+    TransferPair p = a.getTransferPair();
+    p.transfer();
+    ValueVector a_new = p.getTo();
   }
 
   @Test // see DRILL-2328

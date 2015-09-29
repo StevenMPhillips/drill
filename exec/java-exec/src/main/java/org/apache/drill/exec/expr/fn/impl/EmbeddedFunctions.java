@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.expr.fn.impl;
 
+import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.exec.expr.DrillSimpleFunc;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate;
@@ -30,13 +31,17 @@ import org.apache.drill.exec.expr.holders.EmbeddedHolder;
 import org.apache.drill.exec.expr.holders.IntHolder;
 import org.apache.drill.exec.expr.holders.NullableBigIntHolder;
 import org.apache.drill.exec.expr.holders.VarCharHolder;
+import org.apache.drill.exec.vector.ValueHolderHelper;
 import org.apache.drill.exec.vector.complex.impl.BigIntHolderReaderImpl;
 import org.apache.drill.exec.vector.complex.impl.EmbeddedReader;
 import org.apache.drill.exec.vector.complex.reader.BigIntReader;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 import org.apache.drill.exec.vector.complex.writer.BaseWriter.ComplexWriter;
 
+import javax.inject.Inject;
+
 public class EmbeddedFunctions {
+  /*
   @FunctionTemplate(names = {"equal", "==", "="},
           scope = FunctionTemplate.FunctionScope.SIMPLE,
           nulls = NullHandling.NULL_IF_NULL)
@@ -159,6 +164,52 @@ public class EmbeddedFunctions {
 
     }
   }
+  */
+
+  @FunctionTemplate(names = {"fromType"},
+          scope = FunctionTemplate.FunctionScope.SIMPLE,
+          nulls = NullHandling.NULL_IF_NULL)
+  public static class FromType implements DrillSimpleFunc {
+
+    @Param
+    IntHolder in;
+    @Output
+    VarCharHolder out;
+    @Inject
+    DrillBuf buffer;
+
+    public void setup() {}
+
+    public void eval() {
+
+      VarCharHolder h = ValueHolderHelper.getVarCharHolder(buffer, org.apache.drill.common.types.MinorType.valueOf(in.value).toString());
+      out.buffer = h.buffer;
+      out.start = h.start;
+      out.end = h.end;
+    }
+  }
+
+  @FunctionTemplate(names = {"toType"},
+          scope = FunctionTemplate.FunctionScope.SIMPLE,
+          nulls = NullHandling.NULL_IF_NULL)
+  public static class ToType implements DrillSimpleFunc {
+
+    @Param
+    VarCharHolder input;
+    @Output
+    IntHolder out;
+
+    public void setup() {}
+
+    public void eval() {
+
+      out.value = input.getType().getMinorType().getNumber();
+      byte[] b = new byte[input.end - input.start];
+      input.buffer.getBytes(input.start, b, 0, b.length);
+      String type = new String(b);
+      out.value = org.apache.drill.common.types.MinorType.valueOf(type).getNumber();
+    }
+  }
 
   @FunctionTemplate(names = {"typeOf"},
           scope = FunctionTemplate.FunctionScope.SIMPLE,
@@ -201,7 +252,7 @@ public class EmbeddedFunctions {
   */
 
   @SuppressWarnings("unused")
-  @FunctionTemplate(name = "castBIGINT", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
+  @FunctionTemplate(name = "asBigInt", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
   public static class CastEmbeddedBigInt implements DrillSimpleFunc{
 
     @Param EmbeddedHolder in;
@@ -211,7 +262,22 @@ public class EmbeddedFunctions {
     public void setup() {}
 
     public void eval() {
-      out.value = org.apache.drill.exec.expr.fn.impl.EmbeddedFunctions.castBigInt(in.reader);
+      in.reader.read(out);
+    }
+  }
+
+  @SuppressWarnings("unused")
+  @FunctionTemplate(name = "asVarChar", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
+  public static class CastEmbeddedVarChar implements DrillSimpleFunc{
+
+    @Param EmbeddedHolder in;
+    @Output
+    VarCharHolder out;
+
+    public void setup() {}
+
+    public void eval() {
+      in.reader.read(out);
     }
   }
 
@@ -226,6 +292,7 @@ public class EmbeddedFunctions {
       return 0;
     }
   }
+
   @SuppressWarnings("unused")
   @FunctionTemplate(names = {"castEMBEDDED", "castToEmbedded"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
   public static class CastVarCharToEmbedded implements DrillSimpleFunc{
