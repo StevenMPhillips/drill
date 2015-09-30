@@ -18,15 +18,22 @@
  ******************************************************************************/
 package org.apache.drill.exec.vector.complex;
 
+import com.google.common.collect.ObjectArrays;
+import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.expression.FieldReference;
+import org.apache.drill.common.types.TypeProtos.MinorType;
+import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.memory.OutOfMemoryRuntimeException;
+import org.apache.drill.exec.proto.UserBitShared;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.TransferPair;
 import org.apache.drill.exec.util.CallBack;
 import org.apache.drill.exec.util.JsonStringArrayList;
+import org.apache.drill.exec.vector.UInt1Vector;
 import org.apache.drill.exec.vector.UInt4Vector;
 import org.apache.drill.exec.vector.ValueVector;
+import org.apache.drill.exec.vector.VectorDescriptor;
 import org.apache.drill.exec.vector.complex.impl.ComplexCopier;
 import org.apache.drill.exec.vector.complex.impl.UnionListReader;
 import org.apache.drill.exec.vector.complex.impl.UnionListWriter;
@@ -39,6 +46,7 @@ import java.util.List;
 public class ListVector extends BaseRepeatedValueVector {
 
   UInt4Vector offsets;
+  protected final UInt1Vector bits;
   Mutator mutator = new Mutator();
   Accessor accessor = new Accessor();
   UnionListWriter writer;
@@ -46,6 +54,7 @@ public class ListVector extends BaseRepeatedValueVector {
 
   public ListVector(MaterializedField field, BufferAllocator allocator, CallBack callBack) {
     super(field, allocator, new UnionVector(field, allocator, callBack));
+    this.bits = new UInt1Vector(MaterializedField.create("$bits$", Types.required(MinorType.UINT1)), allocator);
     offsets = getOffsetVector();
     this.field.addChild(getDataVector().getField());
     this.writer = new UnionListWriter(this);
@@ -138,6 +147,89 @@ public class ListVector extends BaseRepeatedValueVector {
   public FieldReader getReader() {
     return reader;
   }
+
+  @Override
+  public boolean allocateNewSafe() {
+    /* boolean to keep track if all the memory allocation were successful
+     * Used in the case of composite vectors when we need to allocate multiple
+     * buffers for multiple vectors. If one of the allocations failed we need to
+     * clear all the memory that we allocated
+     */
+    boolean success = false;
+    try {
+      if (!offsets.allocateNewSafe()) {
+        return false;
+      }
+      success = vector.allocateNewSafe();
+      success = success && bits.allocateNewSafe();
+    } finally {
+      if (!success) {
+        clear();
+      }
+    }
+    offsets.zeroVector();
+    bits.zeroVector();
+    return success;
+  }
+
+  @Override
+  protected UserBitShared.SerializedField.Builder getMetadataBuilder() {
+    return super.getMetadataBuilder()
+            .addChild(offsets.getMetadata())
+            .addChild(bits.getMetadata())
+            .addChild(vector.getMetadata());
+  }
+
+  @Override
+  public int getBufferSize() {
+    if (getAccessor().getValueCount() == 0) {
+      return 0;
+    }
+    return offsets.getBufferSize() + bits.getBufferSize() + vector.getBufferSize();
+  }
+
+  @Override
+  public void clear() {
+    offsets.clear();
+    vector.clear();
+    bits.clear();
+    lastSet = 0;
+    super.clear();
+  }
+
+  @Override
+  public DrillBuf[] getBuffers(boolean clear) {
+    final DrillBuf[] buffers = ObjectArrays.concat(offsets.getBuffers(false), ObjectArrays.concat(bits.getBuffers(false),
+            vector.getBuffers(false), DrillBuf.class), DrillBuf.class);
+    if (clear) {
+      for (DrillBuf buffer:buffers) {
+        buffer.retain();
+      }
+      clear();
+    }
+    return buffers;
+  }
+
+  @Override
+  public void load(UserBitShared.SerializedField metadata, DrillBuf buffer) {
+    final UserBitShared.SerializedField offsetMetadata = metadata.getChild(0);
+    offsets.load(offsetMetadata, buffer);
+
+    final int offsetLength = offsetMetadata.getBufferLength();
+    final UserBitShared.SerializedField bitMetadata = metadata.getChild(1);
+    final int bitLength = bitMetadata.getBufferLength();
+    bits.load(bitMetadata, buffer.slice(offsetLength, bitLength));
+
+    final UserBitShared.SerializedField vectorMetadata = metadata.getChild(2);
+    if (getDataVector() == DEFAULT_DATA_VECTOR) {
+      addOrGetVector(VectorDescriptor.create(vectorMetadata.getMajorType()));
+    }
+
+    final int vectorLength = vectorMetadata.getBufferLength();
+    vector.load(vectorMetadata, buffer.slice(offsetLength + bitLength, vectorLength));
+  }
+
+  private int lastSet;
 
   public class Accessor extends BaseRepeatedAccessor {
 

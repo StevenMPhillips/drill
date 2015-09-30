@@ -75,7 +75,6 @@ public class RepeatedListVector extends AbstractContainerVector
 
       public void get(int index, RepeatedListHolder holder) {
         assert index <= getValueCapacity();
-        holder.isSet = bits.getAccessor().get(index);
         holder.start = getOffsetVector().getAccessor().get(index);
         holder.end = getOffsetVector().getAccessor().get(index+1);
       }
@@ -111,7 +110,6 @@ public class RepeatedListVector extends AbstractContainerVector
       @Override
       public void startNewValue(int index) {
         emptyPopulator.populate(index+1);
-        setNotNull(index);
         super.startNewValue(index);
       }
 
@@ -164,9 +162,6 @@ public class RepeatedListVector extends AbstractContainerVector
         final RepeatedListHolder holder = new RepeatedListHolder();
         getAccessor().get(srcIndex, holder);
         target.emptyPopulator.populate(destIndex+1);
-        if (holder.isSet == 1) {
-          target.mutator.startNewValue(destIndex);
-        }
         final TransferPair vectorTransfer = children[1];
         int newIndex = target.getOffsetVector().getAccessor().get(destIndex);
         //todo: make this a bulk copy.
@@ -269,7 +264,7 @@ public class RepeatedListVector extends AbstractContainerVector
 
     final List<MaterializedField> children = Lists.newArrayList(field.getChildren());
     final int childSize = children.size();
-    assert childSize < 4;
+    assert childSize < 3;
     final boolean hasChild = childSize > 0;
     if (hasChild) {
       // the last field is data field
