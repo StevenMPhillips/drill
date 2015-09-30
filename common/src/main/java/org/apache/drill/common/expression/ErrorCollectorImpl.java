@@ -28,19 +28,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 
 public class ErrorCollectorImpl implements ErrorCollector {
-//    List<ExpressionValidationError> errors;
-    ErrorThrower errors;
-
-    private static class ErrorThrower {
-        private void add(ExpressionValidationError error) {
-            throw new RuntimeException(error.toString());
-        }
-    }
+    List<ExpressionValidationError> errors;
 
     public ErrorCollectorImpl() {
-//        errors = Lists.newArrayList();
-        errors = new ErrorThrower();
-
+        errors = Lists.newArrayList();
     }
 
     private String addExpr(ExpressionPosition expr, String message) {
@@ -101,21 +92,18 @@ public class ErrorCollectorImpl implements ErrorCollector {
 
     @Override
     public boolean hasErrors() {
-//        return !errors.isEmpty();
-        return false;
+        return !errors.isEmpty();
     }
 
 
     @Override
     public int getErrorCount() {
-//      return errors.size();
-        return 0;
+      return errors.size();
     }
 
     @Override
     public String toErrorString() {
-//        return "\n" + Joiner.on("\n").join(errors);
-        return null;
+        return "\n" + Joiner.on("\n").join(errors);
     }
 
     @Override

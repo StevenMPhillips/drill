@@ -213,18 +213,6 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
 
   </#list></#list>
 
-  public void copyReader(FieldReader reader) {
-    fail("Copy FieldReader");
-  }
-
-  public void copyReaderToField(String name, FieldReader reader) {
-    fail("Copy FieldReader to STring");
-  }
-
-  private void fail(String name) {
-    throw new IllegalArgumentException(String.format("You tried to write a %s type when you are using a ValueWriter of type %s.", name, this.getClass().getSimpleName()));
-  }
-
   @Override
   public void allocate() {
     data.allocateNew();

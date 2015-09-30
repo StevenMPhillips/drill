@@ -66,9 +66,6 @@ public class UnionTypeReducerBatch extends AbstractSingleRecordBatch<UnionTypeRe
     for (TransferPair p : transferPairs) {
       p.transfer();
     }
-//    for (VectorWrapper w : container) {
-//      w.getValueVector().getMutator().setValueCount(incoming.getRecordCount());
-//    }
     return IterOutcome.OK;
   }
 

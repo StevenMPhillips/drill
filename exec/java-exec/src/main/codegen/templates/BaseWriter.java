@@ -33,7 +33,6 @@ package org.apache.drill.exec.vector.complex.writer;
   public interface BaseWriter extends AutoCloseable, Positionable {
   FieldWriter getParent();
   int getValueCapacity();
-  void writeString(String s);
 
   public interface MapWriter extends BaseWriter {
 

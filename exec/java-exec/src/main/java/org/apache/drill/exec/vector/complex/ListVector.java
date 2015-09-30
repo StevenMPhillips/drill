@@ -160,29 +160,5 @@ public class ListVector extends BaseRepeatedValueVector {
 
   public class Mutator extends BaseRepeatedMutator {
 
-    /*
-    EmbeddedWriter writer;
-
-    public void addSafe(int index, long value) {
-      if (writer == null) {
-        writer = new EmbeddedWriter(data);
-      }
-      final int nextOffset = offsets.getAccessor().get(index+1);
-      writer.setPosition(nextOffset);
-      writer.writeBigInt(value);
-      offsets.getMutator().setSafe(index+1, nextOffset+1);
-    }
-
-    public void addSafe(int index, int start, int end, DrillBuf buffer) {
-      if (writer == null) {
-        writer = new EmbeddedWriter(data);
-      }
-      int nextOffset = offsets.getAccessor().get(index+1);
-      writer.setPosition(nextOffset);
-      writer.writeVarChar(start, end, buffer);
-      offsets.getMutator().setSafe(index + 1, nextOffset + 1);
-    }
-
-*/
   }
 }

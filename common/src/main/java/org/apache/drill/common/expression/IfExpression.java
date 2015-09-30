@@ -23,8 +23,6 @@ import java.util.List;
 import org.apache.drill.common.expression.visitors.ExprVisitor;
 import org.apache.drill.common.types.TypeProtos.DataMode;
 import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.Types;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +103,6 @@ public class IfExpression extends LogicalExpressionBase {
     }
 
     return majorType;
-//    return Types.optional(MinorType.EMBEDDED);
   }
 
   public static Builder newBuilder() {

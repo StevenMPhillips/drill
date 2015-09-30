@@ -147,39 +147,12 @@ public class EmbeddedReader extends AbstractFieldReader {
   }
 
   public void read(Nullable${name}Holder holder){
-//    get${name}().read(holder);
     getReaderForIndex(idx()).read(holder);
   }
 
-  /*
-  public void read(int arrayIndex, ${name}Holder holder){
-    fail("Repeated${name}");
-  }
-  
-  public void read(int arrayIndex, Nullable${name}Holder holder){
-    fail("Repeated${name}");
-  }
-  */
-  
   public void copyAsValue(${name}Writer writer){
-//    get${name}().copyAsValue(writer);
     getReaderForIndex(idx()).copyAsValue(writer);
   }
-  /*
-  public void copyAsField(String name, ${name}Writer writer){
-    fail("${name}")
-  }
-
-  public ${friendlyType} read${safeType}(int arrayIndex){
-    fail("read${safeType}(int arrayIndex)");
-    return null;
-  }
-
-  public ${friendlyType} read${safeType}(){
-    get${name}().setPosition(idx());
-    return get${name}().read${safeType}();
-  }
-  */
   </#if>
   </#list></#list>
 

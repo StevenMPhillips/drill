@@ -196,10 +196,6 @@ public class StringFunctionHelpers {
     return toStringFromUTF8(varCharHolder.start, varCharHolder.end, varCharHolder.buffer);
   }
 
-  public static void writeString(String string, VarCharHolder varCharHolder) {
-
-  }
-
   public static String toStringFromUTF8(int start, int end, DrillBuf buffer) {
     byte[] buf = new byte[end - start];
     buffer.getBytes(start, buf, 0, end - start);

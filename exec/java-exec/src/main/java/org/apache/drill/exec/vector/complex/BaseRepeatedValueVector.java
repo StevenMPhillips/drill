@@ -249,8 +249,6 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
         offsets.getMutator().setSafe(i + 1, offsets.getAccessor().get(i));
       }
       lastSet = index + 1;
-//      offsets.getMutator().setSafe(index + 1, offsets.getAccessor().get(index));
-//      setValueCount(index+1);
     }
 
     @Override
@@ -264,7 +262,6 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
         }
         offsets.getMutator().setValueCount(valueCount + 1);
       }
-//      offsets.getMutator().setValueCount(valueCount == 0 ? 0 : valueCount+1);
       final int childValueCount = valueCount == 0 ? 0 : offsets.getAccessor().get(valueCount);
       vector.getMutator().setValueCount(childValueCount);
       bits.getMutator().setValueCount(valueCount);

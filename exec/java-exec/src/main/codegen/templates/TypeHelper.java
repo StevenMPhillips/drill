@@ -114,11 +114,7 @@ public class TypeHelper {
       }
       
     case LIST:
-//      switch (mode) {
-//      case REPEATED:
-//        return RepeatedListVector.class;
-//      }
-    return ListVector.class;
+      return ListVector.class;
     
 <#list vv.types as type>
   <#list type.minor as minor>
@@ -303,10 +299,6 @@ public class TypeHelper {
         return new RepeatedMapVector(field, allocator, callBack);
       }
     case LIST:
-//      switch (type.getMode()) {
-//      case REPEATED:
-//        return new RepeatedListVector(field, allocator, callBack);
-//      }
       return new ListVector(field, allocator, callBack);
 <#list vv.  types as type>
   <#list type.minor as minor>

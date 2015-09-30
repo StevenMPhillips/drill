@@ -118,7 +118,6 @@ public class JsonWriter {
           writeValue(reader.reader());
         }
         gen.writeEndArray();
-//        writeValue(reader.reader());
         break;
       case MAP:
         gen.writeStartObject();

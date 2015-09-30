@@ -63,12 +63,7 @@ abstract class AbstractFieldReader extends AbstractBaseReader implements FieldRe
   public void copyAsField(String name, ListWriter writer){
     fail("CopyAsFieldList");
   }
-
-//  public void read(EmbeddedHolder holder) {
-//    holder.reader = this;
-//    holder.isSet = this.isSet() ? 1 : 0;
-//  }
-
+  
   <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
   <#assign boxedType = (minor.boxedType!type.boxedType) />
 
