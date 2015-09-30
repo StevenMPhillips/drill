@@ -87,12 +87,12 @@ public class ExpressionTreeMaterializer {
   };
 
   public static LogicalExpression materialize(LogicalExpression expr, VectorAccessible batch, ErrorCollector errorCollector, FunctionLookupContext functionLookupContext) {
-    return ExpressionTreeMaterializer.materialize(expr, batch, errorCollector, functionLookupContext, false);
+    return ExpressionTreeMaterializer.materialize(expr, batch, errorCollector, functionLookupContext, false, false);
   }
 
   public static LogicalExpression materializeAndCheckErrors(LogicalExpression expr, VectorAccessible batch, FunctionLookupContext functionLookupContext) throws SchemaChangeException {
     ErrorCollector collector = new ErrorCollectorImpl();
-    LogicalExpression e = ExpressionTreeMaterializer.materialize(expr, batch, collector, functionLookupContext, false);
+    LogicalExpression e = ExpressionTreeMaterializer.materialize(expr, batch, collector, functionLookupContext, false, false);
     if (collector.hasErrors()) {
       throw new SchemaChangeException(String.format("Failure while trying to materialize incoming schema.  Errors:\n %s.", collector.toErrorString()));
     }
@@ -100,8 +100,8 @@ public class ExpressionTreeMaterializer {
   }
 
   public static LogicalExpression materialize(LogicalExpression expr, VectorAccessible batch, ErrorCollector errorCollector, FunctionLookupContext functionLookupContext,
-      boolean allowComplexWriterExpr) {
-    LogicalExpression out =  expr.accept(new MaterializeVisitor(batch, errorCollector, allowComplexWriterExpr), functionLookupContext);
+      boolean allowComplexWriterExpr, boolean unionTypeEnabled) {
+    LogicalExpression out =  expr.accept(new MaterializeVisitor(batch, errorCollector, allowComplexWriterExpr, unionTypeEnabled), functionLookupContext);
 
     if (!errorCollector.hasErrors()) {
       out = out.accept(ConditionalExprOptimizer.INSTANCE, null);
@@ -190,11 +190,13 @@ public class ExpressionTreeMaterializer {
     private final ErrorCollector errorCollector;
     private final VectorAccessible batch;
     private final boolean allowComplexWriter;
+    private final boolean unionTypeEnabled;
 
-    public MaterializeVisitor(VectorAccessible batch, ErrorCollector errorCollector, boolean allowComplexWriter) {
+    public MaterializeVisitor(VectorAccessible batch, ErrorCollector errorCollector, boolean allowComplexWriter, boolean unionTypeEnabled) {
       this.batch = batch;
       this.errorCollector = errorCollector;
       this.allowComplexWriter = allowComplexWriter;
+      this.unionTypeEnabled = unionTypeEnabled;
     }
 
     private LogicalExpression validateNewExpr(LogicalExpression newExpr) {

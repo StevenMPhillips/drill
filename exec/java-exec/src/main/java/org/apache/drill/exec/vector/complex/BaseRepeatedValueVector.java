@@ -241,6 +241,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
 
     public void setNotNull(int index) {
       bits.getMutator().setSafe(index, 1);
+      lastSet = index + 1;
     }
 
     @Override
@@ -248,6 +249,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
       for (int i = lastSet; i <= index; i++) {
         offsets.getMutator().setSafe(i + 1, offsets.getAccessor().get(i));
       }
+      setNotNull(index);
       lastSet = index + 1;
     }
 

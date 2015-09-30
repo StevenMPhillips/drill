@@ -156,9 +156,42 @@ public class ListVector extends BaseRepeatedValueVector {
       }
       return vals;
     }
+
+    @Override
+    public boolean isNull(int index) {
+      return bits.getAccessor().get(index) == 0;
+    }
   }
 
   public class Mutator extends BaseRepeatedMutator {
+    public void setNotNull(int index) {
+      bits.getMutator().setSafe(index, 1);
+      lastSet = index + 1;
+    }
 
+    @Override
+    public void startNewValue(int index) {
+      for (int i = lastSet; i <= index; i++) {
+        offsets.getMutator().setSafe(i + 1, offsets.getAccessor().get(i));
+      }
+      setNotNull(index);
+      lastSet = index + 1;
+    }
+
+    @Override
+    public void setValueCount(int valueCount) {
+      // TODO: populate offset end points
+      if (valueCount == 0) {
+        offsets.getMutator().setValueCount(0);
+      } else {
+        for (int i = lastSet; i < valueCount; i++) {
+          offsets.getMutator().setSafe(i + 1, offsets.getAccessor().get(i));
+        }
+        offsets.getMutator().setValueCount(valueCount + 1);
+      }
+      final int childValueCount = valueCount == 0 ? 0 : offsets.getAccessor().get(valueCount);
+      vector.getMutator().setValueCount(childValueCount);
+      bits.getMutator().setValueCount(valueCount);
+    }
   }
 }

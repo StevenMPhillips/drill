@@ -20,4 +20,5 @@ package org.apache.drill.exec.expr.holders;
 public final class RepeatedListHolder implements ValueHolder{
   public int start;
   public int end;
+  public int isSet;
 }

@@ -324,6 +324,9 @@ public class JsonReader extends BaseJsonProcessor {
           break;
         }
         case VALUE_NULL:
+          System.out.println();
+          map.start();
+          map.end();
           // do nothing as we don't have a type.
           break;
         case VALUE_NUMBER_FLOAT:

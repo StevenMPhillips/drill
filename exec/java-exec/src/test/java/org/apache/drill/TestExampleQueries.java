@@ -49,7 +49,8 @@ public class TestExampleQueries extends BaseTestQuery {
 //    test("select fromType(typeOf(a)) as `type`, 1 + cast(case typeOf(a) when toType('MAP') then t.a.b when toType('BIGINT') then a when toType('LIST') then a[0] end as bigint) as a from dfs.`/tmp/a.json` t");
 //    test("select t.a.b from dfs.`/tmp/a.json` t");
 //    test("select cast(a as bigint) from dfs.`/tmp/b.json`");
-    test("select a from dfs.`/tmp/t` where case typeOf(a) when type('BIGINT') then asBigInt(a) when type('VARCHAR') then cast(asVarChar(a) as bigint) end = 2");
+//    test("select a from dfs.`/tmp/t` where case typeOf(a) when type('BIGINT') then asBigInt(a) when type('VARCHAR') then cast(asVarChar(a) as bigint) end = 2");
+    test("select a from dfs.tmp.t");
 //    test("select 1 + cast(case typeOf(a) when 1 then t.a.b when 6 then a when 40 then a[0] end as bigint) as a from dfs.`/tmp/a.json` t");
 //    test("select case typeOf(a) when 1 then castToEmbedded(a) when 6 then castToEmbedded(cast(a as bigint) + 1) else castToEmbedded(a) end as a from dfs.`/tmp/a.json`");
 //    test("select t.a[0] as a_0, t.a[1] as a_1 from dfs.tmp.t4 t");

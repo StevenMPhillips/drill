@@ -116,7 +116,13 @@ public class TypeHelper {
       }
       
     case LIST:
-      return ListVector.class;
+      switch (mode) {
+      case REPEATED:
+        return RepeatedListVector.class;
+      case REQUIRED:
+      case OPTIONAL:
+        return ListVector.class;
+      }
     
 <#list vv.types as type>
   <#list type.minor as minor>
@@ -301,7 +307,13 @@ public class TypeHelper {
         return new RepeatedMapVector(field, allocator, callBack);
       }
     case LIST:
-      return new ListVector(field, allocator, callBack);
+      switch (type.getMode()) {
+      case REPEATED:
+        return new RepeatedListVector(field, allocator, callBack);
+      case OPTIONAL:
+      case REQUIRED:
+        return new ListVector(field, allocator, callBack);
+      }
 <#list vv.  types as type>
   <#list type.minor as minor>
     case ${minor.class?upper_case}:
