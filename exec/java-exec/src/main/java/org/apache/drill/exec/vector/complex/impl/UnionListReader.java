@@ -19,23 +19,23 @@
 package org.apache.drill.exec.vector.complex.impl;
 
 import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.exec.expr.holders.EmbeddedHolder;
+import org.apache.drill.exec.expr.holders.UnionHolder;
 import org.apache.drill.exec.vector.UInt4Vector;
 import org.apache.drill.exec.vector.complex.ListVector;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
-public class EmbeddedListReader extends AbstractFieldReader {
+public class UnionListReader extends AbstractFieldReader {
 
   private ListVector vector;
-  private EmbeddedVector data;
+  private UnionVector data;
   private UInt4Vector offsets;
-  private EmbeddedReader reader;
+  private UnionReader reader;
 
-  public EmbeddedListReader(ListVector vector) {
+  public UnionListReader(ListVector vector) {
     this.vector = vector;
     this.data = vector.getDataVector();
     this.offsets = vector.getOffsetVector();
-    this.reader = (EmbeddedReader) data.getReader();
+    this.reader = (UnionReader) data.getReader();
   }
 
   @Override
@@ -64,7 +64,7 @@ public class EmbeddedListReader extends AbstractFieldReader {
   }
 
   @Override
-  public void read(int index, EmbeddedHolder holder) {
+  public void read(int index, UnionHolder holder) {
     setPosition(idx());
     for (int i = -1; i < index; i++) {
       next();

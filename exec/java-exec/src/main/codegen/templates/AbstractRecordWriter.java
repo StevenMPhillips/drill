@@ -55,8 +55,8 @@ public abstract class AbstractRecordWriter implements RecordWriter {
   }
 
   @Override
-  public FieldConverter getNewEmbeddedConverter(int fieldId, String fieldName, FieldReader reader) {
-    throw new UnsupportedOperationException("Doesn't support writing Embedded type'");
+  public FieldConverter getNewUnionConverter(int fieldId, String fieldName, FieldReader reader) {
+    throw new UnsupportedOperationException("Doesn't support writing Union type'");
   }
 
   @Override

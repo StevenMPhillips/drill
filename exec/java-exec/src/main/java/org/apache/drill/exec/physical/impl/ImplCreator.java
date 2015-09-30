@@ -68,7 +68,7 @@ public class ImplCreator {
     Preconditions.checkNotNull(root);
     Preconditions.checkNotNull(context);
 
-    root = UnionReducerInjector.rewritePlanWithIteratorValidator(context, root);
+//    root = UnionReducerInjector.rewritePlanWithIteratorValidator(context, root);
     if (AssertionUtil.isAssertionsEnabled()) {
       root = IteratorValidatorInjector.rewritePlanWithIteratorValidator(context, root);
     }

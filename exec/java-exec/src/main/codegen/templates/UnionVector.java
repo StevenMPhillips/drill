@@ -19,7 +19,7 @@
 import org.apache.drill.common.types.TypeProtos.MinorType;
 
 <@pp.dropOutputFile />
-<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/EmbeddedVector.java" />
+<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/UnionVector.java" />
 
 
 <#include "/@includes/license.ftl" />
@@ -37,7 +37,7 @@ import org.apache.drill.exec.util.CallBack;
 @SuppressWarnings("unused")
 
 
-public class EmbeddedVector implements ValueVector {
+public class UnionVector implements ValueVector {
 
   private MaterializedField field;
   private BufferAllocator allocator;
@@ -65,7 +65,7 @@ public class EmbeddedVector implements ValueVector {
     INIT, SINGLE, MULTI
   }
 
-  public EmbeddedVector(MaterializedField field, BufferAllocator allocator, CallBack callBack) {
+  public UnionVector(MaterializedField field, BufferAllocator allocator, CallBack callBack) {
     this.field = field.clone();
     this.allocator = allocator;
     internalMap = new MapVector("internal", allocator, callBack);
@@ -205,34 +205,34 @@ public class EmbeddedVector implements ValueVector {
 
   @Override
   public TransferPair makeTransferPair(ValueVector target) {
-    return new TransferImpl((EmbeddedVector) target);
+    return new TransferImpl((UnionVector) target);
   }
 
-  public void transferTo(EmbeddedVector target) {
+  public void transferTo(UnionVector target) {
     internalMap.makeTransferPair(target.internalMap).transfer();
     target.valueCount = valueCount;
   }
 
-  public void copyFrom(int inIndex, int outIndex, EmbeddedVector from) {
+  public void copyFrom(int inIndex, int outIndex, UnionVector from) {
     from.getReader().setPosition(inIndex);
     getWriter().setPosition(outIndex);
     ComplexCopier copier = new ComplexCopier(from.reader, mutator.writer);
     copier.write();
   }
 
-  public void copyFromSafe(int inIndex, int outIndex, EmbeddedVector from) {
+  public void copyFromSafe(int inIndex, int outIndex, UnionVector from) {
     copyFrom(inIndex, outIndex, from);
   }
 
   private class TransferImpl implements TransferPair {
 
-    EmbeddedVector to;
+    UnionVector to;
 
     public TransferImpl(MaterializedField field) {
-      to = new EmbeddedVector(field, allocator, null);
+      to = new UnionVector(field, allocator, null);
     }
 
-    public TransferImpl(EmbeddedVector to) {
+    public TransferImpl(UnionVector to) {
       this.to = to;
     }
 
@@ -253,7 +253,7 @@ public class EmbeddedVector implements ValueVector {
 
     @Override
     public void copyValueSafe(int from, int to) {
-      this.to.copyFrom(from, to, EmbeddedVector.this);
+      this.to.copyFrom(from, to, UnionVector.this);
     }
   }
 
@@ -270,14 +270,14 @@ public class EmbeddedVector implements ValueVector {
   @Override
   public FieldReader getReader() {
     if (reader == null) {
-      reader = new EmbeddedReader(this);
+      reader = new UnionReader(this);
     }
     return reader;
   }
 
   public FieldWriter getWriter() {
     if (mutator.writer == null) {
-      mutator.writer = new EmbeddedWriter(this);
+      mutator.writer = new UnionWriter(this);
     }
     return mutator.writer;
   }
@@ -349,9 +349,9 @@ public class EmbeddedVector implements ValueVector {
     public void get(int index, ComplexHolder holder) {
     }
 
-    public void get(int index, EmbeddedHolder holder) {
+    public void get(int index, UnionHolder holder) {
       if (reader == null) {
-        reader = new EmbeddedReader(EmbeddedVector.this);
+        reader = new UnionReader(UnionVector.this);
       }
       reader.setPosition(index);
       holder.reader = reader;
@@ -374,21 +374,21 @@ public class EmbeddedVector implements ValueVector {
 
   public class Mutator extends BaseValueVector.BaseMutator {
 
-    EmbeddedWriter writer;
+    UnionWriter writer;
 
     @Override
     public void setValueCount(int valueCount) {
-      EmbeddedVector.this.valueCount = valueCount;
+      UnionVector.this.valueCount = valueCount;
       internalMap.getMutator().setValueCount(valueCount);
     }
 
     public void set(int index, byte[] bytes) {
     }
 
-    public void setSafe(int index, EmbeddedHolder holder) {
+    public void setSafe(int index, UnionHolder holder) {
       FieldReader reader = holder.reader;
       if (writer == null) {
-        writer = new EmbeddedWriter(EmbeddedVector.this);
+        writer = new UnionWriter(UnionVector.this);
       }
       writer.setPosition(index);
       MinorType type = reader.getType().getMinorType();

@@ -20,11 +20,10 @@ package org.apache.drill.exec.expr.holders;
 import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.common.types.Types;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedReader;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
-public class EmbeddedHolder implements ValueHolder {
-  public static final MajorType TYPE = Types.optional(MinorType.EMBEDDED);
+public class UnionHolder implements ValueHolder {
+  public static final MajorType TYPE = Types.optional(MinorType.UNION);
   public FieldReader reader;
   public int isSet;
 

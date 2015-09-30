@@ -20,7 +20,7 @@ import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.exec.vector.complex.impl.NullReader;
 
 <@pp.dropOutputFile />
-<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/EmbeddedReader.java" />
+<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/UnionReader.java" />
 
 
 <#include "/@includes/license.ftl" />
@@ -30,12 +30,12 @@ package org.apache.drill.exec.vector.complex.impl;
 <#include "/@includes/vv_imports.ftl" />
 
 @SuppressWarnings("unused")
-public class EmbeddedReader extends AbstractFieldReader {
+public class UnionReader extends AbstractFieldReader {
 
   private BaseReader[] readers = new BaseReader[43];
-  public EmbeddedVector data;
+  public UnionVector data;
   
-  public EmbeddedReader(EmbeddedVector data) {
+  public UnionReader(UnionVector data) {
     this.data = data;
   }
 
@@ -47,12 +47,12 @@ public class EmbeddedReader extends AbstractFieldReader {
     return !data.getAccessor().isNull(idx());
   }
 
-  public void read(EmbeddedHolder holder) {
+  public void read(UnionHolder holder) {
     holder.reader = this;
     holder.isSet = this.isSet() ? 1 : 0;
   }
 
-  public void read(int index, EmbeddedHolder holder) {
+  public void read(int index, UnionHolder holder) {
     getList().read(index, holder);
   }
 
@@ -92,11 +92,11 @@ public class EmbeddedReader extends AbstractFieldReader {
     return mapReader;
   }
 
-  private EmbeddedListReader listReader;
+  private UnionListReader listReader;
 
   private FieldReader getList() {
     if (listReader == null) {
-      listReader = new EmbeddedListReader(data.getList());
+      listReader = new UnionListReader(data.getList());
       listReader.setPosition(idx());
       readers[MinorType.LIST_VALUE] = listReader;
     }
@@ -109,7 +109,7 @@ public class EmbeddedReader extends AbstractFieldReader {
   }
 
   @Override
-  public void copyAsValue(EmbeddedWriter writer) {
+  public void copyAsValue(UnionWriter writer) {
     writer.data.copyFrom(idx(), writer.idx(), data);
   }
 

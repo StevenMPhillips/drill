@@ -329,14 +329,14 @@ public class ExpressionTreeMaterializer {
         if (leastRestrictive != thenType) {
           // Implicitly cast the then expression
           conditions = new IfExpression.IfCondition(newCondition,
-                  addCastExpression(conditions.expression, Types.optional(MinorType.EMBEDDED), functionLookupContext, errorCollector));
+                  addCastExpression(conditions.expression, Types.optional(MinorType.UNION), functionLookupContext, errorCollector));
         } else if (leastRestrictive != elseType) {
           // Implicitly cast the else expression
-          newElseExpr = addCastExpression(newElseExpr, Types.optional(MinorType.EMBEDDED), functionLookupContext, errorCollector);
+          newElseExpr = addCastExpression(newElseExpr, Types.optional(MinorType.UNION), functionLookupContext, errorCollector);
         } else {
           conditions = new IfExpression.IfCondition(newCondition,
-                  addCastExpression(conditions.expression, Types.optional(MinorType.EMBEDDED), functionLookupContext, errorCollector));
-          newElseExpr = addCastExpression(newElseExpr, Types.optional(MinorType.EMBEDDED), functionLookupContext, errorCollector);
+                  addCastExpression(conditions.expression, Types.optional(MinorType.UNION), functionLookupContext, errorCollector));
+          newElseExpr = addCastExpression(newElseExpr, Types.optional(MinorType.UNION), functionLookupContext, errorCollector);
         }
       }
 

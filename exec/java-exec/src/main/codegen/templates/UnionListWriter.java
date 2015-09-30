@@ -17,7 +17,7 @@
  */
 
 <@pp.dropOutputFile />
-<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/EmbeddedListWriter.java" />
+<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/UnionListWriter.java" />
 
 
 <#include "/@includes/license.ftl" />
@@ -31,21 +31,21 @@ package org.apache.drill.exec.vector.complex.impl;
  */
 
 @SuppressWarnings("unused")
-public class EmbeddedListWriter extends AbstractFieldWriter {
+public class UnionListWriter extends AbstractFieldWriter {
 
   ListVector vector;
-  EmbeddedVector data;
+  UnionVector data;
   UInt4Vector offsets;
-  private EmbeddedWriter writer;
+  private UnionWriter writer;
   private boolean inMap = false;
   private String mapName;
   private int lastIndex = 0;
 
-  public EmbeddedListWriter(ListVector vector) {
+  public UnionListWriter(ListVector vector) {
     super(null);
     this.vector = vector;
-    this.data = (EmbeddedVector) vector.getDataVector();
-    this.writer = new EmbeddedWriter(data);
+    this.data = (UnionVector) vector.getDataVector();
+    this.writer = new UnionWriter(data);
     this.offsets = vector.getOffsetVector();
   }
 

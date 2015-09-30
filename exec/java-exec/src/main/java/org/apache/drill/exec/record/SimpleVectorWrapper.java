@@ -27,7 +27,7 @@ import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.AbstractContainerVector;
 import org.apache.drill.exec.vector.complex.AbstractMapVector;
 import org.apache.drill.exec.vector.complex.MapVector;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
+import org.apache.drill.exec.vector.complex.impl.UnionVector;
 
 public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper<T>{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SimpleVectorWrapper.class);
@@ -107,11 +107,11 @@ public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper
     }
     PathSegment seg = expectedPath.getRootSegment();
 
-    if (v instanceof EmbeddedVector) {
+    if (v instanceof UnionVector) {
       TypedFieldId.Builder builder = TypedFieldId.newBuilder();
       builder.addId(id).remainder(expectedPath.getRootSegment().getChild());
-      builder.finalType(Types.optional(TypeProtos.MinorType.EMBEDDED));
-      builder.intermediateType(Types.optional(TypeProtos.MinorType.EMBEDDED));
+      builder.finalType(Types.optional(TypeProtos.MinorType.UNION));
+      builder.intermediateType(Types.optional(TypeProtos.MinorType.UNION));
       return builder.build();
     } else
     if (v instanceof AbstractContainerVector) {

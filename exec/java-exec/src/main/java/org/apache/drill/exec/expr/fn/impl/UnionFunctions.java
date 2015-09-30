@@ -18,29 +18,20 @@
 package org.apache.drill.exec.expr.fn.impl;
 
 import io.netty.buffer.DrillBuf;
-import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.exec.expr.DrillSimpleFunc;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate;
-import org.apache.drill.exec.expr.annotations.FunctionTemplate.FunctionScope;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.NullHandling;
 import org.apache.drill.exec.expr.annotations.Output;
 import org.apache.drill.exec.expr.annotations.Param;
-import org.apache.drill.exec.expr.holders.BigIntHolder;
-import org.apache.drill.exec.expr.holders.BitHolder;
-import org.apache.drill.exec.expr.holders.EmbeddedHolder;
+import org.apache.drill.exec.expr.holders.UnionHolder;
 import org.apache.drill.exec.expr.holders.IntHolder;
-import org.apache.drill.exec.expr.holders.NullableBigIntHolder;
 import org.apache.drill.exec.expr.holders.VarCharHolder;
-import org.apache.drill.exec.vector.ValueHolderHelper;
-import org.apache.drill.exec.vector.complex.impl.BigIntHolderReaderImpl;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedReader;
-import org.apache.drill.exec.vector.complex.reader.BigIntReader;
+import org.apache.drill.exec.vector.complex.impl.UnionReader;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
-import org.apache.drill.exec.vector.complex.writer.BaseWriter.ComplexWriter;
 
 import javax.inject.Inject;
 
-public class EmbeddedFunctions {
+public class UnionFunctions {
 
   @FunctionTemplate(names = {"typeString"},
           scope = FunctionTemplate.FunctionScope.SIMPLE,
@@ -107,11 +98,12 @@ public class EmbeddedFunctions {
   }
 
   @SuppressWarnings("unused")
-  @FunctionTemplate(names = {"castEMBEDDED", "castToEmbedded"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
-  public static class CastEmbeddedToEmbedded implements DrillSimpleFunc{
+  @FunctionTemplate(names = {"castUNION", "castToUnion"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
+  public static class CastUnionToUnion implements DrillSimpleFunc{
 
     @Param FieldReader in;
-    @Output EmbeddedHolder out;
+    @Output
+    UnionHolder out;
 
     public void setup() {}
 

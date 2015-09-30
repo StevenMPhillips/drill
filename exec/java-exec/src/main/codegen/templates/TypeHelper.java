@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import org.apache.drill.exec.vector.complex.EmbeddedVector;
+import org.apache.drill.exec.vector.complex.UnionVector;
 
 <@pp.dropOutputFile />
 <@pp.changeOutputFile name="/org/apache/drill/exec/expr/TypeHelper.java" />
@@ -73,6 +73,8 @@ public class TypeHelper {
   public static SqlAccessor getSqlAccessor(ValueVector vector){
     final MajorType type = vector.getField().getType();
     switch(type.getMinorType()){
+    case UNION:
+      return new UnionSqlAccessor((UnionVector) vector);
     <#list vv.types as type>
     <#list type.minor as minor>
     case ${minor.class?upper_case}:
@@ -102,8 +104,8 @@ public class TypeHelper {
   
   public static Class<?> getValueVectorClass(MinorType type, DataMode mode){
     switch (type) {
-    case EMBEDDED:
-      return EmbeddedVector.class;
+    case UNION:
+      return UnionVector.class;
     case MAP:
       switch (mode) {
       case OPTIONAL:
@@ -177,7 +179,7 @@ public class TypeHelper {
   
   public static Class<?> getWriterInterface( MinorType type, DataMode mode){
     switch (type) {
-    case EMBEDDED: return EmbeddedWriter.class;
+    case UNION: return UnionWriter.class;
     case MAP: return MapWriter.class;
     case LIST: return ListWriter.class;
 <#list vv.types as type>
@@ -193,8 +195,8 @@ public class TypeHelper {
   
   public static Class<?> getWriterImpl( MinorType type, DataMode mode){
     switch (type) {
-    case EMBEDDED:
-      return EmbeddedWriter.class;
+    case UNION:
+      return UnionWriter.class;
     case MAP:
       switch (mode) {
       case REQUIRED:
@@ -252,8 +254,8 @@ public class TypeHelper {
   
   public static JType getHolderType(JCodeModel model, MinorType type, DataMode mode){
     switch (type) {
-    case EMBEDDED:
-      return model._ref(EmbeddedHolder.class);
+    case UNION:
+      return model._ref(UnionHolder.class);
     case MAP:
     case LIST:
       return model._ref(ComplexHolder.class);
@@ -287,8 +289,8 @@ public class TypeHelper {
 
     switch (type.getMinorType()) {
     
-    case EMBEDDED:
-      return new EmbeddedVector(field, allocator, callBack);
+    case UNION:
+      return new UnionVector(field, allocator, callBack);
 
     case MAP:
       switch (type.getMode()) {

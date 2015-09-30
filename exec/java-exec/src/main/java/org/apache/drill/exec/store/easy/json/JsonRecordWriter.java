@@ -130,13 +130,13 @@ public class JsonRecordWriter extends JSONOutputRecordWriter implements RecordWr
   }
 
   @Override
-  public FieldConverter getNewEmbeddedConverter(int fieldId, String fieldName, FieldReader reader) {
-    return new EmbeddedJsonConverter(fieldId, fieldName, reader);
+  public FieldConverter getNewUnionConverter(int fieldId, String fieldName, FieldReader reader) {
+    return new UnionJsonConverter(fieldId, fieldName, reader);
   }
 
-  public class EmbeddedJsonConverter extends FieldConverter {
+  public class UnionJsonConverter extends FieldConverter {
 
-    public EmbeddedJsonConverter(int fieldId, String fieldName, FieldReader reader) {
+    public UnionJsonConverter(int fieldId, String fieldName, FieldReader reader) {
       super(fieldId, fieldName, reader);
     }
 

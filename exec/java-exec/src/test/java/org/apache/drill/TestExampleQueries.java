@@ -29,7 +29,6 @@ import org.apache.drill.exec.memory.TopLevelAllocator;
 import org.apache.drill.exec.record.TransferPair;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.MapVector;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
 import org.apache.drill.exec.vector.complex.impl.SingleMapWriter;
 import org.apache.drill.exec.vector.complex.writer.BaseWriter.MapWriter;
 import org.junit.Ignore;
@@ -50,7 +49,7 @@ public class TestExampleQueries extends BaseTestQuery {
 //    test("select fromType(typeOf(a)) as `type`, 1 + cast(case typeOf(a) when toType('MAP') then t.a.b when toType('BIGINT') then a when toType('LIST') then a[0] end as bigint) as a from dfs.`/tmp/a.json` t");
 //    test("select t.a.b from dfs.`/tmp/a.json` t");
 //    test("select cast(a as bigint) from dfs.`/tmp/b.json`");
-//    test("select a from dfs.`/tmp/t` where case typeOf(a) when type('BIGINT') then asBigInt(a) when type('VARCHAR') then cast(asVarChar(a) as bigint) end = 2");
+    test("select a from dfs.`/tmp/t` where case typeOf(a) when type('BIGINT') then asBigInt(a) when type('VARCHAR') then cast(asVarChar(a) as bigint) end = 2");
 //    test("select 1 + cast(case typeOf(a) when 1 then t.a.b when 6 then a when 40 then a[0] end as bigint) as a from dfs.`/tmp/a.json` t");
 //    test("select case typeOf(a) when 1 then castToEmbedded(a) when 6 then castToEmbedded(cast(a as bigint) + 1) else castToEmbedded(a) end as a from dfs.`/tmp/a.json`");
 //    test("select t.a[0] as a_0, t.a[1] as a_1 from dfs.tmp.t4 t");
@@ -63,15 +62,7 @@ public class TestExampleQueries extends BaseTestQuery {
 //    test("select a from dfs.tmp.`a.json` where typeOf(a) = type('map')");
 //    test("create table dfs_test.tmp.t as select * from dfs.tmp.`lists2.json`");
 //    test("select * from dfs.tmp.`lists2.json`");
-    test("select o_orderkey, sum(t.l.l_extendedprice * (1 - t.l.l_discount)) as revenue,\n" +
-            "o_orderdate, o_shippriority from\n" +
-            "(select o.o_orderkey, o.o_orderdate, o.o_shippriority, o.o_customer.c_mktsegment c_mktsegment, flatten(o.o_lineitems) l from dfs.`/drill/lineorders` o) t\n" +
-            "where c_mktsegment = 'HOUSEHOLD'\n" +
-            "and o_orderdate < '1995-03-25'\n" +
-            "and t.l.l_shipdate > '1995-03-25'\n" +
-            "group by o_orderkey, o_orderdate, o_shippriority\n" +
-            "order by revenue desc, o_orderdate\n" +
-            "limit 10;");
+//    test("select dataType, s.vm.runtime.device[1].runtimeState.vmDirectPathGen2InactiveReasonOther[0] from dfs.tmp.`s.json` s limit 1");
     System.out.println(getDfsTestTmpSchemaLocation());
   }
 

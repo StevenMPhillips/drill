@@ -17,7 +17,7 @@
  */
 
 <@pp.dropOutputFile />
-<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/EmbeddedFunctions.java" />
+<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/UnionFunctions.java" />
 
 
 <#include "/@includes/license.ftl" />
@@ -40,7 +40,7 @@ import org.apache.drill.exec.record.RecordBatch;
  */
 
 @SuppressWarnings("unused")
-public class EmbeddedFunctions {
+public class UnionFunctions {
 
   <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
   <#assign fields = minor.fields!type.fields />
@@ -49,31 +49,35 @@ public class EmbeddedFunctions {
   <#if !minor.class?starts_with("Decimal")>
 
   @SuppressWarnings("unused")
-  @FunctionTemplate(name = "as${name}", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
-  public static class CastEmbedded${name} implements DrillSimpleFunc {
+  @FunctionTemplate(name = "as${name}", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
+  public static class CastUnion${name} implements DrillSimpleFunc {
 
-    @Param EmbeddedHolder in;
-    @Output ${name}Holder out;
+    @Param UnionHolder in;
+    @Output Nullable${name}Holder out;
 
     public void setup() {}
 
     public void eval() {
-      in.reader.read(out);
+      if (in.isSet == 1) {
+        in.reader.read(out);
+      } else {
+        out.isSet = 0;
+      }
     }
   }
 
   @SuppressWarnings("unused")
-  @FunctionTemplate(names = {"castEMBEDDED", "castToEmbedded"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
-  public static class Cast${name}ToEmbedded implements DrillSimpleFunc {
+  @FunctionTemplate(names = {"castUNION", "castToUnion"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
+  public static class Cast${name}ToUnion implements DrillSimpleFunc {
 
     @Param Nullable${name}Holder in;
-    @Output EmbeddedHolder out;
+    @Output UnionHolder out;
 
     public void setup() {}
 
     public void eval() {
       out.reader = new org.apache.drill.exec.vector.complex.impl.Nullable${name}HolderReaderImpl(in);
-      out.isSet = 1;
+      out.isSet = in.isSet;
     }
   }
 

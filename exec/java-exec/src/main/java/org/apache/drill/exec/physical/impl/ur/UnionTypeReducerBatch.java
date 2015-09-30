@@ -30,7 +30,7 @@ import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TransferPair;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.vector.ValueVector;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
+import org.apache.drill.exec.vector.complex.impl.UnionVector;
 
 import java.util.List;
 
@@ -48,8 +48,8 @@ public class UnionTypeReducerBatch extends AbstractSingleRecordBatch<UnionTypeRe
     transferPairs.clear();
     for (VectorWrapper w : incoming) {
       ValueVector v;
-      if (w.getValueVector() instanceof EmbeddedVector && ((EmbeddedVector) w.getValueVector()).isSingleType()) {
-        v = ((EmbeddedVector) w.getValueVector()).getSingleVector();
+      if (w.getValueVector() instanceof UnionVector && ((UnionVector) w.getValueVector()).isSingleType()) {
+        v = ((UnionVector) w.getValueVector()).getSingleVector();
       } else {
         v = w.getValueVector();
       }

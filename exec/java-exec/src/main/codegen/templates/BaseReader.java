@@ -33,9 +33,9 @@ public interface BaseReader extends Positionable{
   MajorType getType();
   MaterializedField getField();
   void reset();
-  void read(EmbeddedHolder holder);
-  void read(int index, EmbeddedHolder holder);
-  void copyAsValue(EmbeddedWriter writer);
+  void read(UnionHolder holder);
+  void read(int index, UnionHolder holder);
+  void copyAsValue(UnionWriter writer);
 
   public interface MapReader extends BaseReader, Iterable<String>{
     FieldReader reader(String name);

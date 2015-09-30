@@ -45,7 +45,7 @@ import org.apache.drill.exec.util.JsonStringHashMap;
 import org.apache.drill.exec.vector.BaseValueVector;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.RepeatedMapVector.MapSingleCopier;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
+import org.apache.drill.exec.vector.complex.impl.UnionVector;
 import org.apache.drill.exec.vector.complex.impl.SingleMapReaderImpl;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
@@ -183,8 +183,8 @@ public class MapVector extends AbstractMapVector {
         // (This is similar to what happens in ScanBatch where the children cannot be added till they are
         // read). To take care of this, we ensure that the hashCode of the MaterializedField does not
         // include the hashCode of the children but is based only on MaterializedField$key.
-        if (vector instanceof EmbeddedVector && ((EmbeddedVector)vector).isSingleType()) {
-          EmbeddedVector embeddedVector = (EmbeddedVector) vector;
+        if (vector instanceof UnionVector && ((UnionVector)vector).isSingleType()) {
+          UnionVector embeddedVector = (UnionVector) vector;
           ValueVector singleTypeVector = embeddedVector.getSingleVector();
           ValueVector newVector = to.addOrGet(child, singleTypeVector.getField().getType(), singleTypeVector.getClass());
           if (allocate && to.size() != preSize) {

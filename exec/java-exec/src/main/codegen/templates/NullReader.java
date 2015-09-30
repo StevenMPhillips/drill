@@ -56,7 +56,7 @@ public class NullReader extends AbstractBaseReader implements FieldReader{
 
   public void copyAsValue(ListWriter writer) {}
 
-  public void copyAsValue(EmbeddedWriter writer) {}
+  public void copyAsValue(UnionWriter writer) {}
 
   <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
   public void read(${name}Holder holder){

@@ -115,7 +115,7 @@ public class GetSetVectorHelper {
 
     JInvocation setMethod = vector.invoke("getMutator").invoke(setMethodName).arg(indexVariable);
 
-    if (type.getMinorType() == MinorType.EMBEDDED) {
+    if (type.getMinorType() == MinorType.UNION) {
       return setMethod.arg(in.getHolder());
     }
     switch(type.getMode()){

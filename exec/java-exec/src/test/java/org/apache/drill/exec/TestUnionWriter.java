@@ -17,63 +17,30 @@
  */
 package org.apache.drill.exec;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.config.DrillConfig;
-import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.exec.expr.holders.EmbeddedHolder;
-import org.apache.drill.exec.expr.holders.NullableBigIntHolder;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.memory.RootAllocatorFactory;
-import org.apache.drill.exec.memory.TopLevelAllocator;
-import org.apache.drill.exec.physical.impl.OutputMutator;
-import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
-import org.apache.drill.exec.record.TransferPair;
-import org.apache.drill.exec.record.VectorAccessible;
 import org.apache.drill.exec.record.VectorContainer;
-import org.apache.drill.exec.record.VectorWrapper;
-import org.apache.drill.exec.record.WritableBatch;
 import org.apache.drill.exec.store.TestOutputMutator;
 import org.apache.drill.exec.store.easy.json.JsonProcessor.ReadState;
 import org.apache.drill.exec.util.VectorUtil;
-import org.apache.drill.exec.vector.NullableBigIntVector;
-import org.apache.drill.exec.vector.UInt1Vector;
 import org.apache.drill.exec.vector.complex.fn.JsonReader;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedReader;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedWriter;
+import org.apache.drill.exec.vector.complex.impl.UnionReader;
+import org.apache.drill.exec.vector.complex.impl.UnionVector;
+import org.apache.drill.exec.vector.complex.impl.UnionWriter;
 import org.apache.drill.exec.vector.complex.impl.VectorContainerWriter;
-import org.apache.drill.exec.vector.complex.writer.BaseWriter.MapWriter;
-import org.apache.drill.exec.vector.complex.writer.BigIntWriter;
-import org.apache.drill.exec.vector.complex.writer.IntWriter;
-import org.apache.drill.exec.vector.complex.writer.VarCharWriter;
-import org.codehaus.jackson.map.SerializationConfig.Feature;
 import org.junit.Test;
-import org.msgpack.core.MessageUnpacker;
-import org.msgpack.core.buffer.InputStreamBufferInput;
-import org.msgpack.core.buffer.MessageBufferInput;
-import org.msgpack.value.ImmutableValue;
-import org.msgpack.value.Value;
 
-import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.util.List;
-import java.util.Map;
 
-public class TestEmbeddedWriter {
+public class TestUnionWriter {
 
   /*
   @Test
   public void test() throws Exception {
     BufferAllocator allocator = new TopLevelAllocator(DrillConfig.create());
-    EmbeddedWriter writer = new EmbeddedWriter(allocator);
+    UnionWriter writer = new UnionWriter(allocator);
     writer.allocate();
 
     MapWriter rootWriter = writer.asMap();
@@ -132,7 +99,7 @@ public class TestEmbeddedWriter {
 
 //    writer.setValueCount(3);
 
-//    EmbeddedVector vector = writer.getData();
+//    UnionVector vector = writer.getData();
 
     {
 //      Object obj = vector.getAccessor().getObject(0);
@@ -150,11 +117,11 @@ public class TestEmbeddedWriter {
       System.out.println(obj);
     }
 
-//    EmbeddedReader reader = new EmbeddedReader(vector);
+//    UnionReader reader = new UnionReader(vector);
 
     reader.setPosition(0);
 
-    EmbeddedHolder holder = new EmbeddedHolder();
+    UnionHolder holder = new UnionHolder();
     reader.reader("a").read(holder);
 
     System.out.println(holder.reader.readLong());
@@ -211,8 +178,8 @@ public class TestEmbeddedWriter {
     container.setRecordCount(cnt);
     writer.setValueCount(cnt);
 //    String name = "graph";
-//    final EmbeddedVector v = (EmbeddedVector) container.getValueAccessorById(EmbeddedVector.class, container.getValueVectorId(SchemaPath.getSimplePath(name)).getFieldIds()).getValueVector();
-//    final EmbeddedReader r = new EmbeddedReader(v);
+//    final UnionVector v = (UnionVector) container.getValueAccessorById(UnionVector.class, container.getValueVectorId(SchemaPath.getSimplePath(name)).getFieldIds()).getValueVector();
+//    final UnionReader r = new UnionReader(v);
 
     VectorUtil.showVectorAccessibleContent(container, "  |---|  ");
 
@@ -220,7 +187,7 @@ public class TestEmbeddedWriter {
 //      System.out.println(v.getAccessor().getObject(i));
 //    }
 
-//    final NullableBigIntVector v = ((EmbeddedVector) mutator.iterator().next().getValueVector()).getBigInt();
+//    final NullableBigIntVector v = ((UnionVector) mutator.iterator().next().getValueVector()).getBigInt();
 
 /*
     long t1 = System.nanoTime();

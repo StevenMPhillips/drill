@@ -17,7 +17,7 @@
  */
 
 <@pp.dropOutputFile />
-<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/EmbeddedWriter.java" />
+<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/UnionWriter.java" />
 
 
 <#include "/@includes/license.ftl" />
@@ -30,24 +30,24 @@ package org.apache.drill.exec.vector.complex.impl;
  * This class is generated using freemarker and the ${.template_name} template.
  */
 @SuppressWarnings("unused")
-public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
+public class UnionWriter extends AbstractFieldWriter implements FieldWriter {
 
-  EmbeddedVector data;
+  UnionVector data;
   private MapWriter mapWriter;
-  private EmbeddedListWriter listWriter;
+  private UnionListWriter listWriter;
   private List<BaseWriter> writers = Lists.newArrayList();
 
-  public EmbeddedWriter(BufferAllocator allocator) {
+  public UnionWriter(BufferAllocator allocator) {
     super(null);
-//    data = new EmbeddedVector(MaterializedField.create("root", Types.optional(MinorType.EMBEDDED)), allocator);
+//    data = new UnionVector(MaterializedField.create("root", Types.optional(MinorType.EMBEDDED)), allocator);
   }
 
-  public EmbeddedWriter(EmbeddedVector vector) {
+  public UnionWriter(UnionVector vector) {
     super(null);
     data = vector;
   }
 
-  public EmbeddedWriter(EmbeddedVector vector, FieldWriter parent) {
+  public UnionWriter(UnionVector vector, FieldWriter parent) {
     super(null);
     data = vector;
   }
@@ -83,10 +83,6 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
     getListWriter(true).endList();
   }
 
-  public void writeString(String s) {
-    fail("string");
-  }
-
   private MapWriter getMapWriter(boolean create) {
     if (create && mapWriter == null) {
       mapWriter = new SingleMapWriter(data.getMap(), null);
@@ -103,7 +99,7 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
 
   private ListWriter getListWriter(boolean create) {
     if (create && listWriter == null) {
-      listWriter = new EmbeddedListWriter(data.getList());
+      listWriter = new UnionListWriter(data.getList());
       listWriter.setPosition(idx());
       writers.add(listWriter);
     }
@@ -189,16 +185,9 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
   <#if lowerName == "int" ><#assign lowerName = "integer" /></#if>
   <#assign upperName = minor.class?upper_case />
   <#assign capName = minor.class?cap_first />
-  <#if minor.class?starts_with("Decimal") >
-  public ${capName}Writer ${lowerName}(String name, int scale, int precision) {
-    fail("${capName}");
-    return null;
-  }
-  </#if>
-
+  <#if !minor.class?starts_with("Decimal")>
   @Override
   public ${capName}Writer ${lowerName}(String name) {
-    AbstractBaseWriter.check(name);
     data.getMutator().setType(idx(), MinorType.MAP);
     getMapWriter(true).setPosition(idx());
     return getMapWriter(true).${lowerName}(name);
@@ -210,7 +199,7 @@ public class EmbeddedWriter extends AbstractFieldWriter implements FieldWriter {
     getListWriter(true).setPosition(idx());
     return getListWriter(true).${lowerName}();
   }
-
+  </#if>
   </#list></#list>
 
   @Override

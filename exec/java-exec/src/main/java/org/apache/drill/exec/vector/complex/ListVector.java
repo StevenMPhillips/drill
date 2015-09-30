@@ -28,9 +28,9 @@ import org.apache.drill.exec.util.JsonStringArrayList;
 import org.apache.drill.exec.vector.UInt4Vector;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.impl.ComplexCopier;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedListReader;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedListWriter;
-import org.apache.drill.exec.vector.complex.impl.EmbeddedVector;
+import org.apache.drill.exec.vector.complex.impl.UnionListReader;
+import org.apache.drill.exec.vector.complex.impl.UnionListWriter;
+import org.apache.drill.exec.vector.complex.impl.UnionVector;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 import org.apache.drill.exec.vector.complex.writer.FieldWriter;
 
@@ -41,18 +41,18 @@ public class ListVector extends BaseRepeatedValueVector {
   UInt4Vector offsets;
   Mutator mutator = new Mutator();
   Accessor accessor = new Accessor();
-  EmbeddedListWriter writer;
-  EmbeddedListReader reader;
+  UnionListWriter writer;
+  UnionListReader reader;
 
   public ListVector(MaterializedField field, BufferAllocator allocator, CallBack callBack) {
-    super(field, allocator, new EmbeddedVector(field, allocator, callBack));
+    super(field, allocator, new UnionVector(field, allocator, callBack));
     offsets = getOffsetVector();
     this.field.addChild(getDataVector().getField());
-    this.writer = new EmbeddedListWriter(this);
-    this.reader = new EmbeddedListReader(this);
+    this.writer = new UnionListWriter(this);
+    this.reader = new UnionListReader(this);
   }
 
-  public EmbeddedListWriter getWriter() {
+  public UnionListWriter getWriter() {
     return writer;
   }
 
@@ -77,8 +77,8 @@ public class ListVector extends BaseRepeatedValueVector {
   }
 
   @Override
-  public EmbeddedVector getDataVector() {
-    return (EmbeddedVector) vector;
+  public UnionVector getDataVector() {
+    return (UnionVector) vector;
   }
 
   @Override
@@ -150,7 +150,7 @@ public class ListVector extends BaseRepeatedValueVector {
       final UInt4Vector.Accessor offsetsAccessor = offsets.getAccessor();
       final int start = offsetsAccessor.get(index);
       final int end = offsetsAccessor.get(index + 1);
-      final EmbeddedVector.Accessor valuesAccessor = getDataVector().getAccessor();
+      final UnionVector.Accessor valuesAccessor = getDataVector().getAccessor();
       for(int i = start; i < end; i++) {
         vals.add(valuesAccessor.getObject(i));
       }
