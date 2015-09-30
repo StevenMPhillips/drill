@@ -178,7 +178,7 @@ public class FilterRecordBatch extends AbstractSingleRecordBatch<Filter>{
     final ClassGenerator<Filterer> cg = CodeGenerator.getRoot(Filterer.TEMPLATE_DEFINITION2, context.getFunctionRegistry());
 
     final LogicalExpression expr = ExpressionTreeMaterializer.materialize(popConfig.getExpr(), incoming, collector,
-            context.getFunctionRegistry(), false, context.getOptions().getOption(ExecConstants.ENABLE_UNION_TYPE));
+            context.getFunctionRegistry(), false, unionTypeEnabled);
     if (collector.hasErrors()) {
       throw new SchemaChangeException(String.format("Failure while trying to materialize incoming schema.  Errors:\n %s.", collector.toErrorString()));
     }

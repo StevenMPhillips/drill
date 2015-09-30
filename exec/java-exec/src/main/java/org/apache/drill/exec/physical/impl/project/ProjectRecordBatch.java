@@ -382,7 +382,7 @@ public class ProjectRecordBatch extends AbstractSingleRecordBatch<Project> {
       }
 
       final LogicalExpression expr = ExpressionTreeMaterializer.materialize(namedExpression.getExpr(), incoming,
-              collector, context.getFunctionRegistry(), true, context.getOptions().getOption(ExecConstants.ENABLE_UNION_TYPE));
+              collector, context.getFunctionRegistry(), true, unionTypeEnabled);
       final MaterializedField outputField = MaterializedField.create(outputName, expr.getMajorType());
       if (collector.hasErrors()) {
         throw new SchemaChangeException(String.format("Failure while trying to materialize incoming schema.  Errors:\n %s.", collector.toErrorString()));

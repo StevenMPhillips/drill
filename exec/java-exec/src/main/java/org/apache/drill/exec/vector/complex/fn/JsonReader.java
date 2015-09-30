@@ -51,7 +51,7 @@ public class JsonReader extends BaseJsonProcessor {
   private boolean atLeastOneWrite = false;
   private final MapVectorOutput mapOutput;
   private final ListVectorOutput listOutput;
-  private final boolean extended = false;
+  private final boolean extended = true;
   private final boolean readNumbersAsDouble;
 
   /**

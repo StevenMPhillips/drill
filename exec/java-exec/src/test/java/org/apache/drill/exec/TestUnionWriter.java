@@ -29,6 +29,7 @@ import org.apache.drill.exec.vector.complex.impl.UnionReader;
 import org.apache.drill.exec.vector.complex.impl.UnionVector;
 import org.apache.drill.exec.vector.complex.impl.UnionWriter;
 import org.apache.drill.exec.vector.complex.impl.VectorContainerWriter;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.FileInputStream;
@@ -155,6 +156,7 @@ public class TestUnionWriter {
   }
 
   */
+  @Ignore
   @Test
   public void q() throws IOException {
     FileInputStream input = new FileInputStream("/tmp/a.json");
