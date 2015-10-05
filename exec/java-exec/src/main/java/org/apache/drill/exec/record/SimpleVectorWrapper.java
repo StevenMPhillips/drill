@@ -117,7 +117,7 @@ public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper
       TypedFieldId.Builder builder = TypedFieldId.newBuilder();
       builder.addId(id).remainder(expectedPath.getRootSegment().getChild());
       List<MinorType> minorTypes = ((UnionVector) v).getSubTypes();
-      MajorType.Builder majorTypeBuilder = MajorType.newBuilder();
+      MajorType.Builder majorTypeBuilder = MajorType.newBuilder().setMinorType(MinorType.UNION);
       for (MinorType type : minorTypes) {
         majorTypeBuilder.addSubType(type);
       }
