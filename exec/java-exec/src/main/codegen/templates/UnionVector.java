@@ -60,6 +60,9 @@ public class UnionVector implements ValueVector {
   private State state = State.INIT;
   private int singleType = 0;
   private ValueVector singleVector;
+  private MajorType majorType;
+
+  private final CallBack callBack;
 
   private enum State {
     INIT, SINGLE, MULTI
@@ -72,6 +75,8 @@ public class UnionVector implements ValueVector {
     internalMapWriter = new SingleMapWriter(internalMap, null, true, true);
     this.typeVector = internalMap.addOrGet("types", Types.required(MinorType.UINT1), UInt1Vector.class);
     this.field.addChild(internalMap.getField().clone());
+    this.majorType = Types.optional(MinorType.UNION);
+    this.callBack = callBack;
   }
 
   private void updateState(ValueVector v) {
@@ -82,6 +87,17 @@ public class UnionVector implements ValueVector {
     } else {
       state = State.MULTI;
       singleVector = null;
+    }
+  }
+
+  public List<MinorType> getSubTypes() {
+    return majorType.getSubTypeList();
+  }
+
+  private void addSubType(MinorType type) {
+    majorType =  MajorType.newBuilder(this.majorType).addSubType(type).build();
+    if (callBack != null) {
+      callBack.doWork();
     }
   }
 
@@ -100,6 +116,7 @@ public class UnionVector implements ValueVector {
       int vectorCount = internalMap.size();
       mapVector = internalMap.addOrGet("map", Types.optional(MinorType.MAP), MapVector.class);
       updateState(mapVector);
+      addSubType(MinorType.MAP);
       if (internalMap.size() > vectorCount) {
         mapVector.allocateNew();
       }
@@ -119,6 +136,7 @@ public class UnionVector implements ValueVector {
       int vectorCount = internalMap.size();
       ${uncappedName}Vector = internalMap.addOrGet("${uncappedName}", Types.optional(MinorType.${name?upper_case}), Nullable${name}Vector.class);
       updateState(${uncappedName}Vector);
+      addSubType(MinorType.${name?upper_case});
       if (internalMap.size() > vectorCount) {
         ${uncappedName}Vector.allocateNew();
       }
@@ -135,6 +153,7 @@ public class UnionVector implements ValueVector {
       int vectorCount = internalMap.size();
       listVector = internalMap.addOrGet("list", Types.optional(MinorType.LIST), ListVector.class);
       updateState(listVector);
+      addSubType(MinorType.LIST);
       if (internalMap.size() > vectorCount) {
         listVector.allocateNew();
       }
