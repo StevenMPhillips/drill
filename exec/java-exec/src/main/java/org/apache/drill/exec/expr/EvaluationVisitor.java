@@ -18,9 +18,13 @@
 package org.apache.drill.exec.expr;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
+import com.google.common.collect.Maps;
 import org.apache.drill.common.expression.BooleanOperator;
 import org.apache.drill.common.expression.CastExpression;
 import org.apache.drill.common.expression.ConvertExpression;
@@ -78,13 +82,16 @@ import com.sun.codemodel.JVar;
 public class EvaluationVisitor {
 
   private final FunctionImplementationRegistry registry;
+  private boolean eliminateCommonExpressions;
 
   public EvaluationVisitor(FunctionImplementationRegistry registry) {
     super();
     this.registry = registry;
   }
 
-  public HoldingContainer addExpr(LogicalExpression e, ClassGenerator<?> generator) {
+  public HoldingContainer addExpr(LogicalExpression e, ClassGenerator<?> generator, boolean eliminateCommonExpressions) {
+
+    this.eliminateCommonExpressions = eliminateCommonExpressions;
 
     Set<LogicalExpression> constantBoundaries;
     if (generator.getMappingSet().hasEmbeddedConstant()) {
@@ -93,6 +100,56 @@ public class EvaluationVisitor {
       constantBoundaries = ConstantExpressionIdentifier.getConstantExpressionSet(e);
     }
     return e.accept(new ConstantFilter(constantBoundaries), generator);
+  }
+
+  private class ExpressionHolder {
+    private LogicalExpression expression;
+
+    ExpressionHolder(LogicalExpression expression) {
+      this.expression = expression;
+    }
+
+    @Override
+    public int hashCode() {
+      return expression.accept(new HashVisitor(), null);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (!(obj instanceof ExpressionHolder)) {
+        return false;
+      }
+      return expression.accept(new EqualityVisitor(), ((ExpressionHolder) obj).expression);
+    }
+  }
+
+  Map<ExpressionHolder,HoldingContainer> previousExpressions = Maps.newHashMap();
+
+  Stack<Map<ExpressionHolder,HoldingContainer>> mapStack = new Stack();
+
+  private void newScope() {
+    mapStack.push(previousExpressions);
+    previousExpressions = new HashMap(previousExpressions);
+  }
+
+  private void leaveScope() {
+    previousExpressions.clear();
+    previousExpressions = mapStack.pop();
+  }
+
+  private HoldingContainer getPrevious(LogicalExpression expression) {
+    if (!eliminateCommonExpressions) {
+      return null;
+    }
+
+    return previousExpressions.get(new ExpressionHolder(expression));
+  }
+
+  private void put(LogicalExpression expression, HoldingContainer hc) {
+    if (!eliminateCommonExpressions) {
+      return;
+    }
+    previousExpressions.put(new ExpressionHolder(expression), hc);
   }
 
   private class EvalVisitor extends AbstractExprVisitor<HoldingContainer, ClassGenerator<?>, RuntimeException> {
@@ -106,18 +163,31 @@ public class EvaluationVisitor {
     @Override
     public HoldingContainer visitBooleanOperator(BooleanOperator op,
         ClassGenerator<?> generator) throws RuntimeException {
+      HoldingContainer hc = getPrevious(op);
+      if (hc != null) {
+        return hc;
+      }
+      newScope();
       if (op.getName().equals("booleanAnd")) {
-        return visitBooleanAnd(op, generator);
+        hc = visitBooleanAnd(op, generator);
       } else if(op.getName().equals("booleanOr")) {
-        return visitBooleanOr(op, generator);
+        hc = visitBooleanOr(op, generator);
       } else {
         throw new UnsupportedOperationException("BooleanOperator can only be booleanAnd, booleanOr. You are using " + op.getName());
       }
+      leaveScope();
+      put(op, hc);
+      return hc;
     }
 
     @Override
     public HoldingContainer visitFunctionHolderExpression(FunctionHolderExpression holderExpr,
         ClassGenerator<?> generator) throws RuntimeException {
+
+      HoldingContainer hc = getPrevious(holderExpr);
+      if (hc != null) {
+        return hc;
+      }
 
       AbstractFuncHolder holder = (AbstractFuncHolder) holderExpr.getHolder();
 
@@ -138,14 +208,21 @@ public class EvaluationVisitor {
         generator.getMappingSet().exitChild();
       }
 
-      return holder.renderEnd(generator, args, workspaceVars);
+      HoldingContainer out = holder.renderEnd(generator, args, workspaceVars);
+      put(holderExpr, out);
+      return out;
     }
 
     @Override
     public HoldingContainer visitIfExpression(IfExpression ifExpr, ClassGenerator<?> generator) throws RuntimeException {
       JBlock local = generator.getEvalBlock();
 
-      HoldingContainer output = generator.declare(ifExpr.getMajorType());
+      HoldingContainer output = getPrevious(ifExpr);
+      if (output != null) {
+        return output;
+      }
+
+      output = generator.declare(ifExpr.getMajorType());
 
       JConditional jc = null;
       JBlock conditionalBlock = new JBlock(false, false);
@@ -168,7 +245,9 @@ public class EvaluationVisitor {
 
       generator.nestEvalBlock(jc._then());
 
+      newScope();
       HoldingContainer thenExpr = c.expression.accept(this, generator);
+      leaveScope();
 
       generator.unNestEvalBlock();
 
@@ -183,7 +262,9 @@ public class EvaluationVisitor {
 
       generator.nestEvalBlock(jc._else());
 
+      newScope();
       HoldingContainer elseExpr = ifExpr.elseExpression.accept(this, generator);
+      leaveScope();
 
       generator.unNestEvalBlock();
 
@@ -196,6 +277,7 @@ public class EvaluationVisitor {
         jc._else().assign(output.getHolder(), elseExpr.getHolder());
       }
       local.add(conditionalBlock);
+      put(ifExpr, output);
       return output;
     }
 
@@ -335,6 +417,10 @@ public class EvaluationVisitor {
     private HoldingContainer visitValueVectorReadExpression(ValueVectorReadExpression e, ClassGenerator<?> generator)
         throws RuntimeException {
       // declare value vector
+      HoldingContainer hc = getPrevious(e);
+      if (hc != null) {
+        return hc;
+      }
 
       JExpression vv1 = generator.declareVectorValueSetupAndMember(generator.getMappingSet().getIncoming(),
           e.getFieldId());
@@ -448,7 +534,8 @@ public class EvaluationVisitor {
             eval.assign(complexReader, expr);
           }
 
-          HoldingContainer hc = new HoldingContainer(e.getMajorType(), complexReader, null, null, false, true);
+          hc = new HoldingContainer(e.getMajorType(), complexReader, null, null, false, true);
+          put(e, hc);
           return hc;
         } else {
           if (seg != null) {
@@ -460,6 +547,7 @@ public class EvaluationVisitor {
 
       }
 
+      put(e, out);
       return out;
     }
 
@@ -625,7 +713,11 @@ public class EvaluationVisitor {
       //    null    false    false
       //    null    null     null
       for (int i = 0; i < op.args.size(); i++) {
-        arg = op.args.get(i).accept(this, generator);
+        arg = getPrevious(op.args.get(i));
+        if (arg == null) {
+          arg = op.args.get(i).accept(this, generator);
+          put(op.args.get(i), arg);
+        }
 
         JBlock earlyExit = null;
         if (arg.isOptional()) {
@@ -688,7 +780,11 @@ public class EvaluationVisitor {
       //    null    null     null
 
       for (int i = 0; i < op.args.size(); i++) {
-        arg = op.args.get(i).accept(this, generator);
+        arg = getPrevious(op.args.get(i));
+        if (arg == null) {
+          arg = op.args.get(i).accept(this, generator);
+          put(op.args.get(i), arg);
+        }
 
         JBlock earlyExit = null;
         if (arg.isOptional()) {
