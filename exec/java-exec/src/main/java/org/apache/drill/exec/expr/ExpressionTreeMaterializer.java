@@ -329,7 +329,7 @@ public class ExpressionTreeMaterializer {
     private boolean hasUnionInput(FunctionCall call) {
       for (LogicalExpression arg : call.args) {
         if (arg.getMajorType().getMinorType() == MinorType.UNION) {
-          if (!call.getName().startsWith("as") && !call.getName().startsWith("is") && !call.getName().startsWith("typeOf")) {
+          if (!call.getName().toLowerCase().startsWith("as") && !call.getName().toLowerCase().startsWith("is") && !call.getName().toLowerCase().startsWith("typeof")) {
             return true;
           }
         }
@@ -367,7 +367,7 @@ public class ExpressionTreeMaterializer {
           ifConditions.add(condition);
         }
 
-        IfExpression ifExpression = IfExpression.newBuilder().setIfCondition(ifConditions.poll()).setElse(NullExpression.INSTANCE).build();
+        LogicalExpression ifExpression = ifConditions.poll().expression;
 
         while (!ifConditions.isEmpty()) {
           ifExpression = IfExpression.newBuilder().setIfCondition(ifConditions.poll()).setElse(ifExpression).build();

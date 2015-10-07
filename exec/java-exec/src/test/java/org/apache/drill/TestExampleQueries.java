@@ -36,9 +36,10 @@ public class TestExampleQueries extends BaseTestQuery {
   public void q() throws Exception {
     testNoResult("use dfs.tmp");
 //    test("select 1 + cast(a as bigint) from t");
-    test("select cast(1 as bigint) + case typeOf(a) when type('bigint') then asBigInt(a) when type('varchar') then cast(asVarChar(a) as bigint) end from t");
+//    test("select cast(1 as bigint) + case typeOf(a) when type('bigint') then asBigInt(a) when type('varchar') then cast(asVarChar(a) as bigint) end from t");
 //    test("select a from t where typeOf(a) = type('bigint')");
-//    test("select a_b, typeString(typeOf(a_b)) type from (select a + b as a_b from t3)");
+//    test("select a_b, typeOf(a_b) type from (select a + b as a_b from t3)");
+    test("select sum(a) from t");
   }
 
   @Test // see DRILL-2328
