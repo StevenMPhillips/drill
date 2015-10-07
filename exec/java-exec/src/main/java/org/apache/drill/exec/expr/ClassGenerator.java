@@ -153,11 +153,13 @@ public class ClassGenerator<T>{
 
   public void nestEvalBlock(JBlock block) {
     String methodName = getCurrentMapping().getMethodName(BlockType.EVAL);
+    evaluationVisitor.newScope();
     this.blocks[sig.get(methodName)].addLast(block);
   }
 
   public void unNestEvalBlock() {
     String methodName = getCurrentMapping().getMethodName(BlockType.EVAL);
+    evaluationVisitor.leaveScope();
     this.blocks[sig.get(methodName)].removeLast();
   }
 
@@ -221,6 +223,7 @@ public class ClassGenerator<T>{
 //    logger.debug("Adding next write {}", ex);
     if (rotate) {
       rotateBlock();
+      evaluationVisitor.previousExpressions.clear();
     }
     return evaluationVisitor.addExpr(ex, this);
   }
