@@ -18,27 +18,67 @@
 package org.apache.drill.exec.store.parquet;
 
 import com.google.common.base.Joiner;
+import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.drill.BaseTestQuery;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.drill.PlanTestBase;
+import org.apache.drill.common.util.TestTools;
+import org.apache.commons.io.FileUtils;
+import org.apache.drill.exec.store.dfs.DrillPathFilter;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.nio.file.Files;
 
-public class TestParquetMetadataCache extends BaseTestQuery {
+import static org.junit.Assert.assertEquals;
+
+public class TestParquetMetadataCache extends PlanTestBase {
+  private static final String WORKING_PATH = TestTools.getWorkingPath();
+  private static final String TEST_RES_PATH = WORKING_PATH + "/src/test/resources";
+  private static final String tableName = "parquetTable";
+
+
+  @BeforeClass
+  public static void copyData() throws Exception {
+    // copy the data into the temporary location
+    String tmpLocation = getDfsTestTmpSchemaLocation();
+    File dataDir = new File(tmpLocation + Path.SEPARATOR + tableName);
+    dataDir.mkdir();
+    FileUtils.copyDirectory(new File(String.format(String.format("%s/multilevel/parquet", TEST_RES_PATH))),
+        dataDir);
+  }
+
+  @Test
+  public void testPartitionPruningWithMetadataCache() throws Exception {
+    test(String.format("refresh table metadata dfs_test.`%s/%s`", getDfsTestTmpSchemaLocation(), tableName));
+    checkForMetadataFile(tableName);
+    String query = String.format("select dir0, dir1, o_custkey, o_orderdate from dfs_test.`%s/%s` " +
+            " where dir0=1994 and dir1='Q1'",
+        getDfsTestTmpSchemaLocation(), tableName);
+    int expectedRowCount = 10;
+    int expectedNumFiles = 1;
+
+    int actualRowCount = testSql(query);
+    assertEquals(expectedRowCount, actualRowCount);
+    String numFilesPattern = "numFiles=" + expectedNumFiles;
+    String usedMetaPattern = "usedMetadataFile=true";
+    PlanTestBase.testPlanMatchingPatterns(query, new String[]{numFilesPattern, usedMetaPattern}, new String[] {"Filter"});
+  }
 
   @Test
   public void testCache() throws Exception {
     String tableName = "nation_ctas";
     test("use dfs_test.tmp");
     test(String.format("create table `%s/t1` as select * from cp.`tpch/nation.parquet`", tableName));
+    test(String.format("create table `%s/t2` as select * from cp.`tpch/nation.parquet`", tableName));
     test(String.format("refresh table metadata %s", tableName));
     checkForMetadataFile(tableName);
-    int rowCount = testSql(String.format("select * from %s", tableName));
-    Assert.assertEquals(25, rowCount);
+    String query = String.format("select * from %s", tableName);
+    int rowCount = testSql(query);
+    Assert.assertEquals(50, rowCount);
+    testPlanMatchingPatterns(query, new String[] { "usedMetadataFile=true" }, new String[]{});
   }
 
   @Test
@@ -52,6 +92,16 @@ public class TestParquetMetadataCache extends BaseTestQuery {
     test(String.format("create table `%s/t2` as select * from cp.`tpch/nation.parquet`", tableName));
     int rowCount = testSql(String.format("select * from %s", tableName));
     Assert.assertEquals(50, rowCount);
+  }
+
+  @Test
+  public void testCacheWithSubschema() throws Exception {
+    String tableName = "nation_ctas_subschema";
+    test(String.format("create table dfs_test.tmp.`%s/t1` as select * from cp.`tpch/nation.parquet`", tableName));
+    test(String.format("refresh table metadata dfs_test.tmp.%s", tableName));
+    checkForMetadataFile(tableName);
+    int rowCount = testSql(String.format("select * from dfs_test.tmp.%s", tableName));
+    Assert.assertEquals(25, rowCount);
   }
 
   private void checkForMetadataFile(String table) throws Exception {
