@@ -26,6 +26,7 @@ import java.util.Queue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.common.base.Preconditions;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.expression.BooleanOperator;
 import org.apache.drill.common.expression.CastExpression;
@@ -350,6 +351,7 @@ public class ExpressionTreeMaterializer {
         }
 
         List<MinorType> subTypes = majorType.getSubTypeList();
+        Preconditions.checkState(subTypes.size() > 0, "Union type has no subtypes");
 
         Queue<IfCondition> ifConditions = Lists.newLinkedList();
 

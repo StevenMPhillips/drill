@@ -229,6 +229,7 @@ public class UnionVector implements ValueVector {
   public void transferTo(UnionVector target) {
     internalMap.makeTransferPair(target.internalMap).transfer();
     target.valueCount = valueCount;
+    target.majorType = majorType;
   }
 
   public void copyFrom(int inIndex, int outIndex, UnionVector from) {
