@@ -317,6 +317,20 @@ public class UnionVector implements ValueVector {
   }
 
   @Override
+  public int getBufferSizeFor(final int valueCount) {
+    if (valueCount == 0) {
+      return 0;
+    }
+
+    long bufferSize = 0;
+    for (final ValueVector v : (Iterable<ValueVector>) this) {
+      bufferSize += v.getBufferSizeFor(valueCount);
+    }
+
+    return (int) bufferSize;
+  }
+
+  @Override
   public DrillBuf[] getBuffers(boolean clear) {
     return internalMap.getBuffers(clear);
   }
@@ -330,7 +344,9 @@ public class UnionVector implements ValueVector {
 
   @Override
   public Iterator<ValueVector> iterator() {
-    return null;
+    List<ValueVector> vectors = Lists.newArrayList(internalMap.iterator());
+    vectors.add(typeVector);
+    return vectors.iterator();
   }
 
   public class Accessor extends BaseValueVector.BaseAccessor {
