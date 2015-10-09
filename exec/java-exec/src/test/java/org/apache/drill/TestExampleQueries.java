@@ -38,8 +38,10 @@ public class TestExampleQueries extends BaseTestQuery {
 //    test("select 1 + cast(a as bigint) from t");
 //    test("select cast(1 as bigint) + case typeOf(a) when type('bigint') then asBigInt(a) when type('varchar') then cast(asVarChar(a) as bigint) end from t");
 //    test("select a from t where typeOf(a) = type('bigint')");
-    test("select a_b, typeOf(a_b) type from (select a + b as a_b from t3)");
-//    test("select sum(a) from t");
+//    test("select a_b, typeOf(a_b) type from (select a + b as a_b from t3)");
+    test("alter session set `planner.enable_streamagg` = false");
+//    test("select sum(cast(a as bigint)) from t3 group by cast(b as bigint)");
+    test("select a from t4 order by b");
   }
 
   @Test // see DRILL-2328

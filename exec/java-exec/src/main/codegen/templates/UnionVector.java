@@ -243,6 +243,11 @@ public class UnionVector implements ValueVector {
     copyFrom(inIndex, outIndex, from);
   }
 
+  public void addVector(ValueVector v) {
+    internalMap.putChild(v.getField().getType().getMinorType().name().toLowerCase(), v);
+    addSubType(v.getField().getType().getMinorType());
+  }
+
   private class TransferImpl implements TransferPair {
 
     UnionVector to;
