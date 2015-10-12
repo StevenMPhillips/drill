@@ -75,7 +75,7 @@ public class UnionVector implements ValueVector {
     internalMapWriter = new SingleMapWriter(internalMap, null, true, true);
     this.typeVector = internalMap.addOrGet("types", Types.required(MinorType.UINT1), UInt1Vector.class);
     this.field.addChild(internalMap.getField().clone());
-    this.majorType = Types.optional(MinorType.UNION);
+    this.majorType = field.getType();
     this.callBack = callBack;
   }
 
