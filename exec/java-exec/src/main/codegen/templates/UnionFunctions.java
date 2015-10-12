@@ -81,17 +81,16 @@ public class UnionFunctions {
   }
 
   @SuppressWarnings("unused")
-  @FunctionTemplate(names = {"castUNION", "castToUnion"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
+  @FunctionTemplate(names = {"castUNION", "castToUnion"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.NULL_IF_NULL)
   public static class Cast${name}ToUnion implements DrillSimpleFunc {
 
-    @Param Nullable${name}Holder in;
+    @Param ${name}Holder in;
     @Output UnionHolder out;
 
     public void setup() {}
 
     public void eval() {
-      out.reader = new org.apache.drill.exec.vector.complex.impl.Nullable${name}HolderReaderImpl(in);
-      out.isSet = in.isSet;
+      out.reader = new org.apache.drill.exec.vector.complex.impl.${name}HolderReaderImpl(in);
     }
   }
 
