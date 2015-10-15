@@ -57,7 +57,7 @@ abstract class AbstractPromotableFieldWriter extends AbstractFieldWriter {
 
   @Override
   public void endList() {
-    getWriter(MinorType.LIST).startList();
+    getWriter(MinorType.LIST).endList();
   }
 
   <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
@@ -112,7 +112,7 @@ abstract class AbstractPromotableFieldWriter extends AbstractFieldWriter {
 
   @Override
   public ${capName}Writer ${lowerName}() {
-    return getWriter(MinorType.MAP).${lowerName}();
+    return getWriter(MinorType.LIST).${lowerName}();
   }
 
   </#if>

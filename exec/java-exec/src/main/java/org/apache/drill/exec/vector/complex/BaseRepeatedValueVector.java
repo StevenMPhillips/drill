@@ -77,7 +77,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
         clear();
       }
     }
-    offsets.zeroVector();
+//    offsets.zeroVector();
     return success;
   }
 
@@ -186,6 +186,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
     if (vector == DEFAULT_DATA_VECTOR && descriptor.getType().getMinorType() != TypeProtos.MinorType.LATE) {
       final MaterializedField field = descriptor.withName(DATA_VECTOR_NAME).getField();
       vector = TypeHelper.getNewVector(field, allocator);
+      vector.allocateNew();
       // returned vector must have the same field
       assert field.equals(vector.getField());
       getField().addChild(field);
@@ -200,6 +201,11 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
     }
 
     return new AddOrGetResult<>((T)vector, created);
+  }
+
+  protected void replaceDataVector(ValueVector v) {
+    vector.clear();
+    vector = v;
   }
 
   public abstract class BaseRepeatedAccessor extends BaseValueVector.BaseAccessor implements RepeatedAccessor {

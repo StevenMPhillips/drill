@@ -127,7 +127,7 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
       if (!unionEnabled){
         writer = new SingleListWriter(name,container,this);
       } else{
-        writer = new PromotableWriter(container.addOrGet(name, Types.optional(MinorType.UNION), UnionVector.class), container);
+        writer = new PromotableWriter(container.addOrGet(name, Types.optional(MinorType.LIST), ListVector.class), container);
       }
       if (container.size() > vectorCount) {
         writer.allocate();

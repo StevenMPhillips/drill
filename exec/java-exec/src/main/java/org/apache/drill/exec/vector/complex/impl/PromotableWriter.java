@@ -24,18 +24,24 @@ import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.TransferPair;
 import org.apache.drill.exec.vector.ValueVector;
+import org.apache.drill.exec.vector.VectorDescriptor;
+import org.apache.drill.exec.vector.ZeroVector;
 import org.apache.drill.exec.vector.complex.AbstractMapVector;
+import org.apache.drill.exec.vector.complex.ListVector;
 import org.apache.drill.exec.vector.complex.MapVector;
 import org.apache.drill.exec.vector.complex.writer.FieldWriter;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 public class PromotableWriter extends AbstractPromotableFieldWriter {
 
   private final AbstractMapVector parentContainer;
+  private final ListVector listVector;
+  private int position;
 
   private enum State {
-    SINGLE, UNION
+    UNTYPED, SINGLE, UNION
   }
 
   private MinorType type;
@@ -47,33 +53,78 @@ public class PromotableWriter extends AbstractPromotableFieldWriter {
   public PromotableWriter(ValueVector v, AbstractMapVector parentContainer) {
     super(null);
     this.parentContainer = parentContainer;
+    this.listVector = null;
+    init(v);
+  }
+
+  public PromotableWriter(ValueVector v, ListVector listVector) {
+    super(null);
+    this.listVector = listVector;
+    this.parentContainer = null;
+    init(v);
+  }
+
+  private void init(ValueVector v) {
     if (v instanceof UnionVector) {
       state = State.UNION;
       unionVector = (UnionVector) v;
       writer = new UnionWriter(unionVector);
+    } else if (v instanceof ZeroVector) {
+      state = State.UNTYPED;
     } else {
-      state = State.SINGLE;
-      vector = v;
-      type = v.getField().getType().getMinorType();
-      Class writerClass = TypeHelper.getWriterImpl(v.getField().getType().getMinorType(), v.getField().getDataMode());
-      Class vectorClass = TypeHelper.getValueVectorClass(v.getField().getType().getMinorType(), v.getField().getDataMode());
-      try {
-        writer = (FieldWriter) writerClass.getConstructor(vectorClass, AbstractFieldWriter.class).newInstance(vector, null);
-      } catch (ReflectiveOperationException e) {
-        throw new RuntimeException(e);
+      setWriter(v);
+    }
+  }
+
+  private void setWriter(ValueVector v) {
+    state = State.SINGLE;
+    vector = v;
+    type = v.getField().getType().getMinorType();
+    Class writerClass = TypeHelper.getWriterImpl(v.getField().getType().getMinorType(), v.getField().getDataMode());
+    if (writerClass.equals(SingleListWriter.class)) {
+      writerClass = UnionListWriter.class;
+    }
+    Class vectorClass = TypeHelper.getValueVectorClass(v.getField().getType().getMinorType(), v.getField().getDataMode());
+    try {
+      Constructor constructor = null;
+      for (Constructor c : writerClass.getConstructors()) {
+        if (c.getParameterTypes().length == 4) {
+          constructor = c;
+        }
       }
+      if (constructor == null) {
+        constructor = writerClass.getConstructor(vectorClass, AbstractFieldWriter.class);
+        writer = (FieldWriter) constructor.newInstance(vector, null);
+      } else {
+        writer = (FieldWriter) constructor.newInstance(vector, null, true, false);
+      }
+    } catch (ReflectiveOperationException e) {
+      throw new RuntimeException(e);
     }
   }
 
   @Override
   public void setPosition(int index) {
     super.setPosition(index);
-    getWriter().setPosition(index);
+    FieldWriter w = getWriter();
+    if (w == null) {
+      position = index;
+    } else {
+      w.setPosition(index);
+    }
   }
 
   protected FieldWriter getWriter(MinorType type) {
     if (state == State.UNION) {
       return writer;
+    }
+    if (state == State.UNTYPED) {
+      if (type == null) {
+        return null;
+      }
+      ValueVector v = listVector.addOrGetVector(new VectorDescriptor(Types.optional(type))).getVector();
+      setWriter(v);
+      writer.setPosition(position);
     }
     if (type != this.type) {
       return promoteToUnion();
@@ -89,7 +140,11 @@ public class PromotableWriter extends AbstractPromotableFieldWriter {
     String name = vector.getField().getLastName();
     TransferPair tp = vector.getTransferPair(new FieldReference(vector.getField().getType().getMinorType().name().toLowerCase()));
     tp.transfer();
-    unionVector = parentContainer.addOrGet(name, Types.optional(MinorType.UNION), UnionVector.class);
+    if (parentContainer != null) {
+      unionVector = parentContainer.addOrGet(name, Types.optional(MinorType.UNION), UnionVector.class);
+    } else if (listVector != null) {
+      unionVector = listVector.promoteToUnion();
+    }
     unionVector.addVector(tp.getTo());
     writer = new UnionWriter(unionVector);
     writer.setPosition(idx());

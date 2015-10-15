@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import com.google.common.collect.Maps;
+import com.sun.codemodel.JOp;
 import org.apache.drill.common.expression.BooleanOperator;
 import org.apache.drill.common.expression.CastExpression;
 import org.apache.drill.common.expression.ConvertExpression;
@@ -473,7 +474,7 @@ public class EvaluationVisitor {
           if (seg.isArray()) {
             // stop once we get to the last segment and the final type is neither complex nor repeated (map, list, repeated list).
             // In case of non-complex and non-repeated type, we return Holder, in stead of FieldReader.
-            if (seg.isLastPath() && !complex && !repeated) {
+            if (seg.isLastPath() && !complex && !repeated && !e.getTypedFieldId().isListVector()) {
               break;
             }
 

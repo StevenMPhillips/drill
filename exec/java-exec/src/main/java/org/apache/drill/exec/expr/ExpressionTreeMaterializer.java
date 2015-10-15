@@ -382,6 +382,9 @@ public class ExpressionTreeMaterializer {
     }
 
     private LogicalExpression getUnionCastExpressionForType(MinorType type, LogicalExpression arg) {
+      if (type == MinorType.UNION) {
+        return null;
+      }
       String castFuncName = String.format("as%s", type.toString());
       List<LogicalExpression> args = Lists.newArrayList();
       args.add(arg);

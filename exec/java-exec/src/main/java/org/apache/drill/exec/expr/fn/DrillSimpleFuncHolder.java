@@ -20,6 +20,7 @@ package org.apache.drill.exec.expr.fn;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.codemodel.JOp;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.types.TypeProtos.DataMode;
 import org.apache.drill.common.types.TypeProtos.MajorType;
@@ -106,10 +107,16 @@ public class DrillSimpleFuncHolder extends DrillFuncHolder{
       JExpression e = null;
       for (HoldingContainer v : inputVariables) {
         if (v.isOptional()) {
-          if (e == null) {
-            e = v.getIsSet();
+          JExpression isNullExpr;
+          if (v.isReader()) {
+           isNullExpr = JOp.cond(v.getHolder().invoke("isSet"), JExpr.lit(1), JExpr.lit(0));
           } else {
-            e = e.mul(v.getIsSet());
+            isNullExpr = v.getIsSet();
+          }
+          if (e == null) {
+            e = isNullExpr;
+          } else {
+            e = e.mul(isNullExpr);
           }
         }
       }
