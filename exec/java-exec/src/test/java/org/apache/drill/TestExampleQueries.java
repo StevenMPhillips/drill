@@ -34,6 +34,12 @@ import org.junit.Test;
 public class TestExampleQueries extends BaseTestQuery {
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
+  @Test
+  public void q() throws Exception {
+    test("alter session set `exec.enable_union_type` = true");
+    test("select 1 + case when isBigInt(a) then a else 0 end as a from dfs.tmp.a");
+  }
+
   @After
   public void reset() throws Exception {
     String[] options = new String[] { ExecConstants.SLICE_TARGET, PlannerSettings.HASHJOIN.getOptionName(), PlannerSettings.HASHAGG.getOptionName(),

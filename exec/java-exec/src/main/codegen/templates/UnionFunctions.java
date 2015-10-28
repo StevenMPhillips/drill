@@ -49,7 +49,7 @@ public class UnionFunctions {
   <#if !minor.class?starts_with("Decimal")>
 
   @SuppressWarnings("unused")
-  @FunctionTemplate(name = "is${name?upper_case}", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
+  @FunctionTemplate(name = "is_${name?upper_case}", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
   public static class UnionIs${name} implements DrillSimpleFunc {
 
     @Param UnionHolder in;
@@ -58,12 +58,16 @@ public class UnionFunctions {
     public void setup() {}
 
     public void eval() {
-      out.value = in.getType().getMinorType() == org.apache.drill.common.types.TypeProtos.MinorType.${name?upper_case} ? 1 : 0;
+      if (in.isSet == 1) {
+        out.value = in.getType().getMinorType() == org.apache.drill.common.types.TypeProtos.MinorType.${name?upper_case} ? 1 : 0;
+      } else {
+        out.value = 0;
+      }
     }
   }
 
   @SuppressWarnings("unused")
-  @FunctionTemplate(name = "as${name?upper_case}", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
+  @FunctionTemplate(name = "assert_${name?upper_case}", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
   public static class CastUnion${name} implements DrillSimpleFunc {
 
     @Param UnionHolder in;
@@ -83,6 +87,21 @@ public class UnionFunctions {
   @SuppressWarnings("unused")
   @FunctionTemplate(names = {"castUNION", "castToUnion"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
   public static class Cast${name}ToUnion implements DrillSimpleFunc {
+
+    @Param ${name}Holder in;
+    @Output UnionHolder out;
+
+    public void setup() {}
+
+    public void eval() {
+      out.reader = new org.apache.drill.exec.vector.complex.impl.${name}HolderReaderImpl(in);
+      out.isSet = 1;
+    }
+  }
+
+  @SuppressWarnings("unused")
+  @FunctionTemplate(names = {"castUNION", "castToUnion"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
+  public static class CastNullable${name}ToUnion implements DrillSimpleFunc {
 
     @Param Nullable${name}Holder in;
     @Output UnionHolder out;
