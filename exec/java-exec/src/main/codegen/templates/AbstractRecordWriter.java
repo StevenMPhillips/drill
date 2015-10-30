@@ -54,22 +54,22 @@ public abstract class AbstractRecordWriter implements RecordWriter {
 
   @Override
   public FieldConverter getNewMapConverter(int fieldId, String fieldName, FieldReader reader) {
-    throw UserException.connectionError(this.getClass().getName + " doesn't support writing Map");
+    throw UserException.connectionError(this.getClass().getName() + " doesn't support writing Map");
   }
 
   @Override
   public FieldConverter getNewUnionConverter(int fieldId, String fieldName, FieldReader reader) {
-    throw UserException.connectionError(this.getClass().getName + " doesn't support writing Union type");
+    throw UserException.connectionError(this.getClass().getName() + " doesn't support writing Union type");
   }
 
   @Override
   public FieldConverter getNewRepeatedMapConverter(int fieldId, String fieldName, FieldReader reader) {
-    throw UserException.connectionError(this.getClass().getName + " doesn't support writing RepeatedMap");
+    throw UserException.connectionError(this.getClass().getName() + " doesn't support writing RepeatedMap");
   }
 
   @Override
   public FieldConverter getNewRepeatedListConverter(int fieldId, String fieldName, FieldReader reader) {
-    throw UserException.connectionError(this.getClass().getName + " doesn't support writing RepeatedList");
+    throw UserException.connectionError(this.getClass().getName() + " doesn't support writing RepeatedList");
   }
 
 <#list vv.types as type>
@@ -77,7 +77,7 @@ public abstract class AbstractRecordWriter implements RecordWriter {
     <#list vv.modes as mode>
   @Override
   public FieldConverter getNew${mode.prefix}${minor.class}Converter(int fieldId, String fieldName, FieldReader reader) {
-    throw UserException.connectionError(this.getClass().getName + " doesn't support writing '${mode.prefix}${minor.class}'");
+    throw UserException.connectionError(this.getClass().getName() + " doesn't support writing '${mode.prefix}${minor.class}'");
   }
     </#list>
   </#list>
