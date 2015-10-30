@@ -49,7 +49,7 @@ public class GUnionFunctions {
   <#if !minor.class?starts_with("Decimal")>
 
   @SuppressWarnings("unused")
-  @FunctionTemplate(name = "is_${name?upper_case}", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
+  @FunctionTemplate(name = "IS_${name?upper_case}", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
   public static class UnionIs${name} implements DrillSimpleFunc {
 
     @Param UnionHolder in;
@@ -67,7 +67,7 @@ public class GUnionFunctions {
   }
 
   @SuppressWarnings("unused")
-  @FunctionTemplate(name = "assert_${name?upper_case}", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
+  @FunctionTemplate(name = "ASSERT_${name?upper_case}", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
   public static class CastUnion${name} implements DrillSimpleFunc {
 
     @Param UnionHolder in;

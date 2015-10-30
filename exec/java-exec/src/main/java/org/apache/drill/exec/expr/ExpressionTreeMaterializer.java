@@ -22,6 +22,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -112,6 +113,11 @@ public class ExpressionTreeMaterializer {
       throw new SchemaChangeException(String.format("Failure while trying to materialize incoming schema.  Errors:\n %s.", collector.toErrorString()));
     }
     return e;
+  }
+
+  public static LogicalExpression materialize(LogicalExpression expr, VectorAccessible batch, ErrorCollector errorCollector, FunctionLookupContext functionLookupContext,
+                                              boolean allowComplexWriterExpr) {
+    return materialize(expr, batch, errorCollector, functionLookupContext, allowComplexWriterExpr, false);
   }
 
   public static LogicalExpression materialize(LogicalExpression expr, VectorAccessible batch, ErrorCollector errorCollector, FunctionLookupContext functionLookupContext,
@@ -261,10 +267,6 @@ public class ExpressionTreeMaterializer {
       //replace with a new function call, since its argument could be changed.
       call = new FunctionCall(call.getName(), args, call.getPosition());
 
-//      if (hasUnionInput(call)) {
-//        return rewriteUnionFunction(call, functionLookupContext);
-//      }
-
       FunctionResolver resolver = FunctionResolverFactory.getResolver(call);
       DrillFuncHolder matchedFuncHolder = functionLookupContext.findDrillFunction(resolver, call);
 
@@ -388,6 +390,11 @@ public class ExpressionTreeMaterializer {
             newArgs.add(e.accept(new CloneVisitor(), null));
           }
 
+          // When expanding the expression tree to handle the different subtypes, we will not throw an exception if one
+          // of the branches fails to find a function match, since it is possible that code path will never occur in execution
+          // So instead of failing to materialize, we generate code to throw the exception during execution if that code
+          // path is hit.
+
           errorCollectors.push(errorCollector);
           errorCollector = new ErrorCollectorImpl();
 
@@ -431,9 +438,8 @@ public class ExpressionTreeMaterializer {
         return getExceptionFunction("Unable to cast union to " + type);
       }
       String castFuncName = String.format("assert_%s", type.toString());
-      List<LogicalExpression> args = Lists.newArrayList();
-      args.add(arg);
-      return new FunctionCall(castFuncName, args, ExpressionPosition.UNKNOWN);
+      Collections.singletonList(arg);
+      return new FunctionCall(castFuncName, Collections.singletonList(arg), ExpressionPosition.UNKNOWN);
     }
 
     private LogicalExpression getIsTypeExpressionForType(MinorType type, LogicalExpression arg) {
