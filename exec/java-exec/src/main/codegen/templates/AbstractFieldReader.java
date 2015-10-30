@@ -61,9 +61,7 @@ abstract class AbstractFieldReader extends AbstractBaseReader implements FieldRe
   public void copyAsField(String name, MapWriter writer){
     fail("CopyAsField MapWriter");
   }
-//  public void copyAsValue(ListWriter writer){
-//    fail("CopyAsValueList");
-//  }
+
   public void copyAsField(String name, ListWriter writer){
     fail("CopyAsFieldList");
   }
