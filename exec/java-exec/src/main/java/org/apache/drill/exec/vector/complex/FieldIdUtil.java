@@ -34,15 +34,16 @@ public class FieldIdUtil {
     }
 
     if (seg.isArray()) {
-      MajorType type;
-      if (vector instanceof AbstractContainerVector) {
-        type = ((AbstractContainerVector) vector).getLastPathType();
-      } else if (vector instanceof ListVector) {
-        type = ((ListVector) vector).getDataVector().getField().getType();
-      } else {
-        throw new UnsupportedOperationException("FieldIdUtil does not support vector of type " + vector.getField().getType());
-      }
       if (seg.isLastPath()) {
+        MajorType type;
+        if (vector instanceof AbstractContainerVector) {
+          type = ((AbstractContainerVector) vector).getLastPathType();
+        } else if (vector instanceof ListVector) {
+          type = ((ListVector) vector).getDataVector().getField().getType();
+          builder.listVector();
+        } else {
+          throw new UnsupportedOperationException("FieldIdUtil does not support vector of type " + vector.getField().getType());
+        }
         builder //
                 .withIndex() //
                 .finalType(type);
