@@ -133,7 +133,10 @@ public class ListVector extends BaseRepeatedValueVector {
 
     @Override
     public void splitAndTransfer(int startIndex, int length) {
-
+      to.allocateNew();
+      for (int i = 0; i < length; i++) {
+        copyValueSafe(startIndex + i, i);
+      }
     }
 
     @Override
