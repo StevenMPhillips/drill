@@ -32,8 +32,13 @@ package org.apache.drill.exec.vector.complex.impl;
 @SuppressWarnings("unused")
 public class ComplexCopier {
 
-  public static void copy(FieldReader in, FieldWriter out) {
-    writeValue(in, out);
+  /**
+   * Do a deep copy of the value in input into output
+   * @param in
+   * @param out
+   */
+  public static void copy(FieldReader input, FieldWriter output) {
+    writeValue(input, output);
   }
 
   private static void writeValue(FieldReader reader, FieldWriter writer) {

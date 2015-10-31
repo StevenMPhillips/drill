@@ -37,6 +37,14 @@ import org.apache.drill.exec.util.CallBack;
 @SuppressWarnings("unused")
 
 
+/**
+ * A vector which can hold values of different types. It does so by using a MapVector which contains a vector for each
+ * primitive type that is stored. MapVector is used in order to take advantage of its serialization/deserialization methods,
+ * as well as the addOrGet method.
+ *
+ * For performance reasons, UnionVector stores a cached reference to each subtype vector, to avoid having to do the map lookup
+ * each time the vector is accessed.
+ */
 public class UnionVector implements ValueVector {
 
   private MaterializedField field;
@@ -50,8 +58,6 @@ public class UnionVector implements ValueVector {
 
   private MapVector mapVector;
   private ListVector listVector;
-  private NullableBigIntVector bigInt;
-  private NullableVarCharVector varChar;
 
   private FieldReader reader;
   private NullableBitVector bit;
@@ -395,9 +401,6 @@ public class UnionVector implements ValueVector {
     public void setValueCount(int valueCount) {
       UnionVector.this.valueCount = valueCount;
       internalMap.getMutator().setValueCount(valueCount);
-    }
-
-    public void set(int index, byte[] bytes) {
     }
 
     public void setSafe(int index, UnionHolder holder) {

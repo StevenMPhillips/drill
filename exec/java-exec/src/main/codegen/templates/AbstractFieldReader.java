@@ -33,6 +33,10 @@ abstract class AbstractFieldReader extends AbstractBaseReader implements FieldRe
     super();
   }
 
+  /**
+   * Returns true if the current value of the reader is not null
+   * @return
+   */
   public boolean isSet() {
     return true;
   }

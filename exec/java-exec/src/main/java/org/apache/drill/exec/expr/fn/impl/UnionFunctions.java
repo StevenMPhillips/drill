@@ -36,6 +36,9 @@ import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
 import javax.inject.Inject;
 
+/**
+ * The class contains additional functions for union types in addition to those in GUnionFunctions
+ */
 public class UnionFunctions {
 
   @FunctionTemplate(names = {"typeOf"},

@@ -40,6 +40,9 @@ import org.apache.drill.exec.record.RecordBatch;
  */
 
 @SuppressWarnings("unused")
+/**
+ * Additional functions can be found in the class UnionFunctions
+ */
 public class GUnionFunctions {
 
   <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
