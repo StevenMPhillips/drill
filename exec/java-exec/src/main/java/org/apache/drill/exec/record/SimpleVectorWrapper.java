@@ -123,9 +123,13 @@ public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper
         majorTypeBuilder.addSubType(type);
       }
       MajorType majorType = majorTypeBuilder.build();
-      builder.finalType(majorType);
       builder.intermediateType(majorType);
-      return builder.build();
+      if (seg.isLastPath()) {
+        builder.finalType(majorType);
+        return builder.build();
+      } else {
+        return ((UnionVector) v).getFieldIdIfMatches(builder, false, seg.getChild());
+      }
     } else if (v instanceof ListVector) {
       ListVector list = (ListVector) v;
       TypedFieldId.Builder builder = TypedFieldId.newBuilder();

@@ -211,6 +211,7 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
     FieldWriter writer = fields.get(name.toLowerCase());
     if(writer == null) {
       ValueVector vector;
+      int vectorCount = container.size();
       if (unionEnabled){
         ${vectName}Vector v = container.addOrGet(name, ${upperName}_TYPE, ${vectName}Vector.class);
         writer = new PromotableWriter(v, container);
@@ -220,7 +221,9 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
         writer = new ${vectName}WriterImpl(v, this);
         vector = v;
       }
-      vector.allocateNewSafe();
+      if (container.size() > vectorCount) {
+        vector.allocateNewSafe();
+      } 
       writer.setPosition(${index});
       fields.put(name.toLowerCase(), writer);
     }

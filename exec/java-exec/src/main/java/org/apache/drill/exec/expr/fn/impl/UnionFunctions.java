@@ -27,6 +27,7 @@ import org.apache.drill.exec.expr.annotations.Param;
 import org.apache.drill.exec.expr.holders.BigIntHolder;
 import org.apache.drill.exec.expr.holders.BitHolder;
 import org.apache.drill.exec.expr.holders.NullableIntHolder;
+import org.apache.drill.exec.expr.holders.NullableTinyIntHolder;
 import org.apache.drill.exec.expr.holders.NullableUInt1Holder;
 import org.apache.drill.exec.expr.holders.UnionHolder;
 import org.apache.drill.exec.expr.holders.IntHolder;
@@ -190,4 +191,5 @@ public class UnionFunctions {
       out.value = input.isSet == 1 ? 0 : 1;
     }
   }
+
 }

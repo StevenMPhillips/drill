@@ -30,6 +30,7 @@ package org.apache.drill.exec.vector.complex;
 import java.util.Iterator;
 import org.apache.drill.exec.vector.complex.impl.ComplexCopier;
 import org.apache.drill.exec.util.CallBack;
+import org.apache.drill.common.expression.PathSegment;
 
 /*
  * This class is generated using freemarker and the ${.template_name} template.
@@ -334,6 +335,24 @@ public class UnionVector implements ValueVector {
     List<ValueVector> vectors = Lists.newArrayList(internalMap.iterator());
     vectors.add(typeVector);
     return vectors.iterator();
+  }
+
+  public TypedFieldId getFieldIdIfMatches(TypedFieldId.Builder builder, boolean addToBreadCrumb, PathSegment seg) {
+    if (seg.isNamed()) {
+      ValueVector v = getMap();
+      if (v != null) {
+        return ((AbstractContainerVector) v).getFieldIdIfMatches(builder, addToBreadCrumb, seg);
+      } else {
+        return null;
+      }
+    } else if (seg.isArray()) {
+      ValueVector v = getList();
+      if (v != null) {
+        return ((ListVector) v).getFieldIdIfMatches(builder, addToBreadCrumb, seg);
+      }
+      else return null;
+    }
+    return null;
   }
 
   public class Accessor extends BaseValueVector.BaseAccessor {

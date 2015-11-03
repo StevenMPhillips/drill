@@ -87,6 +87,7 @@ public class GUnionFunctions {
     }
   }
 
+/*
   @SuppressWarnings("unused")
   @FunctionTemplate(names = {"castUNION", "castToUnion"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls=NullHandling.INTERNAL)
   public static class Cast${name}ToUnion implements DrillSimpleFunc {
@@ -116,6 +117,7 @@ public class GUnionFunctions {
       out.isSet = in.isSet;
     }
   }
+  */
 
   </#if>
 

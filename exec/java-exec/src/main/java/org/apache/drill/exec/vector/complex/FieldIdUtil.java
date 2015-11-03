@@ -91,6 +91,8 @@ public class FieldIdUtil {
     } else if(v instanceof ListVector) {
       ListVector list = (ListVector) v;
       return list.getFieldIdIfMatches(builder, addToBreadCrumb, seg.getChild());
+    } else if (v instanceof  UnionVector) {
+      return ((UnionVector) v).getFieldIdIfMatches(builder, addToBreadCrumb, seg.getChild());
     } else {
       if (seg.isNamed()) {
         if(addToBreadCrumb) {

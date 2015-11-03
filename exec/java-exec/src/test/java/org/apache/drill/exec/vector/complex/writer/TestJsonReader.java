@@ -433,7 +433,9 @@ public class TestJsonReader extends BaseTestQuery {
 
   @Test
   public void testSelectFromListWithCase() throws Exception {
-    String query = "select a, typeOf(a) `type` from (select case when is_list(field2) then field2[4][1].inner7 end a from cp.`jsoninput/union/a.json`) where a is not null";
+    String query = "select a, typeOf(a) `type` from " +
+            "(select case when is_list(field2) then field2[4][1].inner7 end a " +
+            "from cp.`jsoninput/union/a.json`) where a is not null";
     try {
       testBuilder()
               .sqlQuery(query)
@@ -449,7 +451,9 @@ public class TestJsonReader extends BaseTestQuery {
 
   @Test
   public void testTypeCase() throws Exception {
-    String query = "select case when is_bigint(field1) then field1 when is_list(field1) then field1[0] when is_map(field1) then t.field1.inner1 end f1 from cp.`jsoninput/union/a.json` t";
+    String query = "select case when is_bigint(field1) " +
+            "then field1 when is_list(field1) then field1[0] " +
+            "when is_map(field1) then t.field1.inner1 end f1 from cp.`jsoninput/union/a.json` t";
     try {
       testBuilder()
               .sqlQuery(query)
@@ -468,7 +472,10 @@ public class TestJsonReader extends BaseTestQuery {
 
   @Test
   public void testSumWithTypeCase() throws Exception {
-    String query = "select sum(cast(f1 as bigint)) sum_f1 from (select case when is_bigint(field1) then field1 when is_list(field1) then field1[0] when is_map(field1) then t.field1.inner1 end f1 from cp.`jsoninput/union/a.json` t)";
+    String query = "select sum(cast(f1 as bigint)) sum_f1 from " +
+            "(select case when is_bigint(field1) then field1 " +
+            "when is_list(field1) then field1[0] when is_map(field1) then t.field1.inner1 end f1 " +
+            "from cp.`jsoninput/union/a.json` t)";
     try {
       testBuilder()
               .sqlQuery(query)
@@ -500,4 +507,12 @@ public class TestJsonReader extends BaseTestQuery {
     }
   }
 
+  @Test
+  public void q() throws Exception {
+    String query = "select sum(cast(case when `type` = 'map' then t.data.a else data end as bigint)) from dfs.tmp.b t";
+//    String query = "select * from dfs.tmp.b";
+//    String query = "select sum(t.data.a) from dfs.tmp.`b.json` t where `type` = 'map'";
+    test("alter session set `exec.enable_union_type` = true");
+    test(query);
+  }
 }
