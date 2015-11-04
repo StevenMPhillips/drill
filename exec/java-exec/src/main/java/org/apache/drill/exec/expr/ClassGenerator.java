@@ -223,12 +223,12 @@ public class ClassGenerator<T>{
 //    logger.debug("Adding next write {}", ex);
     if (rotate) {
       rotateBlock();
-      evaluationVisitor.previousExpressions.clear();
     }
     return evaluationVisitor.addExpr(ex, this);
   }
 
   public void rotateBlock() {
+    evaluationVisitor.previousExpressions.clear();
     for (LinkedList<JBlock> b : blocks) {
       b.add(new JBlock(true, true));
     }
