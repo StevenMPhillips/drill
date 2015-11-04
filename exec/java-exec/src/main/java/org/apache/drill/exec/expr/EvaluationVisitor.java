@@ -102,7 +102,7 @@ public class EvaluationVisitor {
     } else {
       constantBoundaries = ConstantExpressionIdentifier.getConstantExpressionSet(e);
     }
-    return e.accept(new ConstantFilter(constantBoundaries), generator);
+    return e.accept(new CSEFilter(constantBoundaries), generator);
   }
 
   private class ExpressionHolder {
