@@ -1001,12 +1001,7 @@ public class EvaluationVisitor {
 
     @Override
     public HoldingContainer visitNullConstant(TypedNullConstant e, ClassGenerator<?> generator) throws RuntimeException {
-      HoldingContainer hc = getPrevious(e, generator.getMappingSet());
-      if (hc == null) {
-        hc = super.visitNullConstant(e, generator);
-        put(e, hc, generator.getMappingSet());
-      }
-      return hc;
+      return super.visitNullConstant(e, generator);
     }
 
     @Override
@@ -1021,12 +1016,15 @@ public class EvaluationVisitor {
 
     @Override
     public HoldingContainer visitUnknown(LogicalExpression e, ClassGenerator<?> generator) throws RuntimeException {
-      HoldingContainer hc = getPrevious(e, generator.getMappingSet());
-      if (hc == null) {
-        hc = super.visitUnknown(e, generator);
-        put(e, hc, generator.getMappingSet());
+      if (e instanceof ValueVectorReadExpression) {
+        HoldingContainer hc = getPrevious(e, generator.getMappingSet());
+        if (hc == null) {
+          hc = super.visitUnknown(e, generator);
+          put(e, hc, generator.getMappingSet());
+        }
+        return hc;
       }
-      return hc;
+      return super.visitUnknown(e, generator);
     }
 
     @Override
