@@ -33,6 +33,19 @@ import org.junit.Test;
 public class TestExampleQueries extends BaseTestQuery {
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
 
+  @Test
+  public void q() throws Exception {
+    testNoResult("alter session set `exec.enable_union_type` = true");
+//    test("select a from dfs.tmp.a order by a");
+//    test("select a from dfs.tmp.a order by a desc");
+//    test("select a, b from dfs.tmp.b where a > 0 order by a");
+    testNoResult("use dfs.tmp");
+//    test("select sum(b1.a) from b b1, b b2 where b1.a = b2.a group by b1.b");
+    test("alter session set `planner.disable_exchanges` = true");
+//    test("select price from x order by price desc");
+    test("select * from x3 order by a");
+  }
+
   @Test // see DRILL-2328
   public void testConcatOnNull() throws Exception {
     try {

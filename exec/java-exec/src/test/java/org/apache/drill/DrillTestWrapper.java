@@ -286,7 +286,8 @@ public class DrillTestWrapper {
               }
             }
           }
-          combinedVectors.get(field).add(obj);
+          List<Object> l = combinedVectors.get(field);
+                  l.add(obj);
         }
       }
       records.remove(0);

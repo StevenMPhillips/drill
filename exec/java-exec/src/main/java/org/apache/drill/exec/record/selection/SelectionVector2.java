@@ -72,6 +72,9 @@ public class SelectionVector2 implements AutoCloseable {
   }
 
   public char getIndex(int index) {
+    if (buffer == null) {
+      System.out.println();
+    }
     return buffer.getChar(index * RECORD_SIZE);
   }
 
@@ -116,10 +119,13 @@ public class SelectionVector2 implements AutoCloseable {
     return newSV;
   }
 
+  private boolean cleared = false;
+
   public void clear() {
     if (buffer != null && buffer != DeadBuf.DEAD_BUFFER) {
       buffer.release();
       buffer = DeadBuf.DEAD_BUFFER;
+      cleared = true;
       recordCount = 0;
     }
   }

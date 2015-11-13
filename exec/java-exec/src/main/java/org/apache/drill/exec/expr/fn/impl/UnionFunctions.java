@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.expr.fn.impl;
 
+import com.google.common.collect.Sets;
 import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.exec.expr.DrillSimpleFunc;
@@ -32,15 +33,67 @@ import org.apache.drill.exec.expr.holders.NullableUInt1Holder;
 import org.apache.drill.exec.expr.holders.UnionHolder;
 import org.apache.drill.exec.expr.holders.IntHolder;
 import org.apache.drill.exec.expr.holders.VarCharHolder;
+import org.apache.drill.exec.resolver.TypeCastRules;
 import org.apache.drill.exec.vector.complex.impl.UnionReader;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
 import javax.inject.Inject;
+import java.util.Set;
 
 /**
  * The class contains additional functions for union types in addition to those in GUnionFunctions
  */
 public class UnionFunctions {
+
+  @FunctionTemplate(names = {"compareType"},
+          scope = FunctionTemplate.FunctionScope.SIMPLE,
+          nulls = NullHandling.INTERNAL)
+  public static class CompareType implements DrillSimpleFunc {
+
+    @Param
+    FieldReader input1;
+    @Param
+    FieldReader input2;
+    @Output
+    IntHolder out;
+
+    public void setup() {}
+
+    public void eval() {
+      org.apache.drill.common.types.TypeProtos.MinorType type1;
+      if (input1.isSet()) {
+        type1 = input1.getType().getMinorType();
+      } else {
+        type1 = org.apache.drill.common.types.TypeProtos.MinorType.NULL;
+      }
+      org.apache.drill.common.types.TypeProtos.MinorType type2;
+      if (input2.isSet()) {
+        type2 = input2.getType().getMinorType();
+      } else {
+        type2 = org.apache.drill.common.types.TypeProtos.MinorType.NULL;
+      }
+
+      out.value = org.apache.drill.exec.expr.fn.impl.UnionFunctions.compareTypes(type1, type2);
+    }
+  }
+
+  public static int compareTypes(MinorType type1, MinorType type2) {
+    int typeValue1 = getTypeValue(type1);
+    int typeValue2 = getTypeValue(type2);
+    return typeValue1 - typeValue2;
+  }
+
+  private static int getTypeValue(MinorType type) {
+    if (TypeCastRules.isNumericType(type)) {
+      return MinorType.TINYINT_VALUE;
+    } else if (type == MinorType.TIMESTAMP) {
+      return MinorType.DATE_VALUE;
+    } else if (type == MinorType.VARBINARY) {
+      return MinorType.VARCHAR_VALUE;
+    } else {
+      return type.getNumber();
+    }
+  }
 
   @FunctionTemplate(names = {"typeOf"},
           scope = FunctionTemplate.FunctionScope.SIMPLE,

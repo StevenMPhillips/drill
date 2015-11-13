@@ -442,51 +442,6 @@ public class ExpressionTreeMaterializer {
       throw new UnsupportedOperationException("Did not find any Union input types");
     }
 
-    /**
-     * Returns the function call whose purpose is to throw an Exception if that code is hit during execution
-     * @param message the exception message
-     * @return
-     */
-    private LogicalExpression getExceptionFunction(String message) {
-      QuotedString msg = new QuotedString(message, ExpressionPosition.UNKNOWN);
-      List<LogicalExpression> args = Lists.newArrayList();
-      args.add(msg);
-      FunctionCall call = new FunctionCall(ExceptionFunction.EXCEPTION_FUNCTION_NAME, args, ExpressionPosition.UNKNOWN);
-      return call;
-    }
-
-    /**
-     * Returns the function which asserts that the current subtype of a union type is a specific type, and allows the materializer
-     * to bind to that specific type when doing function resolution
-     * @param type
-     * @param arg
-     * @return
-     */
-    private LogicalExpression getUnionAssertFunctionForType(MinorType type, LogicalExpression arg) {
-      if (type == MinorType.UNION) {
-        return arg;
-      }
-      if (type == MinorType.LIST || type == MinorType.MAP) {
-        return getExceptionFunction("Unable to cast union to " + type);
-      }
-      String castFuncName = String.format("assert_%s", type.toString());
-      Collections.singletonList(arg);
-      return new FunctionCall(castFuncName, Collections.singletonList(arg), ExpressionPosition.UNKNOWN);
-    }
-
-    /**
-     * Get the function that tests whether a union type is a specific type
-     * @param type
-     * @param arg
-     * @return
-     */
-    private LogicalExpression getIsTypeExpressionForType(MinorType type, LogicalExpression arg) {
-      String isFuncName = String.format("is_%s", type.toString());
-      List<LogicalExpression> args = Lists.newArrayList();
-      args.add(arg);
-      return new FunctionCall(isFuncName, args, ExpressionPosition.UNKNOWN);
-    }
-
     public LogicalExpression visitIfExpression(IfExpression ifExpr, FunctionLookupContext functionLookupContext) {
       IfExpression.IfCondition conditions = ifExpr.ifCondition;
       LogicalExpression newElseExpr = ifExpr.elseExpression.accept(this, functionLookupContext);
@@ -830,4 +785,50 @@ public class ExpressionTreeMaterializer {
       }
     }
   }
+
+  /**
+   * Returns the function call whose purpose is to throw an Exception if that code is hit during execution
+   * @param message the exception message
+   * @return
+   */
+  public static LogicalExpression getExceptionFunction(String message) {
+    QuotedString msg = new QuotedString(message, ExpressionPosition.UNKNOWN);
+    List<LogicalExpression> args = Lists.newArrayList();
+    args.add(msg);
+    FunctionCall call = new FunctionCall(ExceptionFunction.EXCEPTION_FUNCTION_NAME, args, ExpressionPosition.UNKNOWN);
+    return call;
+  }
+
+  /**
+   * Returns the function which asserts that the current subtype of a union type is a specific type, and allows the materializer
+   * to bind to that specific type when doing function resolution
+   * @param type
+   * @param arg
+   * @return
+   */
+  public static LogicalExpression getUnionAssertFunctionForType(MinorType type, LogicalExpression arg) {
+    if (type == MinorType.UNION) {
+      return arg;
+    }
+    if (type == MinorType.LIST || type == MinorType.MAP) {
+      return getExceptionFunction("Unable to cast union to " + type);
+    }
+    String castFuncName = String.format("assert_%s", type.toString());
+    Collections.singletonList(arg);
+    return new FunctionCall(castFuncName, Collections.singletonList(arg), ExpressionPosition.UNKNOWN);
+  }
+
+  /**
+   * Get the function that tests whether a union type is a specific type
+   * @param type
+   * @param arg
+   * @return
+   */
+  public static LogicalExpression getIsTypeExpressionForType(MinorType type, LogicalExpression arg) {
+    String isFuncName = String.format("is_%s", type.toString());
+    List<LogicalExpression> args = Lists.newArrayList();
+    args.add(arg);
+    return new FunctionCall(isFuncName, args, ExpressionPosition.UNKNOWN);
+  }
+
 }

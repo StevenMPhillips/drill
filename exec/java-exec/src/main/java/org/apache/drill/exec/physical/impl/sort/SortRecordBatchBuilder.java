@@ -19,10 +19,16 @@ package org.apache.drill.exec.physical.impl.sort;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import com.google.common.collect.Sets;
 import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
+import org.apache.drill.common.types.TypeProtos.DataMode;
+import org.apache.drill.common.types.TypeProtos.MajorType;
+import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.exec.exception.SchemaChangeException;
+import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.memory.BufferAllocator.PreAllocator;
 import org.apache.drill.exec.ops.FragmentContext;
@@ -38,6 +44,7 @@ import org.apache.drill.exec.vector.ValueVector;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
+import org.apache.drill.exec.vector.complex.UnionVector;
 
 public class SortRecordBatchBuilder implements AutoCloseable {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SortRecordBatchBuilder.class);
@@ -47,10 +54,13 @@ public class SortRecordBatchBuilder implements AutoCloseable {
   private int recordCount;
   private long runningBatches;
   private SelectionVector4 sv4;
+  private BufferAllocator allocator;
   final PreAllocator svAllocator;
   private boolean svAllocatorUsed = false;
+  private List<ValueVector> newVectors;
 
   public SortRecordBatchBuilder(BufferAllocator a) {
+    this.allocator = a;
     this.svAllocator = a.getNewPreAllocator();
   }
 
@@ -199,10 +209,55 @@ public class SortRecordBatchBuilder implements AutoCloseable {
 
     for (MaterializedField f : schema) {
       List<ValueVector> v = vectors.get(f);
-      outputContainer.addHyperList(v, false);
+      outputContainer.addHyperList(checkAndUnionize(v), false);
     }
 
     outputContainer.buildSchema(SelectionVectorMode.FOUR_BYTE);
+  }
+
+  private List<ValueVector> checkAndUnionize(List<ValueVector> vectors) {
+    if (true) {
+      return vectors;
+    }
+    Set<MinorType> types = Sets.newHashSet();
+    for (ValueVector v : vectors) {
+      if (v instanceof UnionVector) {
+        for (MinorType type : v.getField().getType().getSubTypeList()) {
+          types.add(type);
+        }
+      } else {
+        types.add(v.getField().getType().getMinorType());
+      }
+    }
+
+    if (types.size() == 1) {
+      return vectors;
+    }
+
+    MajorType.Builder unionTypeBuilder = MajorType.newBuilder().setMinorType(MinorType.UNION).setMode(DataMode.OPTIONAL);
+    for (MinorType type : types) {
+      unionTypeBuilder.addSubType(type);
+    }
+    MajorType unionType = unionTypeBuilder.build();
+    MaterializedField field = MaterializedField.create(vectors.get(0).getField().getPath(), unionType);
+    List<ValueVector> newVectors = Lists.newArrayList();
+    for (ValueVector v : vectors) {
+      UnionVector u;
+      if (v instanceof UnionVector) {
+        u = (UnionVector) v;
+      } else {
+        u = (UnionVector) TypeHelper.getNewVector(field, allocator);
+        u.addVector(v);
+        MinorType type = v.getField().getType().getMinorType();
+        for (int i = 0; i < v.getAccessor().getValueCount(); i++) {
+          u.getMutator().setType(i, type);
+        }
+        u.getMutator().setValueCount(v.getAccessor().getValueCount());
+      }
+      newVectors.add(u);
+    }
+    this.newVectors = newVectors;
+    return newVectors;
   }
 
   public SelectionVector4 getSv4() {
@@ -215,6 +270,11 @@ public class SortRecordBatchBuilder implements AutoCloseable {
     }
     if (sv4 != null) {
       sv4.clear();
+    }
+    if (newVectors != null) {
+      for (ValueVector v : newVectors) {
+        v.clear();
+      }
     }
   }
 
