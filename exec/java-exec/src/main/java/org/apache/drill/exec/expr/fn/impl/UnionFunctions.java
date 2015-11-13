@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.expr.fn.impl;
 
+import com.google.common.collect.Sets;
 import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.exec.expr.DrillSimpleFunc;
@@ -36,11 +37,73 @@ import org.apache.drill.exec.vector.complex.impl.UnionReader;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
 import javax.inject.Inject;
+import java.util.Set;
 
 /**
  * The class contains additional functions for union types in addition to those in GUnionFunctions
  */
 public class UnionFunctions {
+
+  @FunctionTemplate(names = {"compareType"},
+          scope = FunctionTemplate.FunctionScope.SIMPLE,
+          nulls = NullHandling.INTERNAL)
+  public static class CompareType implements DrillSimpleFunc {
+
+    @Param
+    FieldReader input1;
+    @Param
+    FieldReader input2;
+    @Output
+    IntHolder out;
+
+    public void setup() {}
+
+    public void eval() {
+      int type1;
+      if (input1.isSet()) {
+        type1 = input1.getType().getMinorType().getNumber();
+      } else {
+        type1 = org.apache.drill.common.types.TypeProtos.MinorType.NULL.getNumber();
+      }
+      int type2;
+      if (input2.isSet()) {
+        type2 = input2.getType().getMinorType().getNumber();
+      } else {
+        type2 = org.apache.drill.common.types.TypeProtos.MinorType.NULL.getNumber();
+      }
+
+      out.value = org.apache.drill.exec.expr.fn.impl.UnionFunctions.compareTypes(type1, type2);
+    }
+  }
+
+  public static Set<Integer> NUMERIC_TYPES = Sets.newHashSet(
+          MinorType.TINYINT_VALUE,
+          MinorType.SMALLINT_VALUE,
+          MinorType.INT_VALUE,
+          MinorType.BIGINT_VALUE,
+          MinorType.FLOAT4_VALUE,
+          MinorType.FLOAT8_VALUE,
+          MinorType.DECIMAL9_VALUE,
+          MinorType.DECIMAL18_VALUE,
+          MinorType.DECIMAL28SPARSE_VALUE,
+          MinorType.DECIMAL28DENSE_VALUE,
+          MinorType.DECIMAL38SPARSE_VALUE,
+          MinorType.DECIMAL38DENSE_VALUE,
+          MinorType.UINT1_VALUE,
+          MinorType.UINT2_VALUE,
+          MinorType.UINT4_VALUE,
+          MinorType.UINT8_VALUE
+  );
+
+  public static int compareTypes(int type1, int type2) {
+    if (NUMERIC_TYPES.contains(type1)) {
+      type1 = MinorType.TINYINT_VALUE;
+    }
+    if (NUMERIC_TYPES.contains(type2)) {
+      type2 = MinorType.TINYINT_VALUE;
+    }
+    return type1 - type2;
+  }
 
   @FunctionTemplate(names = {"typeOf"},
           scope = FunctionTemplate.FunctionScope.SIMPLE,
