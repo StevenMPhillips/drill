@@ -117,7 +117,7 @@ public class SchemaUtil {
       ValueVector v = vectorMap.remove(field.getPath());
       if (v != null) {
         int valueCount = v.getAccessor().getValueCount();
-        TransferPair tp = v.getTransferPair();
+        TransferPair tp = v.getTransferPair(context.getAllocator());
         tp.transfer();
         if (v.getField().getType().getMinorType().equals(field.getType().getMinorType())) {
           if (field.getType().getMinorType() == MinorType.UNION) {

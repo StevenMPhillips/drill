@@ -198,13 +198,13 @@ public class UnionVector implements ValueVector {
   }
 
   @Override
-  public TransferPair getTransferPair() {
-    return new TransferImpl(field);
+  public TransferPair getTransferPair(BufferAllocator allocator) {
+    return new TransferImpl(field, allocator);
   }
 
   @Override
-  public TransferPair getTransferPair(FieldReference ref) {
-    return new TransferImpl(field.withPath(ref));
+  public TransferPair getTransferPair(FieldReference ref, BufferAllocator allocator) {
+    return new TransferImpl(field.withPath(ref), allocator);
   }
 
   @Override
@@ -242,7 +242,7 @@ public class UnionVector implements ValueVector {
 
     UnionVector to;
 
-    public TransferImpl(MaterializedField field) {
+    public TransferImpl(MaterializedField field, BufferAllocator allocator) {
       to = new UnionVector(field, allocator, null);
     }
 
@@ -291,7 +291,7 @@ public class UnionVector implements ValueVector {
 
   public FieldWriter getWriter() {
     if (mutator.writer == null) {
-      mutator.writer = new UnionWriter(this);
+      mutator.writer = new UnionWriter(this, allocator);
     }
     return mutator.writer;
   }
@@ -431,7 +431,7 @@ public class UnionVector implements ValueVector {
     public void setSafe(int index, UnionHolder holder) {
       FieldReader reader = holder.reader;
       if (writer == null) {
-        writer = new UnionWriter(UnionVector.this);
+        writer = new UnionWriter(UnionVector.this, allocator);
       }
       writer.setPosition(index);
       MinorType type = reader.getType().getMinorType();
