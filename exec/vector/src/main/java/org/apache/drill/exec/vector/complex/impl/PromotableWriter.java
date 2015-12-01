@@ -23,6 +23,7 @@ import org.apache.drill.common.expression.FieldReference;
 import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.expr.BasicTypeHelper;
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.TransferPair;
 import org.apache.drill.exec.vector.ValueVector;
@@ -54,11 +55,13 @@ public class PromotableWriter extends AbstractPromotableFieldWriter {
   private UnionVector unionVector;
   private State state;
   private FieldWriter writer;
+  private BufferAllocator allocator;
 
-  public PromotableWriter(ValueVector v, AbstractMapVector parentContainer) {
+  public PromotableWriter(ValueVector v, AbstractMapVector parentContainer, BufferAllocator allocator) {
     super(null);
     this.parentContainer = parentContainer;
     this.listVector = null;
+    this.allocator = allocator;
     init(v);
   }
 
@@ -73,7 +76,7 @@ public class PromotableWriter extends AbstractPromotableFieldWriter {
     if (v instanceof UnionVector) {
       state = State.UNION;
       unionVector = (UnionVector) v;
-      writer = new UnionWriter(unionVector);
+      writer = new UnionWriter(unionVector, allocator);
     } else if (v instanceof ZeroVector) {
       state = State.UNTYPED;
     } else {
@@ -151,7 +154,7 @@ public class PromotableWriter extends AbstractPromotableFieldWriter {
 
   private FieldWriter promoteToUnion() {
     String name = vector.getField().getLastName();
-    TransferPair tp = vector.getTransferPair(new FieldReference(vector.getField().getType().getMinorType().name().toLowerCase()));
+    TransferPair tp = vector.getTransferPair(new FieldReference(vector.getField().getType().getMinorType().name().toLowerCase()), allocator);
     tp.transfer();
     if (parentContainer != null) {
       unionVector = parentContainer.addOrGet(name, Types.optional(MinorType.UNION), UnionVector.class);
@@ -159,7 +162,7 @@ public class PromotableWriter extends AbstractPromotableFieldWriter {
       unionVector = listVector.promoteToUnion();
     }
     unionVector.addVector(tp.getTo());
-    writer = new UnionWriter(unionVector);
+    writer = new UnionWriter(unionVector, allocator);
     writer.setPosition(idx());
     for (int i = 0; i < idx(); i++) {
       unionVector.getMutator().setType(i, vector.getField().getType().getMinorType());

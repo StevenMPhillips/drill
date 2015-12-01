@@ -36,19 +36,23 @@ public class UnionWriter extends AbstractFieldWriter implements FieldWriter {
   private MapWriter mapWriter;
   private UnionListWriter listWriter;
   private List<BaseWriter> writers = Lists.newArrayList();
+  private BufferAllocator allocator;
 
   public UnionWriter(BufferAllocator allocator) {
     super(null);
+    this.allocator = allocator;
   }
 
-  public UnionWriter(UnionVector vector) {
+  public UnionWriter(UnionVector vector, BufferAllocator allocator) {
     super(null);
-    data = vector;
+    this.data = vector;
+    this.allocator = allocator;
   }
 
-  public UnionWriter(UnionVector vector, FieldWriter parent) {
+  public UnionWriter(UnionVector vector, FieldWriter parent, BufferAllocator allocator) {
     super(null);
-    data = vector;
+    this.data = vector;
+    this.allocator = allocator;
   }
 
   @Override
@@ -84,7 +88,7 @@ public class UnionWriter extends AbstractFieldWriter implements FieldWriter {
 
   private MapWriter getMapWriter() {
     if (mapWriter == null) {
-      mapWriter = new SingleMapWriter(data.getMap(), null, true);
+      mapWriter = new SingleMapWriter(data.getMap(), null, allocator, true);
       mapWriter.setPosition(idx());
       writers.add(mapWriter);
     }
@@ -98,7 +102,7 @@ public class UnionWriter extends AbstractFieldWriter implements FieldWriter {
 
   private ListWriter getListWriter() {
     if (listWriter == null) {
-      listWriter = new UnionListWriter(data.getList());
+      listWriter = new UnionListWriter(data.getList(), allocator);
       listWriter.setPosition(idx());
       writers.add(listWriter);
     }

@@ -128,7 +128,7 @@ public class JSONRecordReader extends AbstractRecordReader {
         this.stream = fileSystem.openPossiblyCompressedStream(hadoopPath);
       }
 
-      this.writer = new VectorContainerWriter(output, unionEnabled);
+      this.writer = new VectorContainerWriter(output, context.getAllocator(), unionEnabled);
       if (isSkipQuery()) {
         this.jsonReader = new CountingJsonReader(fragmentContext.getManagedBuffer());
       } else {

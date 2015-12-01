@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.vector.complex.impl;
 
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.vector.complex.writer.FieldWriter;
 
 
