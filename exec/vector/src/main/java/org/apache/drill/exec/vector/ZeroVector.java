@@ -138,6 +138,11 @@ public class ZeroVector implements ValueVector {
   }
 
   @Override
+  public BufferAllocator getAllocator() {
+    return null;
+  }
+
+  @Override
   public void setInitialCapacity(int numRecords) { }
 
   @Override

@@ -53,17 +53,15 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
   <#if mode == "Repeated">private int currentChildIndex = 0;</#if>
 
   private final boolean unionEnabled;
-  private BufferAllocator allocator;
 
-  public ${mode}MapWriter(${containerClass} container, FieldWriter parent, BufferAllocator allocator, boolean unionEnabled) {
+  public ${mode}MapWriter(${containerClass} container, FieldWriter parent, boolean unionEnabled) {
     super(parent);
     this.container = container;
     this.unionEnabled = unionEnabled;
-    this.allocator = allocator;
   }
 
-  public ${mode}MapWriter(${containerClass} container, FieldWriter parent, BufferAllocator allocator) {
-    this(container, parent, allocator, false);
+  public ${mode}MapWriter(${containerClass} container, FieldWriter parent) {
+    this(container, parent, false);
   }
 
   @Override
@@ -88,9 +86,9 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
       int vectorCount=container.size();
         MapVector vector = container.addOrGet(name, MapVector.TYPE, MapVector.class);
       if(!unionEnabled){
-        writer = new SingleMapWriter(vector, this, allocator);
+        writer = new SingleMapWriter(vector, this);
       } else {
-        writer = new PromotableWriter(vector, container, allocator);
+        writer = new PromotableWriter(vector, container);
       }
       if(vectorCount != container.size()) {
         writer.allocate();
@@ -129,9 +127,9 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
     int vectorCount = container.size();
     if(writer == null) {
       if (!unionEnabled){
-        writer = new SingleListWriter(name, container, this, allocator);
+        writer = new SingleListWriter(name,container,this);
       } else{
-        writer = new PromotableWriter(container.addOrGet(name, Types.optional(MinorType.LIST), ListVector.class), container, allocator);
+        writer = new PromotableWriter(container.addOrGet(name, Types.optional(MinorType.LIST), ListVector.class), container);
       }
       if (container.size() > vectorCount) {
         writer.allocate();
@@ -221,7 +219,7 @@ public class ${mode}MapWriter extends AbstractFieldWriter {
       ValueVector currentVector = container.getChild(name);
       if (unionEnabled){
         ${vectName}Vector v = container.addOrGet(name, ${upperName}_TYPE, ${vectName}Vector.class);
-        writer = new PromotableWriter(v, container, allocator);
+        writer = new PromotableWriter(v, container);
         vector = v;
       } else {
         ${vectName}Vector v = container.addOrGet(name, ${upperName}_TYPE, ${vectName}Vector.class);
