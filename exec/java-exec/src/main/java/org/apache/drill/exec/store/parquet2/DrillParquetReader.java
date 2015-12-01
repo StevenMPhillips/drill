@@ -260,7 +260,7 @@ public class DrillParquetReader extends AbstractRecordReader {
       }
 
       if(!noColumnsFound) {
-        writer = new VectorContainerWriter(output, operatorContext.getAllocator());
+        writer = new VectorContainerWriter(output);
         // Discard the columns not found in the schema when create DrillParquetRecordMaterializer, since they have been added to output already.
         final Collection<SchemaPath> columns = columnsNotFound == null || columnsNotFound.size() == 0 ? getColumns(): CollectionUtils.subtract(getColumns(), columnsNotFound);
         recordMaterializer = new DrillParquetRecordMaterializer(output, writer, projection, columns,

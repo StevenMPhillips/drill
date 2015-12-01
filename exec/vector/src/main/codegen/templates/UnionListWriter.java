@@ -41,19 +41,16 @@ public class UnionListWriter extends AbstractFieldWriter {
   private boolean inMap = false;
   private String mapName;
   private int lastIndex = 0;
-  private BufferAllocator allocator;
 
-  public UnionListWriter(ListVector vector, BufferAllocator allocator) {
+  public UnionListWriter(ListVector vector) {
     super(null);
     this.vector = vector;
     this.writer = new PromotableWriter(vector.getDataVector(), vector);
     this.offsets = vector.getOffsetVector();
-    this.allocator = allocator;
   }
 
-  public UnionListWriter(ListVector vector, AbstractFieldWriter parent, BufferAllocator allocator) {
-    this(vector, allocator);
-    this.allocator = allocator;
+  public UnionListWriter(ListVector vector, AbstractFieldWriter parent) {
+    this(vector);
   }
 
   @Override

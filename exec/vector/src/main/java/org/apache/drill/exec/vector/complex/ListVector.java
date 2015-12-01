@@ -62,7 +62,7 @@ public class ListVector extends BaseRepeatedValueVector {
     this.bits = new UInt1Vector(MaterializedField.create("$bits$", Types.required(MinorType.UINT1)), allocator);
     offsets = getOffsetVector();
     this.field.addChild(getDataVector().getField());
-    this.writer = new UnionListWriter(this, allocator);
+    this.writer = new UnionListWriter(this);
     this.reader = new UnionListReader(this);
     this.callBack = callBack;
   }

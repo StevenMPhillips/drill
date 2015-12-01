@@ -19,7 +19,6 @@ package org.apache.drill.exec.vector.complex.impl;
 
 import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.common.types.Types;
-import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.vector.complex.MapVector;
 import org.apache.drill.exec.vector.complex.StateTool;
@@ -37,20 +36,18 @@ public class ComplexWriterImpl extends AbstractFieldWriter implements ComplexWri
   Mode mode = Mode.INIT;
   private final String name;
   private final boolean unionEnabled;
-  private final BufferAllocator allocator;
 
   private enum Mode { INIT, MAP, LIST };
 
-  public ComplexWriterImpl(String name, MapVector container, BufferAllocator allocator, boolean unionEnabled){
+  public ComplexWriterImpl(String name, MapVector container, boolean unionEnabled){
     super(null);
     this.name = name;
     this.container = container;
     this.unionEnabled = unionEnabled;
-    this.allocator = allocator;
   }
 
-  public ComplexWriterImpl(String name, MapVector container, BufferAllocator allocator){
-    this(name, container, allocator, false);
+  public ComplexWriterImpl(String name, MapVector container){
+    this(name, container, false);
   }
 
   @Override
@@ -126,7 +123,7 @@ public class ComplexWriterImpl extends AbstractFieldWriter implements ComplexWri
 
     case INIT:
       MapVector map = (MapVector) container;
-      mapRoot = new SingleMapWriter(map, this, allocator, unionEnabled);
+      mapRoot = new SingleMapWriter(map, this, unionEnabled);
       mapRoot.setPosition(idx());
       mode = Mode.MAP;
       break;
@@ -147,7 +144,7 @@ public class ComplexWriterImpl extends AbstractFieldWriter implements ComplexWri
 
     case INIT:
       MapVector map = container.addOrGet(name, Types.required(MinorType.MAP), MapVector.class);
-      mapRoot = new SingleMapWriter(map, this, allocator, unionEnabled);
+      mapRoot = new SingleMapWriter(map, this, unionEnabled);
       mapRoot.setPosition(idx());
       mode = Mode.MAP;
       break;
@@ -177,7 +174,7 @@ public class ComplexWriterImpl extends AbstractFieldWriter implements ComplexWri
     switch(mode){
 
     case INIT:
-      listRoot = new SingleListWriter(name, container, this, allocator);
+      listRoot = new SingleListWriter(name, container, this);
       listRoot.setPosition(idx());
       mode = Mode.LIST;
       break;

@@ -115,7 +115,7 @@ public class AvroRecordReader extends AbstractRecordReader {
   @Override
   public void setup(final OperatorContext context, final OutputMutator output) throws ExecutionSetupException {
     operatorContext = context;
-    writer = new VectorContainerWriter(output, operatorContext.getAllocator());
+    writer = new VectorContainerWriter(output);
 
     try {
       reader = getReader(hadoop, fs);

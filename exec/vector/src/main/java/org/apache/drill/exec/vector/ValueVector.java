@@ -69,6 +69,8 @@ public interface ValueVector extends Closeable, Iterable<ValueVector> {
    */
   boolean allocateNewSafe();
 
+  BufferAllocator getAllocator();
+
   /**
    * Set the initial record capacity
    * @param numRecords

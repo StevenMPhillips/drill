@@ -43,6 +43,6 @@ public class VectorAccessibleComplexWriter extends MapVector {
 
   public static ComplexWriter getWriter(String name, VectorContainer container) {
     VectorAccessibleComplexWriter vc = new VectorAccessibleComplexWriter(container);
-    return new ComplexWriterImpl(name, vc, container.getOperatorContext().getAllocator());
+    return new ComplexWriterImpl(name, vc);
   }
 }

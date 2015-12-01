@@ -80,6 +80,10 @@ public class UnionVector implements ValueVector {
     this.callBack = callBack;
   }
 
+  public BufferAllocator getAllocator() {
+    return allocator;
+  }
+
   public List<MinorType> getSubTypes() {
     return majorType.getSubTypeList();
   }
@@ -291,7 +295,7 @@ public class UnionVector implements ValueVector {
 
   public FieldWriter getWriter() {
     if (mutator.writer == null) {
-      mutator.writer = new UnionWriter(this, allocator);
+      mutator.writer = new UnionWriter(this);
     }
     return mutator.writer;
   }
@@ -431,7 +435,7 @@ public class UnionVector implements ValueVector {
     public void setSafe(int index, UnionHolder holder) {
       FieldReader reader = holder.reader;
       if (writer == null) {
-        writer = new UnionWriter(UnionVector.this, allocator);
+        writer = new UnionWriter(UnionVector.this);
       }
       writer.setPosition(index);
       MinorType type = reader.getType().getMinorType();

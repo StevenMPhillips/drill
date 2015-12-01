@@ -147,7 +147,7 @@ public class MongoRecordReader extends AbstractRecordReader {
   @Override
   public void setup(OperatorContext context, OutputMutator output) throws ExecutionSetupException {
     this.operatorContext = context;
-    this.writer = new VectorContainerWriter(output, operatorContext.getAllocator(), unionEnabled);
+    this.writer = new VectorContainerWriter(output, unionEnabled);
     this.jsonReader = new JsonReader(fragmentContext.getManagedBuffer(), Lists.newArrayList(getColumns()), enableAllTextMode, false, readNumbersAsDouble);
 
   }
