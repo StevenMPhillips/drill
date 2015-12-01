@@ -50,18 +50,21 @@ public class ${mode}ListWriter extends AbstractFieldWriter {
   private Mode mode = Mode.INIT;
   private FieldWriter writer;
   protected RepeatedValueVector innerVector;
+  private BufferAllocator allocator;
 
   <#if mode == "Repeated">private int currentChildIndex = 0;</#if>
-  public ${mode}ListWriter(String name, ${containerClass} container, FieldWriter parent){
+  public ${mode}ListWriter(String name, ${containerClass} container, FieldWriter parent, BufferAllocator allocator){
     super(parent);
     this.name = name;
     this.container = container;
+    this.allocator = allocator;
   }
 
-  public ${mode}ListWriter(${containerClass} container, FieldWriter parent){
+  public ${mode}ListWriter(${containerClass} container, FieldWriter parent, BufferAllocator allocator){
     super(parent);
     this.name = null;
     this.container = container;
+    this.allocator = allocator;
   }
 
   @Override
@@ -107,7 +110,7 @@ public class ${mode}ListWriter extends AbstractFieldWriter {
       int vectorCount = container.size();
       final RepeatedMapVector vector = container.addOrGet(name, RepeatedMapVector.TYPE, RepeatedMapVector.class);
       innerVector = vector;
-      writer = new RepeatedMapWriter(vector, this);
+      writer = new RepeatedMapWriter(vector, this, allocator);
       if(vectorCount != container.size()) {
         writer.allocate();
       }
@@ -129,7 +132,7 @@ public class ${mode}ListWriter extends AbstractFieldWriter {
       final int vectorCount = container.size();
       final RepeatedListVector vector = container.addOrGet(name, RepeatedListVector.TYPE, RepeatedListVector.class);
       innerVector = vector;
-      writer = new RepeatedListWriter(null, vector, this);
+      writer = new RepeatedListWriter(null, vector, this, allocator);
       if(vectorCount != container.size()) {
         writer.allocate();
       }

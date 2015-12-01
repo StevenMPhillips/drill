@@ -71,8 +71,8 @@ public abstract class BaseValueVector implements ValueVector {
   }
 
   @Override
-  public TransferPair getTransferPair() {
-    return getTransferPair(new FieldReference(getField().getPath()));
+  public TransferPair getTransferPair(BufferAllocator allocator) {
+    return getTransferPair(new FieldReference(getField().getPath()), allocator);
   }
 
   @Override

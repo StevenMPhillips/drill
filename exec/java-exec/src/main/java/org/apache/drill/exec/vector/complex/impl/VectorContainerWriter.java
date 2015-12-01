@@ -19,6 +19,7 @@ package org.apache.drill.exec.vector.complex.impl;
 
 import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.exception.SchemaChangeException;
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.physical.impl.OutputMutator;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.util.CallBack;
@@ -33,15 +34,15 @@ public class VectorContainerWriter extends AbstractFieldWriter implements Comple
   private final SpecialMapVector mapVector;
   private final OutputMutator mutator;
 
-  public VectorContainerWriter(OutputMutator mutator, boolean unionEnabled) {
+  public VectorContainerWriter(OutputMutator mutator, BufferAllocator allocator, boolean unionEnabled) {
     super(null);
     this.mutator = mutator;
     mapVector = new SpecialMapVector(mutator.getCallBack());
-    mapRoot = new SingleMapWriter(mapVector, this, unionEnabled);
+    mapRoot = new SingleMapWriter(mapVector, this, allocator, unionEnabled);
   }
 
-  public VectorContainerWriter(OutputMutator mutator) {
-    this(mutator, false);
+  public VectorContainerWriter(OutputMutator mutator, BufferAllocator allocator) {
+    this(mutator, allocator, false);
   }
 
   @Override

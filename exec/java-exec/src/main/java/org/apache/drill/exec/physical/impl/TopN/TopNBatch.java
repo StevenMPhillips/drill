@@ -217,7 +217,7 @@ public class TopNBatch extends AbstractRecordBatch<TopN> {
           }
           countSincePurge += incoming.getRecordCount();
           batchCount++;
-          RecordBatchData batch = new RecordBatchData(incoming);
+          RecordBatchData batch = new RecordBatchData(incoming, oContext.getAllocator());
           boolean success = false;
           try {
             batch.canonicalize();
