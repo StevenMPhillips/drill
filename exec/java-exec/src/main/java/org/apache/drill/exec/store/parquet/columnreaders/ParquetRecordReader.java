@@ -88,7 +88,6 @@ public class ParquetRecordReader extends AbstractRecordReader {
   private FileSystem fileSystem;
   private long batchSize;
   Path hadoopPath;
-  private VarLenBinaryReader varLengthReader;
   private ParquetMetadata footer;
   // This is a parallel list to the columns list above, it is used to determine the subset of the project
   // pushdown columns that do not appear in this file
@@ -275,7 +274,7 @@ public class ParquetRecordReader extends AbstractRecordReader {
     try {
       ValueVector vector;
       SchemaElement schemaElement;
-      final ArrayList<VarLengthColumn> varLengthColumns = new ArrayList<>();
+      final ArrayList<ColumnReader> varLengthColumns = new ArrayList<>();
       // initialize all of the column read status objects
       boolean fieldFixedLength;
       // the column chunk meta-data is not guaranteed to be in the same order as the columns in the schema
@@ -301,16 +300,11 @@ public class ParquetRecordReader extends AbstractRecordReader {
           continue;
         }
 
-        fieldFixedLength = column.getType() != PrimitiveType.PrimitiveTypeName.BINARY;
+        fieldFixedLength = column.getType() != PrimitiveType.PrimitiveTypeName.BINARY || true;
         vector = output.addField(field, (Class<? extends ValueVector>) TypeHelper.getValueVectorClass(type.getMinorType(), type.getMode()));
         if (column.getType() != PrimitiveType.PrimitiveTypeName.BINARY) {
           if (column.getMaxRepetitionLevel() > 0) {
-            final RepeatedValueVector repeatedVector = RepeatedValueVector.class.cast(vector);
-            ColumnReader dataReader = ColumnReaderFactory.createFixedColumnReader(this, fieldFixedLength,
-                column, columnChunkMetaData, recordsPerBatch,
-                repeatedVector.getDataVector(), schemaElement);
-            varLengthColumns.add(new FixedWidthRepeatedReader(this, dataReader,
-                getTypeLengthInBits(column.getType()), -1, column, columnChunkMetaData, false, repeatedVector, schemaElement));
+            throw new UnsupportedOperationException("This reader does not support complex/repeated types");
           }
           else {
             columnStatuses.add(ColumnReaderFactory.createFixedColumnReader(this, fieldFixedLength,
@@ -318,12 +312,9 @@ public class ParquetRecordReader extends AbstractRecordReader {
                 schemaElement));
           }
         } else {
-          // create a reader and add it to the appropriate list
-          varLengthColumns.add(ColumnReaderFactory.getReader(this, -1, column, columnChunkMetaData, false, vector, schemaElement));
+          columnStatuses.add(ColumnReaderFactory.getReader(this, -1, column, columnChunkMetaData, false, vector, schemaElement));
         }
       }
-      varLengthReader = new VarLenBinaryReader(this, varLengthColumns);
-
       if (!isStarQuery()) {
         List<SchemaPath> projectedColumns = Lists.newArrayList(getColumns());
         SchemaPath col;
@@ -379,9 +370,9 @@ public class ParquetRecordReader extends AbstractRecordReader {
     for (final ColumnReader<?> column : columnStatuses) {
       column.valuesReadInCurrentPass = 0;
     }
-    for (final VarLengthColumn<?> r : varLengthReader.columns) {
-      r.valuesReadInCurrentPass = 0;
-    }
+//    for (final VarLengthColumn<?> r : varLengthReader.columns) {
+//      r.valuesReadInCurrentPass = 0;
+//    }
   }
 
  public void readAllFixedFields(long recordsToRead) throws IOException {
@@ -401,12 +392,12 @@ public class ParquetRecordReader extends AbstractRecordReader {
         firstColumnStatus = columnStatuses.iterator().next();
       }
       else{
-        if (varLengthReader.columns.size() > 0) {
-          firstColumnStatus = varLengthReader.columns.iterator().next();
-        }
-        else{
+//        if (varLengthReader.columns.size() > 0) {
+//          firstColumnStatus = varLengthReader.columns.iterator().next();
+//        }
+//        else{
           firstColumnStatus = null;
-        }
+//        }
       }
       // No columns found in the file were selected, simply return a full batch of null records for each column requested
       if (firstColumnStatus == null) {
@@ -429,12 +420,7 @@ public class ParquetRecordReader extends AbstractRecordReader {
 
       }
 
-      if (allFieldsFixedLength) {
-        readAllFixedFields(recordsToRead);
-      } else { // variable length columns
-        long fixedRecordsToRead = varLengthReader.readFields(recordsToRead, firstColumnStatus);
-        readAllFixedFields(fixedRecordsToRead);
-      }
+      readAllFixedFields(recordsToRead);
 
       // if we have requested columns that were not found in the file fill their vectors with null
       // (by simply setting the value counts inside of them, as they start null filled)
@@ -475,14 +461,6 @@ public class ParquetRecordReader extends AbstractRecordReader {
     }
 
     codecFactory.release();
-
-    if (varLengthReader != null) {
-      for (final VarLengthColumn r : varLengthReader.columns) {
-        r.clear();
-      }
-      varLengthReader.columns.clear();
-      varLengthReader = null;
-    }
 
     if(parquetReaderStats != null) {
       logger.trace("ParquetTrace,Summary,{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",

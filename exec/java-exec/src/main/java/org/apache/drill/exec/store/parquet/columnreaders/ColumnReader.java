@@ -20,11 +20,15 @@ package org.apache.drill.exec.store.parquet.columnreaders;
 import io.netty.buffer.DrillBuf;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.exec.vector.BaseDataValueVector;
 import org.apache.drill.exec.vector.ValueVector;
 
+import org.apache.drill.exec.vector.VarBinaryVector;
+import org.apache.drill.exec.vector.VarCharVector;
+import org.apache.drill.exec.vector.VarCharVector.Mutator;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.format.SchemaElement;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
@@ -100,79 +104,14 @@ public abstract class ColumnReader<V extends ValueVector> {
     return valuesReadInCurrentPass;
   }
 
-  public void processPages(long recordsToReadInThisPass) throws IOException {
-    reset();
-    if(recordsToReadInThisPass>0) {
-      do {
-        determineSize(recordsToReadInThisPass, 0);
-
-      } while (valuesReadInCurrentPass < recordsToReadInThisPass && pageReader.hasPage());
-    }
-    valueVec.getMutator().setValueCount(valuesReadInCurrentPass);
-  }
+  public abstract void processPages(long recordsToReadInThisPass) throws IOException;
 
   public void clear() {
     valueVec.clear();
     pageReader.clear();
   }
 
-  public void readValues(long recordsToRead) {
-    readField(recordsToRead);
-
-    valuesReadInCurrentPass += recordsReadInThisIteration;
-    pageReader.valuesRead += recordsReadInThisIteration;
-    pageReader.readPosInBytes = readStartInBytes + readLength;
-  }
-
   protected abstract void readField(long recordsToRead);
-
-  /**
-   * Determines the size of a single value in a variable column.
-   *
-   * Return value indicates if we have finished a row group and should stop reading
-   *
-   * @param recordsReadInCurrentPass
-   * @param lengthVarFieldsInCurrentRecord
-   * @return - true if we should stop reading
-   * @throws IOException
-   */
-  public boolean determineSize(long recordsReadInCurrentPass, Integer lengthVarFieldsInCurrentRecord) throws IOException {
-
-    boolean doneReading = readPage();
-    if (doneReading) {
-      return true;
-    }
-
-    doneReading = processPageData((int) recordsReadInCurrentPass);
-    if (doneReading) {
-      return true;
-    }
-
-    lengthVarFieldsInCurrentRecord += dataTypeLengthInBits;
-
-    doneReading = checkVectorCapacityReached();
-    if (doneReading) {
-      return true;
-    }
-
-    return false;
-  }
-
-  protected void readRecords(int recordsToRead) {
-    for (int i = 0; i < recordsToRead; i++) {
-      readField(i);
-    }
-    pageReader.valuesRead += recordsToRead;
-  }
-
-  protected boolean processPageData(int recordsToReadInThisPass) throws IOException {
-    readValues(recordsToReadInThisPass);
-    return true;
-  }
-
-  public void updatePosition() {}
-
-  public void updateReadyToReadPosition() {}
 
   public void reset() {
     readStartInBytes = 0;
@@ -187,44 +126,6 @@ public abstract class ColumnReader<V extends ValueVector> {
     return (int) (valueVec.getValueCapacity() * dataTypeLengthInBits / 8.0);
   }
 
-  // Read a page if we need more data, returns true if we need to exit the read loop
-  public boolean readPage() throws IOException {
-    if (!pageReader.hasPage()
-        || totalValuesReadAndReadyToReadInPage() == pageReader.currentPageCount) {
-      readRecords(pageReader.valuesReadyToRead);
-      if (pageReader.hasPage()) {
-        totalValuesRead += pageReader.currentPageCount;
-      }
-      if (!pageReader.next()) {
-        hitRowGroupEnd();
-        return true;
-      }
-      postPageRead();
-    }
-    return false;
-  }
-
-  protected int totalValuesReadAndReadyToReadInPage() {
-    return pageReader.valuesRead + pageReader.valuesReadyToRead;
-  }
-
-  protected void postPageRead() {
-    pageReader.valuesReadyToRead = 0;
-  }
-
-  protected void hitRowGroupEnd() {}
-
-  protected boolean checkVectorCapacityReached() {
-    if (bytesReadInCurrentPass + dataTypeLengthInBits > capacity()) {
-      logger.debug("Reached the capacity of the data vector in a variable length value vector.");
-      return true;
-    }
-    else if (valuesReadInCurrentPass > valueVec.getValueCapacity()) {
-      return true;
-    }
-    return false;
-  }
-
   // copied out of parquet library, didn't want to deal with the uneeded throws statement they had declared
   public static int readIntLittleEndian(DrillBuf in, int offset) {
     int ch4 = in.getByte(offset) & 0xff;
@@ -233,5 +134,4 @@ public abstract class ColumnReader<V extends ValueVector> {
     int ch1 = in.getByte(offset + 3) & 0xff;
     return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
   }
-
 }

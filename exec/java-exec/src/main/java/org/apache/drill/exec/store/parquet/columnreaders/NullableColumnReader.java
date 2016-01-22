@@ -18,9 +18,13 @@
 package org.apache.drill.exec.store.parquet.columnreaders;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.exec.vector.BaseDataValueVector;
+import org.apache.drill.exec.vector.NullableVarBinaryVector;
+import org.apache.drill.exec.vector.NullableVarCharVector;
 import org.apache.drill.exec.vector.NullableVectorDefinitionSetter;
 import org.apache.drill.exec.vector.ValueVector;
 
@@ -33,6 +37,7 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
   protected BaseDataValueVector castedBaseVector;
   protected NullableVectorDefinitionSetter castedVectorMutator;
   private long definitionLevelsRead = 0;
+  private boolean required;
 
   NullableColumnReader(ParquetRecordReader parentReader, int allocateSize, ColumnDescriptor descriptor, ColumnChunkMetaData columnChunkMetaData,
                boolean fixedLength, V v, SchemaElement schemaElement) throws ExecutionSetupException {
@@ -48,6 +53,7 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
     readLengthInBits = 0;
     recordsReadInThisIteration = 0;
     vectorData = castedBaseVector.getBuffer();
+    required = columnDescriptor.getMaxDefinitionLevel() == 0;
 
     // values need to be spaced out where nulls appear in the column
     // leaving blank space for nulls allows for random access to values
@@ -62,7 +68,7 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
                         // This was previously the indexInOutputVector variable
     boolean haveMoreData; // true if we have more data and have not filled the vector
 
-    while (readCount < recordsToReadInThisPass && writeCount < valueVec.getValueCapacity()) {
+    while (readCount < recordsToReadInThisPass) {
       // read a page if needed
       if (!pageReader.hasPage()
           || (definitionLevelsRead >= pageReader.currentPageCount)) {
@@ -85,7 +91,11 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
 
       // If we are reentering this loop, the currentDefinitionLevel has already been read
       if (currentDefinitionLevel < 0) {
-        currentDefinitionLevel = pageReader.definitionLevels.readInteger();
+        if (required) {
+          currentDefinitionLevel = 0;
+        } else {
+          currentDefinitionLevel = pageReader.definitionLevels.readInteger();
+        }
       }
       haveMoreData = readCount < recordsToReadInThisPass
           && writeCount + nullRunLength < valueVec.getValueCapacity()
@@ -119,21 +129,20 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
       // Handle the run of non-null values
       //
       haveMoreData = readCount < recordsToReadInThisPass
-          && writeCount + runLength < valueVec.getValueCapacity()
-          // note: writeCount+runLength
           && definitionLevelsRead < pageReader.currentPageCount;
       while (haveMoreData && currentDefinitionLevel >= columnDescriptor
           .getMaxDefinitionLevel()) {
         readCount++;
         runLength++;
         definitionLevelsRead++;
-        castedVectorMutator.setIndexDefined(writeCount + runLength
-            - 1); //set the nullable bit to indicate a non-null value
+        castedVectorMutator.setIndexDefined(writeCount + runLength - 1); //set the nullable bit to indicate a non-null value
         haveMoreData = readCount < recordsToReadInThisPass
             && writeCount + runLength < valueVec.getValueCapacity()
             && definitionLevelsRead < pageReader.currentPageCount;
         if (haveMoreData) {
-          currentDefinitionLevel = pageReader.definitionLevels.readInteger();
+          if (!required) {
+            currentDefinitionLevel = pageReader.definitionLevels.readInteger();
+          }
         }
       }
 
@@ -162,14 +171,14 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
       totalValuesRead += runLength + nullRunLength;
 
       logger.trace("" + "recordsToReadInThisPass: {} \t "
-              + "Run Length: {} \t Null Run Length: {} \t readCount: {} \t writeCount: {} \t "
-              + "recordsReadInThisIteration: {} \t valuesReadInCurrentPass: {} \t "
-              + "totalValuesRead: {} \t readStartInBytes: {} \t readLength: {} \t pageReader.byteLength: {} \t "
-              + "definitionLevelsRead: {} \t pageReader.currentPageCount: {}",
-          recordsToReadInThisPass, runLength, nullRunLength, readCount,
-          writeCount, recordsReadInThisIteration, valuesReadInCurrentPass,
-          totalValuesRead, readStartInBytes, readLength, pageReader.byteLength,
-          definitionLevelsRead, pageReader.currentPageCount);
+                      + "Run Length: {} \t Null Run Length: {} \t readCount: {} \t writeCount: {} \t "
+                      + "recordsReadInThisIteration: {} \t valuesReadInCurrentPass: {} \t "
+                      + "totalValuesRead: {} \t readStartInBytes: {} \t readLength: {} \t pageReader.byteLength: {} \t "
+                      + "definitionLevelsRead: {} \t pageReader.currentPageCount: {}",
+              recordsToReadInThisPass, runLength, nullRunLength, readCount,
+              writeCount, recordsReadInThisIteration, valuesReadInCurrentPass,
+              totalValuesRead, readStartInBytes, readLength, pageReader.byteLength,
+              definitionLevelsRead, pageReader.currentPageCount);
 
     }
 
@@ -178,4 +187,69 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
 
     @Override
   protected abstract void readField(long recordsToRead);
+
+
+  public static class NullableVarCharReader extends NullableColumnReader<NullableVarCharVector> {
+
+    NullableVarCharVector.Mutator mutator;
+
+    NullableVarCharReader(ParquetRecordReader parentReader, int allocateSize, ColumnDescriptor descriptor, ColumnChunkMetaData columnChunkMetaData,
+                          boolean fixedLength, ValueVector v, SchemaElement schemaElement) throws ExecutionSetupException {
+      super(parentReader, allocateSize, descriptor, columnChunkMetaData, fixedLength, (NullableVarCharVector) v, schemaElement);
+      mutator = ((NullableVarCharVector) v).getMutator();
+    }
+
+    @Override
+    protected void readField(long recordsToRead) {
+
+      readStartInBytes = pageReader.readPosInBytes;
+      readLengthInBits = recordsReadInThisIteration * dataTypeLengthInBits;
+      readLength = (int) Math.ceil(readLengthInBits / 8.0);
+
+      DrillBuf buf = pageReader.pageData;
+      ByteBuffer buffer = buf.nioBuffer();
+
+      int readPos = (int) readStartInBytes;
+      int writeIndex = valuesReadInCurrentPass;
+      for (int i = 0; i < recordsReadInThisIteration; i++) {
+        int length = buf.getInt(readPos);
+        mutator.setSafe(writeIndex, buffer, readPos + 4, length);
+        readPos += length + 4;
+        writeIndex++;
+      }
+      readLength = readPos - readStartInBytes;
+    }
+  }
+
+  public static class NullableVarBinaryReader extends NullableColumnReader<NullableVarBinaryVector> {
+
+    NullableVarBinaryVector.Mutator mutator;
+
+    NullableVarBinaryReader(ParquetRecordReader parentReader, int allocateSize, ColumnDescriptor descriptor, ColumnChunkMetaData columnChunkMetaData,
+                         boolean fixedLength, ValueVector v, SchemaElement schemaElement) throws ExecutionSetupException {
+      super(parentReader, allocateSize, descriptor, columnChunkMetaData, fixedLength, (NullableVarBinaryVector) v, schemaElement);
+      mutator = ((NullableVarBinaryVector) v).getMutator();
+    }
+
+    @Override
+    protected void readField(long recordsToRead) {
+
+      readStartInBytes = pageReader.readPosInBytes;
+      readLengthInBits = recordsReadInThisIteration * dataTypeLengthInBits;
+      readLength = (int) Math.ceil(readLengthInBits / 8.0);
+
+      DrillBuf buf = pageReader.pageData;
+      ByteBuffer buffer = buf.nioBuffer();
+
+      int readPos = (int) readStartInBytes;
+      int writeIndex = valuesReadInCurrentPass;
+      for (int i = 0; i < recordsReadInThisIteration; i++) {
+        int length = buf.getInt(readPos);
+        mutator.setSafe(writeIndex, buffer, readPos + 4, length);
+        readPos += length + 4;
+        writeIndex++;
+      }
+      readLength = readPos - readStartInBytes;
+    }
+  }
 }

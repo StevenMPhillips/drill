@@ -33,7 +33,7 @@ import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
  * because page/batch boundaries that do not land on byte boundaries require shifting of all of the values
  * in the next batch.
  */
-final class NullableBitReader extends ColumnReader {
+final class NullableBitReader extends NullableColumnReader {
 
   NullableBitReader(ParquetRecordReader parentReader, int allocateSize, ColumnDescriptor descriptor, ColumnChunkMetaData columnChunkMetaData,
                     boolean fixedLength, ValueVector v, SchemaElement schemaElement) throws ExecutionSetupException {

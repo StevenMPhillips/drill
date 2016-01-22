@@ -17,7 +17,9 @@
  ******************************************************************************/
 package org.apache.drill.exec.store.parquet.columnreaders;
 
+import com.google.common.base.Preconditions;
 import org.apache.drill.common.types.TypeProtos;
+import org.apache.drill.common.types.TypeProtos.DataMode;
 import org.apache.drill.common.types.TypeProtos.MinorType;
 
 import org.apache.drill.common.util.CoreDecimalUtility;
@@ -113,8 +115,9 @@ public class ParquetToDrillTypeConverter {
   public static TypeProtos.MajorType toMajorType(PrimitiveType.PrimitiveTypeName primitiveTypeName, int length,
                                           TypeProtos.DataMode mode, SchemaElement schemaElement,
                                           OptionManager options) {
+    Preconditions.checkArgument(mode != DataMode.REPEATED, "This reader does not support complex/repeated types");
     MinorType minorType = getMinorType(primitiveTypeName, length, schemaElement, options);
-    TypeProtos.MajorType.Builder typeBuilder = TypeProtos.MajorType.newBuilder().setMinorType(minorType).setMode(mode);
+    TypeProtos.MajorType.Builder typeBuilder = TypeProtos.MajorType.newBuilder().setMinorType(minorType).setMode(DataMode.OPTIONAL);
 
     if (CoreDecimalUtility.isDecimalType(minorType)) {
       typeBuilder.setPrecision(schemaElement.getPrecision()).setScale(schemaElement.getScale());

@@ -48,6 +48,8 @@ import org.apache.parquet.hadoop.CodecFactory;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.OriginalType;
+import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
 
 import com.google.common.base.Preconditions;
@@ -178,7 +180,7 @@ public class ParquetScanBatchCreator implements BatchCreator<ParquetRowGroupScan
     MessageType schema = footer.getFileMetaData().getSchema();
 
     for (Type type : schema.getFields()) {
-      if (!type.isPrimitive()) {
+      if (!type.isPrimitive() || type.getOriginalType() == OriginalType.DECIMAL || type.asPrimitiveType().getPrimitiveTypeName() == PrimitiveTypeName.BOOLEAN) {
         return true;
       }
     }
