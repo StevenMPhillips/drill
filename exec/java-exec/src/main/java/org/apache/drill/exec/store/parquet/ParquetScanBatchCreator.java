@@ -180,7 +180,7 @@ public class ParquetScanBatchCreator implements BatchCreator<ParquetRowGroupScan
     MessageType schema = footer.getFileMetaData().getSchema();
 
     for (Type type : schema.getFields()) {
-      if (!type.isPrimitive() || type.getOriginalType() == OriginalType.DECIMAL || type.asPrimitiveType().getPrimitiveTypeName() == PrimitiveTypeName.BOOLEAN) {
+      if (!type.isPrimitive()) {
         return true;
       }
     }

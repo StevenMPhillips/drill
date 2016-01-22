@@ -21,6 +21,7 @@ import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.exec.exception.SchemaChangeException;
 
 import org.apache.drill.exec.store.parquet.columnreaders.NullableColumnReader.NullableVarCharReader;
+import org.apache.drill.exec.store.parquet.columnreaders.NullableFixedByteAlignedReaders.NullableFixedByteAlignedReader;
 import org.apache.drill.exec.vector.BigIntVector;
 import org.apache.drill.exec.vector.Decimal18Vector;
 import org.apache.drill.exec.vector.Decimal28SparseVector;
@@ -104,9 +105,9 @@ public class ColumnReaderFactory {
         return new NullableColumnReader.NullableVarCharReader(parentReader, allocateSize, descriptor, columnChunkMetaData, false, (NullableVarCharVector) v, schemaElement);
       case DECIMAL:
         if (v instanceof Decimal28SparseVector) {
-          throw new UnsupportedOperationException();
+          return new NullableFixedByteAlignedReaders.NullableDecimal28Reader(parentReader, allocateSize, descriptor, columnChunkMetaData, fixedLength, v, schemaElement);
         } else if (v instanceof Decimal38SparseVector) {
-          throw new UnsupportedOperationException();
+          return new NullableFixedByteAlignedReaders.NullableDecimal38Reader(parentReader, allocateSize, descriptor, columnChunkMetaData, fixedLength, v, schemaElement);
         }
       default:
         return new NullableColumnReader.NullableVarBinaryReader(parentReader, allocateSize, descriptor, columnChunkMetaData, fixedLength, (NullableVarBinaryVector) v, schemaElement);

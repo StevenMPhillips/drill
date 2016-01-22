@@ -43,8 +43,8 @@ final class NullableBitReader extends NullableColumnReader {
   @Override
   public void readField(long recordsToReadInThisPass) {
 
-    recordsReadInThisIteration = Math.min(pageReader.currentPageCount
-        - pageReader.valuesRead, recordsToReadInThisPass - valuesReadInCurrentPass);
+//    recordsReadInThisIteration = Math.min(pageReader.currentPageCount
+//        - pageReader.valuesRead, recordsToReadInThisPass - valuesReadInCurrentPass);
     int defLevel;
     for (int i = 0; i < recordsReadInThisIteration; i++){
       defLevel = pageReader.definitionLevels.readInteger();
