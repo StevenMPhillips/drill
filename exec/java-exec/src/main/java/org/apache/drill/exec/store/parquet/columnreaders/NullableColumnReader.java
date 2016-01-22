@@ -209,9 +209,10 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
       DrillBuf buf = pageReader.pageData;
       ByteBuffer buffer = buf.nioBuffer();
 
+
       int readPos = (int) readStartInBytes;
       int writeIndex = valuesReadInCurrentPass;
-      for (int i = 0; i < recordsReadInThisIteration; i++) {
+      for (int i = 0; i < recordsToRead; i++) {
         int length = buf.getInt(readPos);
         mutator.setSafe(writeIndex, buffer, readPos + 4, length);
         readPos += length + 4;
@@ -243,7 +244,7 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
 
       int readPos = (int) readStartInBytes;
       int writeIndex = valuesReadInCurrentPass;
-      for (int i = 0; i < recordsReadInThisIteration; i++) {
+      for (int i = 0; i < recordsToRead; i++) {
         int length = buf.getInt(readPos);
         mutator.setSafe(writeIndex, buffer, readPos + 4, length);
         readPos += length + 4;
