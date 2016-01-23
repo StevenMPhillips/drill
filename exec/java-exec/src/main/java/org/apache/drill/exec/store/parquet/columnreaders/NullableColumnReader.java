@@ -29,8 +29,10 @@ import org.apache.drill.exec.vector.NullableVectorDefinitionSetter;
 import org.apache.drill.exec.vector.ValueVector;
 
 import org.apache.parquet.column.ColumnDescriptor;
+import org.apache.parquet.column.Encoding;
 import org.apache.parquet.format.SchemaElement;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
+import org.apache.parquet.io.api.Binary;
 
 abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<V>{
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(NullableColumnReader.class);
@@ -207,16 +209,24 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
       readLength = (int) Math.ceil(readLengthInBits / 8.0);
 
       DrillBuf buf = pageReader.pageData;
-      ByteBuffer buffer = buf.nioBuffer();
 
 
       int readPos = (int) readStartInBytes;
       int writeIndex = valuesReadInCurrentPass;
-      for (int i = 0; i < recordsToRead; i++) {
-        int length = buf.getInt(readPos);
-        mutator.setSafe(writeIndex, buffer, readPos + 4, length);
-        readPos += length + 4;
-        writeIndex++;
+      if (columnChunkMetaData.getEncodings().contains(Encoding.PLAIN_DICTIONARY)) {
+        for (int i = 0; i < recordsToRead; i++) {
+          Binary currDictValToWrite = pageReader.dictionaryValueReader.readBytes();
+          ByteBuffer buffer = currDictValToWrite.toByteBuffer();
+          mutator.setSafe(writeIndex, buffer, buffer.position(), currDictValToWrite.length());
+          writeIndex++;
+        }
+      } else {
+        for (int i = 0; i < recordsToRead; i++) {
+          int length = buf.getInt(readPos);
+          mutator.setSafe(writeIndex, 1, readPos + 4, readPos + 4 + length, buf);
+          readPos += length + 4;
+          writeIndex++;
+        }
       }
       readLength = readPos - readStartInBytes;
     }
@@ -240,15 +250,24 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
       readLength = (int) Math.ceil(readLengthInBits / 8.0);
 
       DrillBuf buf = pageReader.pageData;
-      ByteBuffer buffer = buf.nioBuffer();
+
 
       int readPos = (int) readStartInBytes;
       int writeIndex = valuesReadInCurrentPass;
-      for (int i = 0; i < recordsToRead; i++) {
-        int length = buf.getInt(readPos);
-        mutator.setSafe(writeIndex, buffer, readPos + 4, length);
-        readPos += length + 4;
-        writeIndex++;
+      if (columnChunkMetaData.getEncodings().contains(Encoding.PLAIN_DICTIONARY)) {
+        for (int i = 0; i < recordsToRead; i++) {
+          Binary currDictValToWrite = pageReader.dictionaryValueReader.readBytes();
+          ByteBuffer buffer = currDictValToWrite.toByteBuffer();
+          mutator.setSafe(writeIndex, buffer, buffer.position(), currDictValToWrite.length());
+          writeIndex++;
+        }
+      } else {
+        for (int i = 0; i < recordsToRead; i++) {
+          int length = buf.getInt(readPos);
+          mutator.setSafe(writeIndex, 1, readPos + 4, readPos + 4 + length, buf);
+          readPos += length + 4;
+          writeIndex++;
+        }
       }
       readLength = readPos - readStartInBytes;
     }
