@@ -70,7 +70,7 @@ public class ColumnReaderFactory {
       throws Exception {
     ConvertedType convertedType = schemaElement.getConverted_type();
     if (columnChunkMetaData.getType() == PrimitiveType.PrimitiveTypeName.BOOLEAN){
-      throw new UnsupportedOperationException();
+      return new NullableBitReader(recordReader, allocateSize, descriptor, columnChunkMetaData, fixedLength, v, schemaElement);
     } else if (columnChunkMetaData.getType() == PrimitiveType.PrimitiveTypeName.INT32 && convertedType == ConvertedType.DATE){
       return new NullableFixedByteAlignedReaders.NullableDateReader(recordReader, allocateSize, descriptor, columnChunkMetaData, fixedLength, v, schemaElement);
     } else if (columnChunkMetaData.getType() == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY) {

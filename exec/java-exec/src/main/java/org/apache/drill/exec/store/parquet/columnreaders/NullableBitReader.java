@@ -43,17 +43,9 @@ final class NullableBitReader extends NullableColumnReader {
   @Override
   public void readField(long recordsToReadInThisPass) {
 
-//    recordsReadInThisIteration = Math.min(pageReader.currentPageCount
-//        - pageReader.valuesRead, recordsToReadInThisPass - valuesReadInCurrentPass);
-    int defLevel;
-    for (int i = 0; i < recordsReadInThisIteration; i++){
-      defLevel = pageReader.definitionLevels.readInteger();
-      // if the value is defined
-      if (defLevel == columnDescriptor.getMaxDefinitionLevel()){
-        ((NullableBitVector)valueVec).getMutator().setSafe(i + valuesReadInCurrentPass,
-            pageReader.valueReader.readBoolean() ? 1 : 0 );
-      }
-      // otherwise the value is skipped, because the bit vector indicating nullability is zero filled
+    for (int i = 0; i < recordsToReadInThisPass; i++){
+      ((NullableBitVector)valueVec).getMutator().setSafe(i + valuesReadInCurrentPass,
+          pageReader.valueReader.readBoolean() ? 1 : 0 );
     }
   }
 

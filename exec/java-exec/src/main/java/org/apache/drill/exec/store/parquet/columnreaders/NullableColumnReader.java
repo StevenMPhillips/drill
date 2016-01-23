@@ -118,8 +118,8 @@ abstract class NullableColumnReader<V extends ValueVector> extends ColumnReader<
       if (nullRunLength > 0) {
         int writerIndex =
             ((BaseDataValueVector) valueVec).getBuffer().writerIndex();
-        castedBaseVector.getBuffer().setIndex(0, writerIndex + (int) Math
-            .ceil(nullRunLength * dataTypeLengthInBits / 8.0));
+//        castedBaseVector.getBuffer().setIndex(0, writerIndex + (int) Math
+//            .ceil(nullRunLength * dataTypeLengthInBits / 8.0));
         writeCount += nullRunLength;
         valuesReadInCurrentPass += nullRunLength;
         recordsReadInThisIteration += nullRunLength;
