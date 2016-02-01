@@ -50,7 +50,7 @@ public class SumZeroFunctions {
 
   @Param ${type.inputType}Holder in;
   @Workspace ${type.runningType}Holder value;
-  @Output ${type.outputType}Holder out;
+  @Output Nullable${type.outputType}Holder out;
   
   
   public void setup() {
@@ -65,6 +65,7 @@ public class SumZeroFunctions {
   @Override
   public void output() {
     out.value = value.value;
+    out.isSet = 1;
   }
 
   @Override
