@@ -66,6 +66,7 @@ import org.apache.drill.exec.expr.ClassGenerator.HoldingContainer;
 import org.apache.drill.exec.expr.fn.AbstractFuncHolder;
 import org.apache.drill.exec.expr.fn.FunctionImplementationRegistry;
 import org.apache.drill.exec.physical.impl.filter.ReturnValueExpression;
+import org.apache.drill.exec.record.MajorTypeHelper;
 import org.apache.drill.exec.vector.ValueHolderHelper;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
@@ -367,9 +368,9 @@ public class EvaluationVisitor {
       // Otherwise, input is a holder and we use vv mutator to set value.
       if (inputContainer.isReader()) {
         JType writerImpl = generator.getModel()._ref(
-            TypeHelper.getWriterImpl(inputContainer.getMinorType(), inputContainer.getMajorType().getMode()));
+            TypeHelper.getWriterImpl(MajorTypeHelper.getArrowMinorType(inputContainer.getMinorType()), MajorTypeHelper.getArrowDataMode(inputContainer.getMajorType().getMode())));
         JType writerIFace = generator.getModel()._ref(
-            TypeHelper.getWriterInterface(inputContainer.getMinorType(), inputContainer.getMajorType().getMode()));
+            TypeHelper.getWriterInterface(MajorTypeHelper.getArrowMinorType(inputContainer.getMinorType()), MajorTypeHelper.getArrowDataMode(inputContainer.getMajorType().getMode())));
         JVar writer = generator.declareClassField("writer", writerIFace);
         generator.getSetupBlock().assign(writer, JExpr._new(writerImpl).arg(vv).arg(JExpr._null()));
         generator.getEvalBlock().add(writer.invoke("setPosition").arg(outIndex));

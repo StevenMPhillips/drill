@@ -45,25 +45,25 @@ package org.apache.drill.exec.vector;
  * NB: this class is automatically generated from ${.template_name} and ValueVectorTypes.tdd using FreeMarker.
  */
 @SuppressWarnings("unused")
-public final class ${className}Helper  {
+public final class ${className} {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(${className}.class);
 
-  public static SerializedField.Builder getMetadataBuilder(${minor.class}Vector vector) {
+  public static SerializedField.Builder getMetadataBuilder(Nullable${minor.class}Vector vector) {
     return SerializedFieldHelper.getMetadataBuilder(vector)
-      .addChild(vector.bits.getMetadata())
-      .addChild(vector.values.getMetadata());
+      .addChild(UInt1VectorHelper.getMetadataBuilder(vector.bits)
+      .addChild(${minor.class}VectorHelper.getMetadataBuilder(vector.values);
   }
 
-  public void load(SerializedField metadata, DrillBuf buffer) {
+  public static void load(Nullable${minor.class}Vector vector, SerializedField metadata, DrillBuf buffer) {
     clear();
     // the bits vector is the first child (the order in which the children are added in getMetadataBuilder is significant)
     final SerializedField bitsField = metadata.getChild(0);
-    bits.load(bitsField, buffer);
+    UInt1VectorHelper.load(vector.bits, bitsField, buffer);
 
     final int capacity = buffer.capacity();
     final int bitsLength = bitsField.getBufferLength();
     final SerializedField valuesField = metadata.getChild(1);
-    values.load(valuesField, buffer.slice(bitsLength, capacity - bitsLength));
+    ${minor.class}VectorHelper.load(vector.values, valuesField, buffer.slice(bitsLength, capacity - bitsLength));
   }
 }
 </#list>

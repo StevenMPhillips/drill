@@ -24,28 +24,22 @@ import java.lang.Override;
 <#assign friendlyType = (minor.friendlyType!minor.boxedType!type.boxedType) />
 
 <#if type.major == "Fixed">
-<@pp.changeOutputFile name="/org/apache/drill/exec/vector/${minor.class}Vector.java" />
+<@pp.changeOutputFile name="/org/apache/drill/exec/vector/${minor.class}VectorHelper.java" />
 <#include "/@includes/license.ftl" />
 
 package org.apache.drill.exec.vector;
 
 <#include "/@includes/vv_imports.ftl" />
 
-/**
- * ${minor.class} implements a vector of fixed width values.  Elements in the vector are accessed
- * by position, starting from the logical start of the vector.  Values should be pushed onto the
- * vector sequentially, but may be randomly accessed.
- *   The width of each element is ${type.width} byte(s)
- *   The equivalent Java primitive is '${minor.javaType!type.javaType}'
- *
- * NB: this class is automatically generated from ${.template_name} and ValueVectorTypes.tdd using FreeMarker.
- */
 public final class ${minor.class}VectorHelper {
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(${minor.class}Vector.class);
+  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(${minor.class}VectorHelper.class);
 
-  @Override
-  public void load(${minor.class}Vector vector, SerializedField metadata, DrillBuf buffer) {
-    Preconditions.checkArgument(this.field.getPath().equals(metadata.getNamePart().getName()), "The field %s doesn't match the provided metadata %s.", this.field, metadata);
+  public static SerializedField.Builder getMetadataBuilder(${minor.class}Vector vector) {
+    return SerializedFieldHelper.getMetadataBuilder(vector);
+  }
+
+  public static void load(${minor.class}Vector vector, SerializedField metadata, DrillBuf buffer) {
+    Preconditions.checkArgument(vector.field.getPath().equals(metadata.getNamePart().getName()), "The field %s doesn't match the provided metadata %s.", vector.field, metadata);
     final int actualLength = metadata.getBufferLength();
     final int valueCount = metadata.getValueCount();
     final int expectedLength = valueCount * ${type.width};
@@ -58,7 +52,9 @@ public final class ${minor.class}VectorHelper {
     vector.data = buffer.slice(0, actualLength);
     vector.data.retain(1);
     vector.data.writerIndex(actualLength);
-    }
+  }
+}
 
+</#if>
 </#list>
 </#list>

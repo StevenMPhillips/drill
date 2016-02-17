@@ -35,6 +35,9 @@ import org.apache.drill.exec.vector.accessor.*;
 import org.apache.drill.exec.vector.complex.RepeatedMapVector;
 import org.apache.drill.exec.util.CallBack;
 
+import static org.apache.drill.exec.record.MajorTypeHelper.getDrillDataMode;
+import static org.apache.drill.exec.record.MajorTypeHelper.getDrillMinorType;
+
 public class TypeHelper extends BasicTypeHelper {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TypeHelper.class);
 
@@ -92,4 +95,43 @@ public class TypeHelper extends BasicTypeHelper {
       throw new UnsupportedOperationException(buildErrorMessage("get holder type", type, mode));
   }
 
+  public static void load(ValueVector v, SerializedField metadata, DrillBuf buffer) {
+    MinorType type = getDrillMinorType(v.getField().getType().getMinorType());
+    DataMode mode = getDrillDataMode(v.getField().getType().getMode());
+    switch(type) {
+    <#list vv.types as type>
+    <#list type.minor as minor>
+    case ${minor.class?upper_case}:
+    switch (mode) {
+    case REQUIRED:
+      ${minor.class}VectorHelper.load((${minor.class}Vector) v, metadata, buffer);
+    case OPTIONAL:
+      Nullable${minor.class}VectorHelper.load((Nullable${minor.class}Vector) v, metadata, buffer);
+    case REPEATED:
+//      Repeated${minor.class}VectorHelper.load((Repeated${minor.class}Vector) v, metadata, buffer);
+    }
+    </#list>
+    </#list>
+    }
+  }
+
+  public static SeraializedField getMetadata(ValueVector v) {
+    MinorType type = getDrillMinorType(v.getField().getType().getMinorType());
+    DataMode mode = getDrillDataMode(v.getField().getType().getMode());
+    switch(type) {
+    <#list vv.types as type>
+    <#list type.minor as minor>
+    case ${minor.class?upper_case}:
+    switch (mode) {
+    case REQUIRED:
+      ${minor.class}VectorHelper.getMetadata((${minor.class}Vector) v);
+    case OPTIONAL:
+      Nullable${minor.class}VectorHelper.getMetadata((Nullable${minor.class}Vector) v);
+    case REPEATED:
+//      Repeated${minor.class}VectorHelper.load((Repeated${minor.class}Vector) v, metadata, buffer);
+    }
+    </#list>
+    </#list>
+    }
+  }
 }

@@ -105,8 +105,8 @@ public class TypedFieldId {
   }
 
   public Class<? extends ValueVector> getIntermediateClass() {
-    return (Class<? extends ValueVector>) BasicTypeHelper.getValueVectorClass(intermediateType.getMinorType(),
-        intermediateType.getMode());
+    return (Class<? extends ValueVector>) BasicTypeHelper.getValueVectorClass(MajorTypeHelper.getArrowMinorType(intermediateType.getMinorType()),
+        MajorTypeHelper.getArrowDataMode(intermediateType.getMode()));
   }
 
   public MajorType getFinalType() {

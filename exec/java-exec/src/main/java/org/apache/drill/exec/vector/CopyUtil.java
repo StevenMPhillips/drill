@@ -19,6 +19,7 @@ package org.apache.drill.exec.vector;
 
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.expr.ClassGenerator;
+import org.apache.drill.exec.record.MajorTypeHelper;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorAccessible;
 import org.apache.drill.exec.record.VectorWrapper;
@@ -36,14 +37,14 @@ public class CopyUtil {
     JExpression outIndex = JExpr.direct("outIndex");
     for(VectorWrapper<?> vv : batch) {
       String copyMethod;
-      if (!Types.isFixedWidthType(vv.getField().getType()) || Types.isRepeated(vv.getField().getType()) || Types.isComplex(vv.getField().getType())) {
+      if (!Types.isFixedWidthType(MajorTypeHelper.getDrillMajorType(vv.getField().getType())) || Types.isRepeated(MajorTypeHelper.getDrillMajorType(vv.getField().getType())) || Types.isComplex(MajorTypeHelper.getDrillMajorType(vv.getField().getType()))) {
         copyMethod = "copyFromSafe";
       } else {
         copyMethod = "copyFrom";
       }
       g.rotateBlock();
-      JVar inVV = g.declareVectorValueSetupAndMember("incoming", new TypedFieldId(vv.getField().getType(), vv.isHyper(), fieldId));
-      JVar outVV = g.declareVectorValueSetupAndMember("outgoing", new TypedFieldId(vv.getField().getType(), false, fieldId));
+      JVar inVV = g.declareVectorValueSetupAndMember("incoming", new TypedFieldId(MajorTypeHelper.getDrillMajorType(vv.getField().getType()), vv.isHyper(), fieldId));
+      JVar outVV = g.declareVectorValueSetupAndMember("outgoing", new TypedFieldId(MajorTypeHelper.getDrillMajorType(vv.getField().getType()), false, fieldId));
 
       if(hyper){
 

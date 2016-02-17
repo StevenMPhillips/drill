@@ -44,6 +44,7 @@ import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.NullHandling;
 import org.apache.drill.exec.ops.UdfUtilities;
+import org.apache.drill.exec.record.MajorTypeHelper;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
 import com.google.common.base.Preconditions;
@@ -192,8 +193,8 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
         ValueReference parameter = parameters[i];
         HoldingContainer inputVariable = inputVariables[i];
         if (parameter.isFieldReader && ! inputVariable.isReader() && ! Types.isComplex(inputVariable.getMajorType()) && inputVariable.getMinorType() != MinorType.UNION) {
-          JType singularReaderClass = g.getModel()._ref(TypeHelper.getHolderReaderImpl(inputVariable.getMajorType().getMinorType(),
-              inputVariable.getMajorType().getMode()));
+          JType singularReaderClass = g.getModel()._ref(TypeHelper.getHolderReaderImpl(MajorTypeHelper.getArrowMinorType(inputVariable.getMajorType().getMinorType()),
+              MajorTypeHelper.getArrowDataMode(inputVariable.getMajorType().getMode())));
           JType fieldReadClass = g.getModel()._ref(FieldReader.class);
           sub.decl(fieldReadClass, parameter.name, JExpr._new(singularReaderClass).arg(inputVariable.getHolder()));
         } else {

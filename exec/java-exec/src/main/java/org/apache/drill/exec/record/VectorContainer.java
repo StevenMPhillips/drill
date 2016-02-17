@@ -135,7 +135,7 @@ public class VectorContainer implements Iterable<VectorWrapper<?>>, VectorAccess
   }
 
   public <T extends ValueVector> T addOrGet(String name, MajorType type, Class<T> clazz) {
-    MaterializedField field = MaterializedField.create(name, type);
+    MaterializedField field = MaterializedField.create(name, MajorTypeHelper.getArrowMajorType(type));
     return addOrGet(field);
   }
 
@@ -214,7 +214,7 @@ public class VectorContainer implements Iterable<VectorWrapper<?>>, VectorAccess
     schema = null;
     int i = wrappers.size();
     wrappers.add(SimpleVectorWrapper.create(vv));
-    return new TypedFieldId(vv.getField().getType(), i);
+    return new TypedFieldId(MajorTypeHelper.getDrillMajorType(vv.getField().getType()), i);
   }
 
   public void add(ValueVector[] hyperVector) {

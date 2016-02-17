@@ -21,6 +21,7 @@ import io.netty.buffer.DrillBuf;
 
 import java.util.List;
 
+import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.proto.UserBitShared.RecordBatchDef;
 import org.apache.drill.exec.proto.UserBitShared.SerializedField;
@@ -104,7 +105,7 @@ public class WritableBatch implements AutoCloseable {
           ValueVector v = vv.getValueVector();
           DrillBuf bb = newBuf.slice(bufferOffset, fmd.getBufferLength());
 //        v.load(fmd, cbb.slice(bufferOffset, fmd.getBufferLength()));
-          v.load(fmd, bb);
+          TypeHelper.load(v, fmd, bb);
           vectorIndex++;
           bufferOffset += fmd.getBufferLength();
         }
