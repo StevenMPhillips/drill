@@ -46,8 +46,8 @@ import java.util.List;
 
 public class ListVector extends BaseRepeatedValueVector {
 
-  private UInt4Vector offsets;
-  private final UInt1Vector bits;
+  UInt4Vector offsets;
+  final UInt1Vector bits;
   private Mutator mutator = new Mutator();
   private Accessor accessor = new Accessor();
   private UnionListWriter writer;

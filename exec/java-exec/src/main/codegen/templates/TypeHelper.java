@@ -93,6 +93,29 @@ public class TypeHelper extends BasicTypeHelper {
     MinorType type = v.getField().getType().getMinorType();
     DataMode mode = v.getField().getType().getMode();
     switch(type) {
+    case UNION:
+      new UnionVectorHelper((UnionVector) v).load(metadata, buffer);
+      return;
+    case LIST:
+      switch(mode) {
+      case REQUIRED:
+      case OPTIONAL:
+        new ListVectorHelper((ListVector) v).load(metadata, buffer);
+        return;
+      case REPEATED:
+        new RepeatedListVectorHelper((RepeatedListVector) v).load(metadata, buffer);
+        return;
+      }
+    case MAP:
+      switch(mode) {
+      case REQUIRED:
+      case OPTIONAL:
+        new MapVectorHelper((MapVector) v).load(metadata, buffer);
+        return;
+      case REPEATED:
+        new RepeatedMapVectorHelper((RepeatedMapVector) v).load(metadata, buffer);
+        return;
+      }
     <#list vv.types as type>
     <#list type.minor as minor>
     case ${minor.class?upper_case}:
@@ -116,6 +139,19 @@ public class TypeHelper extends BasicTypeHelper {
     MinorType type = v.getField().getType().getMinorType();
     DataMode mode = v.getField().getType().getMode();
     switch(type) {
+    case UNION:
+      break;
+    case LIST:
+      switch(mode) {
+      case REQUIRED:
+      case OPTIONAL:
+        return new ListVectorHelper((ListVector) v).getMetadataBuilder();
+      case REPEATED:
+        break;
+      }
+      break;
+    case MAP:
+      break;
     <#list vv.types as type>
     <#list type.minor as minor>
     case ${minor.class?upper_case}:
@@ -137,6 +173,24 @@ public class TypeHelper extends BasicTypeHelper {
     MinorType type = v.getField().getType().getMinorType();
     DataMode mode = v.getField().getType().getMode();
     switch(type) {
+    case UNION:
+      return new UnionVectorHelper((UnionVector) v).getMetadata();
+    case LIST:
+      switch(mode) {
+      case REQUIRED:
+      case OPTIONAL:
+        return new ListVectorHelper((ListVector) v).getMetadata();
+      case REPEATED:
+        return new RepeatedListVectorHelper((RepeatedListVector) v).getMetadata();
+      }
+    case MAP:
+      switch(mode) {
+      case REQUIRED:
+      case OPTIONAL:
+        return new MapVectorHelper((MapVector) v).getMetadata();
+      case REPEATED:
+        return new RepeatedMapVectorHelper((RepeatedMapVector) v).getMetadata();
+      }
     <#list vv.types as type>
     <#list type.minor as minor>
     case ${minor.class?upper_case}:

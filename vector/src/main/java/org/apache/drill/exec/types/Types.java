@@ -86,11 +86,11 @@ public class Types {
     private Integer width;
 
     public MajorType(MinorType minorType, DataMode mode) {
-      this(minorType, mode, 0, 0, 0, null);
+      this(minorType, mode, 0, 0, 0, new ArrayList<MinorType>());
     }
 
     public MajorType(MinorType minorType, DataMode mode, Integer precision, Integer scale) {
-      this(minorType, mode, precision, scale, 0, null);
+      this(minorType, mode, precision, scale, 0, new ArrayList<MinorType>());
     }
 
     public MajorType(MinorType minorType, DataMode mode, Integer precision, Integer scale, Integer timezone, List<MinorType> subTypes) {

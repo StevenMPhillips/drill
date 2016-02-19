@@ -264,7 +264,7 @@ public class DrillOptiq {
       switch(call.getType().getSqlTypeName().getName()){
       case "VARCHAR":
       case "CHAR":
-        castType = new MajorType(MinorType.VARCHAR, DataMode.OPTIONAL, null, null, null, null, call.getType().getPrecision());
+        castType = new MajorType(MinorType.VARCHAR, DataMode.OPTIONAL, 0, 0, 0, null, call.getType().getPrecision());
         break;
 
       case "INTEGER": castType = Types.required(MinorType.INT); break;
