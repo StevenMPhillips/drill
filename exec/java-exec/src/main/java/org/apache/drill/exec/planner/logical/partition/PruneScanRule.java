@@ -25,24 +25,15 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
 import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
-import org.apache.calcite.jdbc.CalciteAbstractSchema;
-import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.BitSets;
 
 import org.apache.drill.common.expression.ErrorCollectorImpl;
-import org.apache.drill.common.expression.ExpressionFunction;
 import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.expr.ExpressionTreeMaterializer;
 import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.expr.fn.interpreter.InterpreterEvaluator;
@@ -53,24 +44,23 @@ import org.apache.drill.exec.physical.base.GroupScan;
 import org.apache.drill.exec.planner.FileSystemPartitionDescriptor;
 import org.apache.drill.exec.planner.PartitionDescriptor;
 import org.apache.drill.exec.planner.PartitionLocation;
-import org.apache.drill.exec.planner.logical.DrillFilterRel;
 import org.apache.drill.exec.planner.logical.DrillOptiq;
 import org.apache.drill.exec.planner.logical.DrillParseContext;
-import org.apache.drill.exec.planner.logical.DrillProjectRel;
-import org.apache.drill.exec.planner.logical.DrillRel;
 import org.apache.drill.exec.planner.logical.DrillScanRel;
 import org.apache.drill.exec.planner.logical.DrillTable;
 import org.apache.drill.exec.planner.logical.DrillTranslatableTable;
-import org.apache.drill.exec.planner.logical.DynamicDrillTable;
 import org.apache.drill.exec.planner.logical.RelOptHelper;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
 import org.apache.drill.exec.planner.physical.PrelUtil;
+import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.store.StoragePluginOptimizerRule;
-import org.apache.drill.exec.store.dfs.FileSelection;
 import org.apache.drill.exec.store.dfs.FormatSelection;
-import org.apache.drill.exec.store.parquet.ParquetFileSelection;
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.NullableBitVector;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.plan.RelOptRule;
@@ -234,7 +224,7 @@ public abstract class PruneScanRule extends StoragePluginOptimizerRule {
         final ValueVector[] vectors = new ValueVector[descriptor.getMaxHierarchyLevel()];
         for (int partitionColumnIndex : BitSets.toIter(partitionColumnBitSet)) {
           SchemaPath column = SchemaPath.getSimplePath(fieldNameMap.get(partitionColumnIndex));
-          MajorType type = descriptor.getVectorType(column, settings);
+          MajorType type = MajorTypeHelper.getArrowMajorType(descriptor.getVectorType(column, settings));
           MaterializedField field = MaterializedField.create(column.getAsUnescapedPath(), type);
           ValueVector v = TypeHelper.getNewVector(field, allocator);
           v.allocateNew();
@@ -360,7 +350,7 @@ public abstract class PruneScanRule extends StoragePluginOptimizerRule {
     LogicalExpression materializedExpr = ExpressionTreeMaterializer.materialize(expr, container, errors, optimizerContext.getFunctionRegistry());
     // Make sure pruneCondition's materialized expression is always of BitType, so that
     // it's same as the type of output vector.
-    if (materializedExpr.getMajorType().getMode() == TypeProtos.DataMode.REQUIRED) {
+    if (materializedExpr.getMajorType().getMode() == DataMode.REQUIRED) {
       materializedExpr = ExpressionTreeMaterializer.convertToNullableType(
           materializedExpr,
           materializedExpr.getMajorType().getMinorType(),

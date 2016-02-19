@@ -19,11 +19,11 @@ package org.apache.drill.exec.store.easy.text.compliant;
 
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.physical.impl.OutputMutator;
 import org.apache.drill.exec.record.MaterializedField;
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.VarCharVector;
 
 import java.util.ArrayList;
@@ -121,7 +121,7 @@ class FieldVarCharOutput extends TextOutput {
 
     for (int i = 0; i <= maxField; i++) {
       if (selectedFields[i]) {
-        MaterializedField field = MaterializedField.create(outputColumns.get(i), Types.required(TypeProtos.MinorType.VARCHAR));
+        MaterializedField field = MaterializedField.create(outputColumns.get(i), Types.required(MinorType.VARCHAR));
         this.vectors[i] = outputMutator.addField(field, VarCharVector.class);
       }
     }

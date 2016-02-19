@@ -27,16 +27,10 @@ package org.apache.drill.exec.expr;
 
 <#include "/@includes/vv_imports.ftl" />
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos.DataMode;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.vector.accessor.*;
 import org.apache.drill.exec.vector.complex.RepeatedMapVector;
 import org.apache.drill.exec.util.CallBack;
-
-import static org.apache.drill.exec.record.MajorTypeHelper.getDrillDataMode;
-import static org.apache.drill.exec.record.MajorTypeHelper.getDrillMinorType;
 
 public class TypeHelper extends BasicTypeHelper {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TypeHelper.class);
@@ -63,7 +57,7 @@ public class TypeHelper extends BasicTypeHelper {
     case LIST:
       return new GenericAccessor(vector);
     }
-    throw new UnsupportedOperationException(buildErrorMessage("find sql accessor", type));
+    throw new UnsupportedOperationException(buildErrorMessage("find sql accessor", (type)));
   }
   
   public static JType getHolderType(JCodeModel model, MinorType type, DataMode mode){
@@ -92,46 +86,71 @@ public class TypeHelper extends BasicTypeHelper {
       default:
         break;
       }
-      throw new UnsupportedOperationException(buildErrorMessage("get holder type", type, mode));
+    throw new UnsupportedOperationException(buildErrorMessage("get holder type", type,mode));
   }
 
   public static void load(ValueVector v, SerializedField metadata, DrillBuf buffer) {
-    MinorType type = getDrillMinorType(v.getField().getType().getMinorType());
-    DataMode mode = getDrillDataMode(v.getField().getType().getMode());
+    MinorType type = v.getField().getType().getMinorType();
+    DataMode mode = v.getField().getType().getMode();
     switch(type) {
     <#list vv.types as type>
     <#list type.minor as minor>
     case ${minor.class?upper_case}:
-    switch (mode) {
-    case REQUIRED:
-      ${minor.class}VectorHelper.load((${minor.class}Vector) v, metadata, buffer);
-    case OPTIONAL:
-      Nullable${minor.class}VectorHelper.load((Nullable${minor.class}Vector) v, metadata, buffer);
-    case REPEATED:
-//      Repeated${minor.class}VectorHelper.load((Repeated${minor.class}Vector) v, metadata, buffer);
-    }
+      switch (mode) {
+      case REQUIRED:
+        new ${minor.class}VectorHelper((${minor.class}Vector) v).load(metadata, buffer);
+        return;
+      case OPTIONAL:
+        new Nullable${minor.class}VectorHelper((Nullable${minor.class}Vector) v).load(metadata, buffer);
+        return;
+      case REPEATED:
+        new Repeated${minor.class}VectorHelper((Repeated${minor.class}Vector) v).load(metadata, buffer);
+        return;
+      }
     </#list>
     </#list>
     }
   }
 
-  public static SeraializedField getMetadata(ValueVector v) {
-    MinorType type = getDrillMinorType(v.getField().getType().getMinorType());
-    DataMode mode = getDrillDataMode(v.getField().getType().getMode());
+  public static SerializedField.Builder getMetadataBuilder(ValueVector v) {
+    MinorType type = v.getField().getType().getMinorType();
+    DataMode mode = v.getField().getType().getMode();
     switch(type) {
     <#list vv.types as type>
     <#list type.minor as minor>
     case ${minor.class?upper_case}:
-    switch (mode) {
-    case REQUIRED:
-      ${minor.class}VectorHelper.getMetadata((${minor.class}Vector) v);
-    case OPTIONAL:
-      Nullable${minor.class}VectorHelper.getMetadata((Nullable${minor.class}Vector) v);
-    case REPEATED:
-//      Repeated${minor.class}VectorHelper.load((Repeated${minor.class}Vector) v, metadata, buffer);
-    }
+      switch (mode) {
+      case REQUIRED:
+        return new ${minor.class}VectorHelper((${minor.class}Vector) v).getMetadataBuilder();
+      case OPTIONAL:
+        return new Nullable${minor.class}VectorHelper((Nullable${minor.class}Vector) v).getMetadataBuilder();
+      case REPEATED:
+        return new Repeated${minor.class}VectorHelper((Repeated${minor.class}Vector) v).getMetadataBuilder();
+      }
     </#list>
     </#list>
     }
+    return null;
+  }
+
+  public static SerializedField getMetadata(ValueVector v) {
+    MinorType type = v.getField().getType().getMinorType();
+    DataMode mode = v.getField().getType().getMode();
+    switch(type) {
+    <#list vv.types as type>
+    <#list type.minor as minor>
+    case ${minor.class?upper_case}:
+      switch (mode) {
+      case REQUIRED:
+        return new ${minor.class}VectorHelper((${minor.class}Vector) v).getMetadata();
+      case OPTIONAL:
+        return new Nullable${minor.class}VectorHelper((Nullable${minor.class}Vector) v).getMetadata();
+      case REPEATED:
+        return new Repeated${minor.class}VectorHelper((Repeated${minor.class}Vector) v).getMetadata();
+      }
+    </#list>
+    </#list>
+    }
+    return null;
   }
 }

@@ -31,14 +31,17 @@ package org.apache.drill.exec.vector;
 
 <#include "/@includes/vv_imports.ftl" />
 
-public final class ${minor.class}VectorHelper {
+public final class ${minor.class}VectorHelper extends BaseValueVectorHelper {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(${minor.class}VectorHelper.class);
 
-  public static SerializedField.Builder getMetadataBuilder(${minor.class}Vector vector) {
-    return SerializedFieldHelper.getMetadataBuilder(vector);
+  private ${minor.class}Vector vector;
+
+  public ${minor.class}VectorHelper(${minor.class}Vector vector) {
+    super(vector);
+    this.vector = vector;
   }
 
-  public static void load(${minor.class}Vector vector, SerializedField metadata, DrillBuf buffer) {
+  public void load(SerializedField metadata, DrillBuf buffer) {
     Preconditions.checkArgument(vector.field.getPath().equals(metadata.getNamePart().getName()), "The field %s doesn't match the provided metadata %s.", vector.field, metadata);
     final int actualLength = metadata.getBufferLength();
     final int valueCount = metadata.getValueCount();

@@ -24,7 +24,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 
-import org.apache.drill.common.types.TypeProtos.MajorType;
+import org.apache.drill.exec.types.Types.MajorType;
 import org.apache.drill.exec.vector.ValueVector;
 
 /**

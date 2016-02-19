@@ -19,8 +19,6 @@ package org.apache.drill.exec.expr;
 
 import io.netty.buffer.DrillBuf;
 
-import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.exec.expr.ClassGenerator.HoldingContainer;
 
 import com.sun.codemodel.JBlock;
@@ -29,6 +27,8 @@ import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JInvocation;
 import com.sun.codemodel.JVar;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 
 public class GetSetVectorHelper {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(GetSetVectorHelper.class);

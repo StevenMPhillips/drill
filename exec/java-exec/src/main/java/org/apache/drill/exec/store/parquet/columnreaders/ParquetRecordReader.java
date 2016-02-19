@@ -37,7 +37,6 @@ import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.physical.impl.OutputMutator;
-import org.apache.drill.exec.record.MajorTypeHelper;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.parquet.ParquetReaderStats;
@@ -60,9 +59,9 @@ import org.apache.parquet.schema.PrimitiveType;
 
 import com.google.common.collect.Lists;
 
-import static org.apache.drill.exec.record.MajorTypeHelper.getArrowDataMode;
-import static org.apache.drill.exec.record.MajorTypeHelper.getArrowMajorType;
-import static org.apache.drill.exec.record.MajorTypeHelper.getArrowMinorType;
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowDataMode;
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowMinorType;
 
 public class ParquetRecordReader extends AbstractRecordReader {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ParquetRecordReader.class);

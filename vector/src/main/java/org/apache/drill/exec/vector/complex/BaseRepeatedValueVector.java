@@ -51,8 +51,8 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
   public final static MaterializedField OFFSETS_FIELD =
     MaterializedField.create(OFFSETS_VECTOR_NAME, new MajorType(MinorType.UINT4, DataMode.REQUIRED));
 
-  protected final UInt4Vector offsets;
-  protected ValueVector vector;
+  public final UInt4Vector offsets;
+  public ValueVector vector;
 
   protected BaseRepeatedValueVector(MaterializedField field, BufferAllocator allocator) {
     this(field, allocator, DEFAULT_DATA_VECTOR);

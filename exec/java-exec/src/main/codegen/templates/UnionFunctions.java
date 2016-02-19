@@ -62,7 +62,7 @@ public class GUnionFunctions {
 
     public void eval() {
       if (in.isSet == 1) {
-        out.value = in.getType().getMinorType() == org.apache.drill.common.types.TypeProtos.MinorType.${name?upper_case} ? 1 : 0;
+        out.value = in.getType().getMinorType() == org.apache.drill.exec.types.Types.MinorType.${name?upper_case} ? 1 : 0;
       } else {
         out.value = 0;
       }

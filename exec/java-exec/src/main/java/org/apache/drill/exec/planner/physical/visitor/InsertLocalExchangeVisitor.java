@@ -43,6 +43,8 @@ import org.apache.calcite.rex.RexUtil;
 import java.util.Collections;
 import java.util.List;
 
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
+
 public class InsertLocalExchangeVisitor extends BasePrelVisitor<Prel, Void, RuntimeException> {
   private final boolean isMuxEnabled;
   private final boolean isDeMuxEnabled;
@@ -58,7 +60,7 @@ public class InsertLocalExchangeVisitor extends BasePrelVisitor<Prel, Void, Runt
     @Override
     public RexNode createCall(String funcName, List<RexNode> inputFields) {
       final DrillSqlOperator op =
-          new DrillSqlOperator(funcName, inputFields.size(), MajorType.getDefaultInstance(), true);
+          new DrillSqlOperator(funcName, inputFields.size(), getArrowMajorType(MajorType.getDefaultInstance()), true);
       return rexBuilder.makeCall(op, inputFields);
     }
   }

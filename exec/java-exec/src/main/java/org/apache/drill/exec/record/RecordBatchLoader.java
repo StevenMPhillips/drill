@@ -113,7 +113,7 @@ public class RecordBatchLoader implements VectorAccessible, Iterable<VectorWrapp
         if (field.getValueCount() == 0) {
           AllocationHelper.allocate(vector, 0, 0, 0);
         } else {
-          vector.load(field, buf.slice(bufOffset, field.getBufferLength()));
+          TypeHelper.load(vector, field, buf.slice(bufOffset, field.getBufferLength()));
         }
         bufOffset += field.getBufferLength();
         newVectors.add(vector);

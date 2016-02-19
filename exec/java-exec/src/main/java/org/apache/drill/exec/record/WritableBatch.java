@@ -154,7 +154,7 @@ public class WritableBatch implements AutoCloseable {
     List<SerializedField> metadata = Lists.newArrayList();
 
     for (ValueVector vv : vectors) {
-      metadata.add(vv.getMetadata());
+      metadata.add(TypeHelper.getMetadata(vv));
 
       // don't try to get the buffers if we don't have any records. It is possible the buffers are dead buffers.
       if (recordCount == 0) {

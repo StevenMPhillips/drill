@@ -43,6 +43,9 @@ import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.dfs.DrillFileSystem;
 import org.apache.drill.exec.store.parquet.ParquetDirectByteBufferAllocator;
 import org.apache.drill.exec.store.parquet.RowGroupReadEntry;
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.NullableIntVector;
 import org.apache.drill.exec.vector.ValueVector;
@@ -219,9 +222,9 @@ public class DrillParquetReader extends AbstractRecordReader {
           for(SchemaPath col: columnsNotFound){
             nullFilledVectors.add(
               (NullableIntVector)output.addField(MaterializedField.create(col.getAsUnescapedPath(),
-                  org.apache.drill.common.types.Types.optional(TypeProtos.MinorType.INT)),
-                (Class<? extends ValueVector>) TypeHelper.getValueVectorClass(TypeProtos.MinorType.INT,
-                  TypeProtos.DataMode.OPTIONAL)));
+                              Types.optional(MinorType.INT)),
+                      (Class<? extends ValueVector>) TypeHelper.getValueVectorClass(MinorType.INT,
+                              DataMode.OPTIONAL)));
           }
           if(columnsNotFound.size()==getColumns().size()){
             noColumnsFound=true;

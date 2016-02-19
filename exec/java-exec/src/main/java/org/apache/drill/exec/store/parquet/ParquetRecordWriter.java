@@ -27,8 +27,6 @@ import java.util.Map;
 
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos.DataMode;
-import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.common.util.DrillVersionInfo;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.exception.OutOfMemoryException;
@@ -36,6 +34,7 @@ import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.planner.physical.WriterPrel;
 import org.apache.drill.exec.record.BatchSchema;
+import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorAccessible;
@@ -43,6 +42,8 @@ import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.store.EventBasedRecordWriter;
 import org.apache.drill.exec.store.EventBasedRecordWriter.FieldConverter;
 import org.apache.drill.exec.store.ParquetOutputRecordWriter;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.BitVector;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 import org.apache.hadoop.conf.Configuration;
@@ -203,11 +204,11 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
   private PrimitiveType getPrimitiveType(MaterializedField field) {
     MinorType minorType = field.getType().getMinorType();
     String name = field.getLastName();
-    PrimitiveTypeName primitiveTypeName = ParquetTypeHelper.getPrimitiveTypeNameForMinorType(minorType);
-    Repetition repetition = ParquetTypeHelper.getRepetitionForDataMode(field.getDataMode());
-    OriginalType originalType = ParquetTypeHelper.getOriginalTypeForMinorType(minorType);
+    PrimitiveTypeName primitiveTypeName = ParquetTypeHelper.getPrimitiveTypeNameForMinorType(MajorTypeHelper.getDrillMinorType(minorType));
+    Repetition repetition = ParquetTypeHelper.getRepetitionForDataMode(MajorTypeHelper.getDrillDataMode(field.getDataMode()));
+    OriginalType originalType = ParquetTypeHelper.getOriginalTypeForMinorType(MajorTypeHelper.getDrillMinorType(minorType));
     DecimalMetadata decimalMetadata = ParquetTypeHelper.getDecimalMetadataForField(field);
-    int length = ParquetTypeHelper.getLengthForMinorType(minorType);
+    int length = ParquetTypeHelper.getLengthForMinorType(MajorTypeHelper.getDrillMinorType(minorType));
     return new PrimitiveType(repetition, primitiveTypeName, length, name, originalType, decimalMetadata, null);
   }
 

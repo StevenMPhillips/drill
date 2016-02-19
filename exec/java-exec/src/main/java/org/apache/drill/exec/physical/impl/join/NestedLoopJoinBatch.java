@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 
 import org.apache.drill.common.exceptions.DrillRuntimeException;
-import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.exec.compile.sig.GeneratorMapping;
 import org.apache.drill.exec.compile.sig.MappingSet;
 import org.apache.drill.exec.exception.ClassTransformationException;
@@ -39,6 +38,7 @@ import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorWrapper;
+import org.apache.drill.exec.types.Types.MajorType;
 import org.apache.drill.exec.vector.AllocationHelper;
 
 import com.google.common.base.Preconditions;
@@ -235,7 +235,7 @@ public class NestedLoopJoinBatch extends AbstractRecordBatch<NestedLoopJoinPOP> 
     int outputFieldId = 0;
     // Set the input and output value vector references corresponding to the left batch
     for (MaterializedField field : leftSchema) {
-      final TypeProtos.MajorType fieldType = field.getType();
+      final MajorType fieldType = field.getType();
 
       // Add the vector to the output container
       container.addOrGet(field);
@@ -257,7 +257,7 @@ public class NestedLoopJoinBatch extends AbstractRecordBatch<NestedLoopJoinPOP> 
     // Set the input and output value vector references corresponding to the right batch
     for (MaterializedField field : rightSchema) {
 
-      final TypeProtos.MajorType fieldType = field.getType();
+      final MajorType fieldType = field.getType();
       // Add the vector to our output container
       container.addOrGet(field);
 

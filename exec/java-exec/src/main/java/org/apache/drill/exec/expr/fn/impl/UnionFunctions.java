@@ -19,7 +19,7 @@ package org.apache.drill.exec.expr.fn.impl;
 
 import com.google.common.collect.Sets;
 import io.netty.buffer.DrillBuf;
-import org.apache.drill.common.types.TypeProtos.MinorType;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.expr.DrillSimpleFunc;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate;
@@ -68,17 +68,17 @@ public class UnionFunctions {
     public void setup() {}
 
     public void eval() {
-      org.apache.drill.common.types.TypeProtos.MinorType type1;
+      org.apache.drill.exec.types.Types.MinorType type1;
       if (input1.isSet()) {
         type1 = input1.getType().getMinorType();
       } else {
-        type1 = org.apache.drill.common.types.TypeProtos.MinorType.NULL;
+        type1 = org.apache.drill.exec.types.Types.MinorType.NULL;
       }
-      org.apache.drill.common.types.TypeProtos.MinorType type2;
+      org.apache.drill.exec.types.Types.MinorType type2;
       if (input2.isSet()) {
         type2 = input2.getType().getMinorType();
       } else {
-        type2 = org.apache.drill.common.types.TypeProtos.MinorType.NULL;
+        type2 = org.apache.drill.exec.types.Types.MinorType.NULL;
       }
 
       out.value = org.apache.drill.exec.expr.fn.impl.UnionFunctions.compareTypes(type1, type2);
@@ -130,7 +130,7 @@ public class UnionFunctions {
     case TIMESTAMP:
       return 5;
     default:
-      return 6 + type.getNumber();
+      return 6 + type.ordinal();
     }
   }
 
@@ -154,7 +154,7 @@ public class UnionFunctions {
       if (input.isSet()) {
          type = input.getType().getMinorType().name().getBytes();
       } else {
-        type = org.apache.drill.common.types.TypeProtos.MinorType.NULL.name().getBytes();
+        type = org.apache.drill.exec.types.Types.MinorType.NULL.name().getBytes();
       }
       buf = buf.reallocIfNeeded(type.length);
       buf.setBytes(0, type);
@@ -191,7 +191,7 @@ public class UnionFunctions {
 
     public void eval() {
       if (in.isSet == 1) {
-        if (in.reader.getType().getMinorType() != org.apache.drill.common.types.TypeProtos.MinorType.LIST) {
+        if (in.reader.getType().getMinorType() != org.apache.drill.exec.types.Types.MinorType.LIST) {
           throw new UnsupportedOperationException("The input is not a LIST type");
         }
         out.reader = in.reader;
@@ -212,7 +212,7 @@ public class UnionFunctions {
 
     public void eval() {
       if (in.isSet == 1) {
-        out.value = in.getType().getMinorType() == org.apache.drill.common.types.TypeProtos.MinorType.LIST ? 1 : 0;
+        out.value = in.getType().getMinorType() == org.apache.drill.exec.types.Types.MinorType.LIST ? 1 : 0;
       } else {
         out.value = 0;
       }
@@ -230,7 +230,7 @@ public class UnionFunctions {
 
     public void eval() {
       if (in.isSet == 1) {
-        if (in.reader.getType().getMinorType() != org.apache.drill.common.types.TypeProtos.MinorType.MAP) {
+        if (in.reader.getType().getMinorType() != org.apache.drill.exec.types.Types.MinorType.MAP) {
           throw new UnsupportedOperationException("The input is not a MAP type");
         }
         out.reader = in.reader;
@@ -251,7 +251,7 @@ public class UnionFunctions {
 
     public void eval() {
       if (in.isSet == 1) {
-        out.value = in.getType().getMinorType() == org.apache.drill.common.types.TypeProtos.MinorType.MAP ? 1 : 0;
+        out.value = in.getType().getMinorType() == org.apache.drill.exec.types.Types.MinorType.MAP ? 1 : 0;
       } else {
         out.value = 0;
       }

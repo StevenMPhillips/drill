@@ -18,12 +18,12 @@
 package org.apache.drill.exec.vector.complex;
 
 import org.apache.drill.common.exceptions.DrillRuntimeException;
-import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.TypeProtos.MajorType;
 
 import org.apache.drill.exec.expr.fn.impl.MappifyUtility;
 import org.apache.drill.exec.record.MaterializedField;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 import org.apache.drill.exec.vector.complex.writer.BaseWriter;
 
@@ -41,7 +41,7 @@ public class MapUtility {
       MinorType valueMinorType = valueMajorType.getMinorType();
       boolean repeated = false;
 
-      if (valueMajorType.getMode() == TypeProtos.DataMode.REPEATED) {
+      if (valueMajorType.getMode() == DataMode.REPEATED) {
         repeated = true;
       }
 
@@ -208,7 +208,7 @@ public class MapUtility {
           }
           break;
         case MAP:
-          if (valueMajorType.getMode() == TypeProtos.DataMode.REPEATED) {
+          if (valueMajorType.getMode() == DataMode.REPEATED) {
             fieldReader.copyAsValue(mapWriter.list(MappifyUtility.fieldValue).map());
           } else {
             fieldReader.copyAsValue(mapWriter.map(MappifyUtility.fieldValue));

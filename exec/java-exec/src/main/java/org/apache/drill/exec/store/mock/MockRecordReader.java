@@ -20,7 +20,6 @@ package org.apache.drill.exec.store.mock;
 import java.util.Map;
 
 import org.apache.drill.common.exceptions.ExecutionSetupException;
-import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.exception.OutOfMemoryException;
 import org.apache.drill.exec.exception.SchemaChangeException;
@@ -28,6 +27,7 @@ import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.physical.impl.OutputMutator;
+import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.mock.MockGroupScanPOP.MockColumn;
@@ -54,14 +54,14 @@ public class MockRecordReader extends AbstractRecordReader {
   private int getEstimatedRecordSize(MockColumn[] types) {
     int x = 0;
     for (int i = 0; i < types.length; i++) {
-      x += TypeHelper.getSize(types[i].getMajorType());
+      x += TypeHelper.getSize(MajorTypeHelper.getArrowMajorType(types[i].getMajorType()));
     }
     return x;
   }
 
   private MaterializedField getVector(String name, MajorType type, int length) {
     assert context != null : "Context shouldn't be null.";
-    final MaterializedField f = MaterializedField.create(name, type);
+    final MaterializedField f = MaterializedField.create(name, MajorTypeHelper.getArrowMajorType(type));
     return f;
   }
 

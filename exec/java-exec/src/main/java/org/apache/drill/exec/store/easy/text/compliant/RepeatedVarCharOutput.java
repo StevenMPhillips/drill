@@ -30,10 +30,11 @@ import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.FieldReference;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.physical.impl.OutputMutator;
 import org.apache.drill.exec.record.MaterializedField;
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.RepeatedVarCharVector;
 
 import com.google.common.base.Preconditions;
@@ -121,7 +122,7 @@ class RepeatedVarCharOutput extends TextOutput {
   public RepeatedVarCharOutput(OutputMutator outputMutator, Collection<SchemaPath> columns, boolean isStarQuery) throws SchemaChangeException {
     super();
 
-    MaterializedField field = MaterializedField.create(COL_NAME, Types.repeated(TypeProtos.MinorType.VARCHAR));
+    MaterializedField field = MaterializedField.create(COL_NAME, Types.repeated(MinorType.VARCHAR));
     this.vector = outputMutator.addField(field, RepeatedVarCharVector.class);
 
     this.mutator = vector.getMutator();

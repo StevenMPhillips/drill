@@ -24,8 +24,6 @@ import org.apache.drill.common.expression.FieldReference;
 import org.apache.drill.common.logical.data.JoinCondition;
 import org.apache.drill.common.logical.data.NamedExpression;
 import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.TypeProtos.DataMode;
-import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.compile.sig.GeneratorMapping;
@@ -54,6 +52,9 @@ import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.record.VectorWrapper;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.AbstractContainerVector;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -423,8 +424,8 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
         // If left or full outer join, then the output type must be nullable. However, map types are
         // not nullable so we must exclude them from the check below (see DRILL-2197).
         if ((joinType == JoinRelType.LEFT || joinType == JoinRelType.FULL) && inputType.getMode() == DataMode.REQUIRED
-            && inputType.getMinorType() != TypeProtos.MinorType.MAP) {
-          outputType = Types.overrideMode(inputType, DataMode.OPTIONAL);
+            && inputType.getMinorType() != MinorType.MAP) {
+          outputType = new MajorType(inputType.getMinorType(), DataMode.OPTIONAL, inputType.getPrecision(), inputType.getScale(), inputType.getTimezone(), inputType.getSubTypes());
         } else {
           outputType = inputType;
         }
@@ -460,8 +461,8 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
         // If right or full outer join then the output type should be optional. However, map types are
         // not nullable so we must exclude them from the check below (see DRILL-2771, DRILL-2197).
         if ((joinType == JoinRelType.RIGHT || joinType == JoinRelType.FULL) && inputType.getMode() == DataMode.REQUIRED
-            && inputType.getMinorType() != TypeProtos.MinorType.MAP) {
-          outputType = Types.overrideMode(inputType, DataMode.OPTIONAL);
+            && inputType.getMinorType() != MinorType.MAP) {
+          outputType = new MajorType(inputType.getMinorType(), DataMode.OPTIONAL, inputType.getPrecision(), inputType.getScale(), inputType.getTimezone(), inputType.getSubTypes());
         } else {
           outputType = inputType;
         }

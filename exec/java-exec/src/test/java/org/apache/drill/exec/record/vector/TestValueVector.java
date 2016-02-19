@@ -28,7 +28,6 @@ import org.apache.drill.common.AutoCloseables;
 import org.apache.drill.common.config.DrillConfig;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.ExecTest;
 import org.apache.drill.exec.exception.OversizedAllocationException;
 import org.apache.drill.exec.expr.TypeHelper;
@@ -48,6 +47,10 @@ import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.memory.RootAllocatorFactory;
 import org.apache.drill.exec.proto.UserBitShared;
 import org.apache.drill.exec.record.MaterializedField;
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.BaseValueVector;
 import org.apache.drill.exec.vector.BitVector;
 import org.apache.drill.exec.vector.NullableFloat4Vector;
@@ -330,7 +333,7 @@ the interface to load has changed
     final DrillBuf[] buffers1 = vector1.getBuffers(false);
     final DrillBuf buffer1 = combineBuffers(allocator, buffers1);
     final VarCharVector vector2 = new VarCharVector(field, allocator);
-    vector2.load(vector1.getMetadata(), buffer1);
+    TypeHelper.load(vector2, TypeHelper.getMetadata(vector1), buffer1);
 
     // Check the contents of the new vector.
     final VarCharVector.Accessor accessor = vector2.getAccessor();
@@ -387,7 +390,7 @@ the interface to load has changed
     final DrillBuf[] buffers1 = vector1.getBuffers(false);
     final DrillBuf buffer1 = combineBuffers(allocator, buffers1);
     final NullableVarCharVector vector2 = new NullableVarCharVector(field, allocator);
-    vector2.load(vector1.getMetadata(), buffer1);
+    TypeHelper.load(vector2, TypeHelper.getMetadata(vector1), buffer1);
 
     // Check the vector's contents.
     final NullableVarCharVector.Accessor accessor2 = vector2.getAccessor();
@@ -682,9 +685,9 @@ the interface to load has changed
   }
 
   protected static class ChildVerifier implements VectorVerifier {
-    public final TypeProtos.MajorType[] types;
+    public final MajorType[] types;
 
-    public ChildVerifier(TypeProtos.MajorType... childTypes) {
+    public ChildVerifier(MajorType... childTypes) {
       this.types = Preconditions.checkNotNull(childTypes);
     }
 
@@ -692,7 +695,7 @@ the interface to load has changed
     public void verify(ValueVector vector) throws Exception {
       final String hint = String.format("%s failed the test case", vector.getClass().getSimpleName());
 
-      final UserBitShared.SerializedField metadata = vector.getMetadata();
+      final UserBitShared.SerializedField metadata = TypeHelper.getMetadata(vector);
       final int actual = metadata.getChildCount();
       assertEquals(hint, types.length, actual);
 
@@ -748,8 +751,8 @@ the interface to load has changed
     builder.put(UInt4Vector.class, noChild);
     builder.put(BitVector.class, noChild);
     builder.put(VarCharVector.class, offsetChild);
-    builder.put(NullableVarCharVector.class, new ChildVerifier(UInt1Holder.TYPE, Types.optional(TypeProtos.MinorType.VARCHAR)));
-    builder.put(RepeatedListVector.class, new ChildVerifier(UInt4Holder.TYPE, Types.LATE_BIND_TYPE));
+    builder.put(NullableVarCharVector.class, new ChildVerifier(UInt1Holder.TYPE, Types.optional(MinorType.VARCHAR)));
+    builder.put(RepeatedListVector.class, new ChildVerifier(UInt4Holder.TYPE, new MajorType(MinorType.LATE, DataMode.OPTIONAL)));
     builder.put(MapVector.class, noChild);
     builder.put(RepeatedMapVector.class, offsetChild);
     final ImmutableMap<Class, VectorVerifier> children = builder.build();
@@ -775,11 +778,11 @@ the interface to load has changed
       @Override
       public void verify(ValueVector vector) {
         final String hint = String.format("%s failed the test case", vector.getClass().getSimpleName());
-        final UserBitShared.SerializedField metadata = vector.getMetadata();
+        final UserBitShared.SerializedField metadata = TypeHelper.getMetadata(vector);
         assertEquals(hint, 0, metadata.getBufferLength());
         assertEquals(hint, 0, metadata.getValueCount());
 
-        vector.load(metadata, empty);
+        TypeHelper.load(vector, metadata, empty);
 
         assertEquals(hint, 0, vector.getValueCapacity());
         assertEquals(hint, 0, vector.getAccessor().getValueCount());

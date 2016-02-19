@@ -32,9 +32,11 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
@@ -50,11 +52,8 @@ public class TestFrameworkTest extends BaseTestQuery{
   public void testSchemaTestBuilderSetInvalidBaselineValues() throws Exception {
     final String query = "SELECT ltrim('drill') as col FROM (VALUES(1)) limit 0";
 
-    List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
-    TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
-            .setMinorType(TypeProtos.MinorType.VARCHAR)
-            .setMode(TypeProtos.DataMode.REQUIRED)
-            .build();
+    List<Pair<SchemaPath, MajorType>> expectedSchema = Lists.newArrayList();
+    MajorType majorType = Types.required(MinorType.VARCHAR);
     expectedSchema.add(Pair.of(SchemaPath.getSimplePath("col"), majorType));
 
     testBuilder()
@@ -69,11 +68,8 @@ public class TestFrameworkTest extends BaseTestQuery{
   public void testSchemaTestBuilderSetInvalidBaselineRecords() throws Exception {
     final String query = "SELECT ltrim('drill') as col FROM (VALUES(1)) limit 0";
 
-    List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
-    TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
-        .setMinorType(TypeProtos.MinorType.VARCHAR)
-        .setMode(TypeProtos.DataMode.REQUIRED)
-        .build();
+    List<Pair<SchemaPath, MajorType>> expectedSchema = Lists.newArrayList();
+    MajorType majorType = new MajorType(MinorType.VARCHAR, DataMode.REQUIRED);
     expectedSchema.add(Pair.of(SchemaPath.getSimplePath("col"), majorType));
 
     testBuilder()
@@ -88,11 +84,8 @@ public class TestFrameworkTest extends BaseTestQuery{
   public void testSchemaTestBuilderSetInvalidBaselineColumns() throws Exception {
     final String query = "SELECT ltrim('drill') as col FROM (VALUES(1)) limit 0";
 
-    List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
-    TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
-            .setMinorType(TypeProtos.MinorType.VARCHAR)
-            .setMode(TypeProtos.DataMode.REQUIRED)
-            .build();
+    List<Pair<SchemaPath, MajorType>> expectedSchema = Lists.newArrayList();
+    MajorType majorType = new MajorType(MinorType.VARCHAR, DataMode.REQUIRED);
     expectedSchema.add(Pair.of(SchemaPath.getSimplePath("col"), majorType));
 
     testBuilder()
@@ -109,7 +102,7 @@ public class TestFrameworkTest extends BaseTestQuery{
         .sqlQuery("select employee_id, first_name, last_name from cp.`testframework/small_test_data.json`")
         .ordered()
         .csvBaselineFile("testframework/small_test_data.tsv")
-        .baselineTypes(TypeProtos.MinorType.BIGINT, TypeProtos.MinorType.VARCHAR, TypeProtos.MinorType.VARCHAR)
+        .baselineTypes(MinorType.BIGINT, MinorType.VARCHAR, MinorType.VARCHAR)
         .baselineColumns("employee_id", "first_name", "last_name")
         .build().run();
   }
@@ -141,7 +134,7 @@ public class TestFrameworkTest extends BaseTestQuery{
           .sqlQuery("select cast(dec_col as decimal(38,2)) dec_col from cp.`testframework/decimal_test.json`")
           .unOrdered()
           .csvBaselineFile("testframework/decimal_test.tsv")
-          .baselineTypes(Types.withScaleAndPrecision(TypeProtos.MinorType.DECIMAL38SPARSE, TypeProtos.DataMode.REQUIRED, 2, 38))
+          .baselineTypes(new MajorType(MinorType.DECIMAL38SPARSE, DataMode.REQUIRED, 38, 2, 0, null))
           .baselineColumns("dec_col")
           .build().run();
 
@@ -225,7 +218,7 @@ public class TestFrameworkTest extends BaseTestQuery{
         .sqlQuery("select employee_id, first_name, last_name from cp.`testframework/small_test_data.json`")
         .ordered()
         .csvBaselineFile("testframework/small_test_data_extra.tsv")
-        .baselineTypes(TypeProtos.MinorType.BIGINT, TypeProtos.MinorType.VARCHAR, TypeProtos.MinorType.VARCHAR)
+        .baselineTypes(MinorType.BIGINT, MinorType.VARCHAR, MinorType.VARCHAR)
         .baselineColumns("employee_id", "first_name", "last_name")
         .build().run();
     } catch (AssertionError ex) {
@@ -243,7 +236,7 @@ public class TestFrameworkTest extends BaseTestQuery{
           .sqlQuery("select " + CSV_COLS + " from cp.`testframework/small_test_data_extra.tsv`")
           .ordered()
           .csvBaselineFile("testframework/small_test_data.tsv")
-          .baselineTypes(TypeProtos.MinorType.BIGINT, TypeProtos.MinorType.VARCHAR, TypeProtos.MinorType.VARCHAR)
+          .baselineTypes(MinorType.BIGINT, MinorType.VARCHAR, MinorType.VARCHAR)
           .baselineColumns("employee_id", "first_name", "last_name")
           .build().run();
     } catch (AssertionError ex) {
@@ -261,7 +254,7 @@ public class TestFrameworkTest extends BaseTestQuery{
           .sqlQuery("select " + CSV_COLS + ", columns[3] as address from cp.`testframework/small_test_data_extra_col.tsv`")
           .ordered()
           .csvBaselineFile("testframework/small_test_data.tsv")
-          .baselineTypes(TypeProtos.MinorType.BIGINT, TypeProtos.MinorType.VARCHAR, TypeProtos.MinorType.VARCHAR)
+          .baselineTypes(MinorType.BIGINT, MinorType.VARCHAR, MinorType.VARCHAR)
           .baselineColumns("employee_id", "first_name", "last_name")
           .build().run();
     } catch (AssertionError ex) {
@@ -279,7 +272,7 @@ public class TestFrameworkTest extends BaseTestQuery{
           .sqlQuery("select employee_id, first_name, last_name from cp.`testframework/small_test_data.json`")
           .ordered()
           .csvBaselineFile("testframework/small_test_data_extra_col.tsv")
-          .baselineTypes(TypeProtos.MinorType.BIGINT, TypeProtos.MinorType.VARCHAR, TypeProtos.MinorType.VARCHAR, TypeProtos.MinorType.VARCHAR)
+          .baselineTypes(MinorType.BIGINT, MinorType.VARCHAR, MinorType.VARCHAR, MinorType.VARCHAR)
           .baselineColumns("employee_id", "first_name", "last_name", "address")
           .build().run();
     } catch (Exception ex) {
@@ -297,7 +290,7 @@ public class TestFrameworkTest extends BaseTestQuery{
         .sqlQuery("select employee_id, first_name, last_name from cp.`testframework/small_test_data.json`")
         .ordered()
         .csvBaselineFile("testframework/small_test_data.tsv")
-        .baselineTypes(TypeProtos.MinorType.INT, TypeProtos.MinorType.VARCHAR, TypeProtos.MinorType.VARCHAR)
+        .baselineTypes(MinorType.INT, MinorType.VARCHAR, MinorType.VARCHAR)
         .baselineColumns("employee_id", "first_name", "last_name")
         .build().run();
     } catch (Exception ex) {
@@ -415,10 +408,10 @@ public class TestFrameworkTest extends BaseTestQuery{
 
   @Test
   public void testCSVVerificationTypeMap() throws Throwable {
-    Map<SchemaPath, TypeProtos.MajorType> typeMap = new HashMap<>();
-    typeMap.put(TestBuilder.parsePath("first_name"), Types.optional(TypeProtos.MinorType.VARCHAR));
-    typeMap.put(TestBuilder.parsePath("employee_id"), Types.optional(TypeProtos.MinorType.INT));
-    typeMap.put(TestBuilder.parsePath("last_name"), Types.optional(TypeProtos.MinorType.VARCHAR));
+    Map<SchemaPath, MajorType> typeMap = new HashMap<>();
+    typeMap.put(TestBuilder.parsePath("first_name"), Types.optional(MinorType.VARCHAR));
+    typeMap.put(TestBuilder.parsePath("employee_id"), Types.optional(MinorType.INT));
+    typeMap.put(TestBuilder.parsePath("last_name"), Types.optional(MinorType.VARCHAR));
     testBuilder()
         .sqlQuery("select cast(columns[0] as int) employee_id, columns[1] as first_name, columns[2] as last_name from cp.`testframework/small_test_data_reordered.tsv`")
         .unOrdered()
@@ -431,10 +424,10 @@ public class TestFrameworkTest extends BaseTestQuery{
         .build().run();
 
     typeMap.clear();
-    typeMap.put(TestBuilder.parsePath("first_name"), Types.optional(TypeProtos.MinorType.VARCHAR));
+    typeMap.put(TestBuilder.parsePath("first_name"), Types.optional(MinorType.VARCHAR));
     // This is the wrong type intentionally to ensure failures happen when expected
-    typeMap.put(TestBuilder.parsePath("employee_id"), Types.optional(TypeProtos.MinorType.VARCHAR));
-    typeMap.put(TestBuilder.parsePath("last_name"), Types.optional(TypeProtos.MinorType.VARCHAR));
+    typeMap.put(TestBuilder.parsePath("employee_id"), Types.optional(MinorType.VARCHAR));
+    typeMap.put(TestBuilder.parsePath("last_name"), Types.optional(MinorType.VARCHAR));
 
     try {
     testBuilder()

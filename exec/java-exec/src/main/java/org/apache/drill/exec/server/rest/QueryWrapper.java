@@ -152,7 +152,7 @@ public class QueryWrapper {
             for (int i = 0; i < rows; ++i) {
               final Map<String, String> record = Maps.newHashMap();
               for (VectorWrapper<?> vw : loader) {
-                final String field = vw.getValueVector().getMetadata().getNamePart().getName();
+                final String field = vw.getValueVector().getField().getName();
                 final ValueVector.Accessor accessor = vw.getValueVector().getAccessor();
                 final Object value = i < accessor.getValueCount() ? accessor.getObject(i) : null;
                 final String display = value == null ? null : value.toString();

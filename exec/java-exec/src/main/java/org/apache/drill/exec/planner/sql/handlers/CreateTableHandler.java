@@ -60,6 +60,8 @@ import org.apache.drill.exec.util.Pointer;
 import org.apache.drill.exec.work.foreman.ForemanSetupException;
 import org.apache.drill.exec.work.foreman.SqlUnsupportedException;
 
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
+
 public class CreateTableHandler extends DefaultSqlHandler {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CreateTableHandler.class);
 
@@ -238,7 +240,7 @@ public class CreateTableHandler extends DefaultSqlHandler {
 
   private RexNode composeDisjunction(final RexBuilder rexBuilder, List<RexNode> compFuncs) {
     final DrillSqlOperator booleanOrFunc
-             = new DrillSqlOperator("orNoShortCircuit", 2, MajorType.getDefaultInstance(), true);
+             = new DrillSqlOperator("orNoShortCircuit", 2, getArrowMajorType(MajorType.getDefaultInstance()), true);
     RexNode node = compFuncs.remove(0);
     while (!compFuncs.isEmpty()) {
       node = rexBuilder.makeCall(booleanOrFunc, node, compFuncs.remove(0));

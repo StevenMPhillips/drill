@@ -20,6 +20,7 @@ package org.apache.drill.exec.types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class Types {
   public enum MinorType {
@@ -73,26 +74,37 @@ public class Types {
   public static class MajorType {
     private MinorType minorType;
     private DataMode mode;
-    private Integer precision;
-    private Integer scale;
-    private Integer timezone;
+    private int precision;
+    private int scale;
+    private int timezone;
     private List<MinorType> subTypes;
 
+    public Integer getWidth() {
+      return width;
+    }
+
+    private Integer width;
+
     public MajorType(MinorType minorType, DataMode mode) {
-      this(minorType, mode, null, null, null, null);
+      this(minorType, mode, 0, 0, 0, null);
     }
 
     public MajorType(MinorType minorType, DataMode mode, Integer precision, Integer scale) {
-      this(minorType, mode, precision, scale, null, null);
+      this(minorType, mode, precision, scale, 0, null);
     }
 
     public MajorType(MinorType minorType, DataMode mode, Integer precision, Integer scale, Integer timezone, List<MinorType> subTypes) {
+      this(minorType, mode, precision, scale, timezone, subTypes, 0);
+    }
+
+    public MajorType(MinorType minorType, DataMode mode, Integer precision, Integer scale, Integer timezone, List<MinorType> subTypes, Integer width) {
       this.minorType = minorType;
       this.mode = mode;
       this.precision = precision;
       this.scale = scale;
       this.timezone = timezone;
       this.subTypes = subTypes;
+      this.width = width;
     }
 
     public MinorType getMinorType() {
@@ -117,6 +129,24 @@ public class Types {
 
     public List<MinorType> getSubTypes() {
       return subTypes;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      if (other == null) {
+        return false;
+      }
+      if (!(other instanceof MajorType)) {
+        return false;
+      }
+      MajorType that = (MajorType) other;
+      return this.minorType == that.minorType &&
+              this.mode == that.mode &&
+              this.precision == that.precision &&
+              this.scale == that.scale &&
+              this.timezone == that.timezone &&
+              this.width == that.width &&
+              Objects.equals(this.subTypes, that.subTypes);
     }
   }
 

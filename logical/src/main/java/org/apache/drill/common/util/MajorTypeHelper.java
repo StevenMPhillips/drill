@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.record;
+package org.apache.drill.common.util;
 
 import org.apache.drill.exec.types.Types.DataMode;
 import org.apache.drill.exec.types.Types.MajorType;
@@ -55,11 +55,22 @@ public class MajorTypeHelper {
   }
 
   public static org.apache.drill.common.types.TypeProtos.MajorType getDrillMajorType(MajorType arrowMajorType) {
-    org.apache.drill.common.types.TypeProtos.MajorType.Builder builder = org.apache.drill.common.types.TypeProtos.MajorType.newBuilder().setMinorType(getDrillMinorType(arrowMajorType.getMinorType()))
-            .setMode(getDrillDataMode(arrowMajorType.getMode()))
-            .setPrecision(arrowMajorType.getPrecision())
-            .setScale(arrowMajorType.getScale())
-            .setTimeZone(arrowMajorType.getTimezone());
+    org.apache.drill.common.types.TypeProtos.MajorType.Builder builder = org.apache.drill.common.types.TypeProtos.MajorType.newBuilder().setMinorType(getDrillMinorType(arrowMajorType.getMinorType()));
+    if (arrowMajorType.getMode() != null) {
+      builder.setMode(getDrillDataMode(arrowMajorType.getMode()));
+    }
+    if (arrowMajorType.getPrecision() != null) {
+      builder.setPrecision(arrowMajorType.getPrecision());
+    }
+    if (arrowMajorType.getScale() != null) {
+      builder.setScale(arrowMajorType.getScale());
+    }
+    if (arrowMajorType.getTimezone() != null) {
+      builder.setTimeZone(arrowMajorType.getTimezone());
+    }
+    if (arrowMajorType.getWidth() != null) {
+      builder.setWidth(arrowMajorType.getWidth());
+    }
     if (arrowMajorType.getSubTypes() != null) {
       for (MinorType subType : arrowMajorType.getSubTypes()) {
         builder.addSubType(getDrillMinorType(subType));

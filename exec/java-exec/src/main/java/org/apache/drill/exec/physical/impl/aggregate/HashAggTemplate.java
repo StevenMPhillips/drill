@@ -45,6 +45,7 @@ import org.apache.drill.exec.physical.impl.common.HashTableConfig;
 import org.apache.drill.exec.physical.impl.common.HashTableStats;
 import org.apache.drill.exec.physical.impl.common.IndexPointer;
 import org.apache.drill.exec.record.BatchSchema;
+import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.RecordBatch.IterOutcome;
@@ -383,7 +384,7 @@ public abstract class HashAggTemplate implements HashAggregator {
     }
     while (outgoingIter.hasNext()) {
       ValueVector vv = outgoingIter.next().getValueVector();
-      MajorType type = vv.getField().getType();
+      MajorType type = MajorTypeHelper.getDrillMajorType(vv.getField().getType());
 
       /*
        * In build schema we use the allocation model that specifies exact record count

@@ -26,9 +26,6 @@ import java.util.List;
 import org.apache.drill.common.config.DrillConfig;
 import org.apache.drill.common.expression.ExpressionPosition;
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.ExecTest;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.memory.RootAllocatorFactory;
@@ -36,6 +33,8 @@ import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.RecordBatchLoader;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.WritableBatch;
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.IntVector;
 import org.apache.drill.exec.vector.NullableVarCharVector;
@@ -105,7 +104,7 @@ public class TestLoad extends ExecTest {
           System.out.print("\t");
         }
         final ValueVector.Accessor accessor = v.getValueVector().getAccessor();
-        if (v.getField().getType().getMinorType() == TypeProtos.MinorType.VARCHAR) {
+        if (v.getField().getType().getMinorType() == MinorType.VARCHAR) {
           final Object obj = accessor.getObject(r);
           if (obj != null) {
             System.out.print(accessor.getObject(r));
