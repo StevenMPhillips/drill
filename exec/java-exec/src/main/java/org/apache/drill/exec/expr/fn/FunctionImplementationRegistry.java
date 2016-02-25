@@ -28,7 +28,6 @@ import org.apache.drill.common.expression.FunctionCall;
 import org.apache.drill.common.expression.fn.CastFunctions;
 import org.apache.drill.common.scanner.ClassPathScanner;
 import org.apache.drill.common.scanner.persistence.ScanResult;
-import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.planner.sql.DrillOperatorTable;
 import org.apache.drill.exec.resolver.FunctionResolver;
@@ -37,6 +36,8 @@ import org.apache.drill.exec.server.options.OptionManager;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
 
 public class FunctionImplementationRegistry implements FunctionLookupContext {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(FunctionImplementationRegistry.class);
@@ -120,7 +121,7 @@ public class FunctionImplementationRegistry implements FunctionLookupContext {
         && functionCall.args.size() > 0
         && CastFunctions.isReplacementNeeded(functionCall.args.get(0).getMajorType().getMinorType(),
                                              funcName)) {
-      org.apache.drill.common.types.TypeProtos.DataMode dataMode =
+      DataMode dataMode =
           functionCall.args.get(0).getMajorType().getMode();
       funcName = CastFunctions.getReplacingCastFunction(funcName, dataMode);
     }

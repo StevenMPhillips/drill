@@ -115,7 +115,7 @@ public class VectorAccessibleSerializable extends AbstractStreamSerializable {
       try {
         buf.writeBytes(input, dataLength);
         vector = TypeHelper.getNewVector(field, allocator);
-        vector.load(metaData, buf);
+        TypeHelper.load(vector, metaData, buf);
       } finally {
         buf.release();
       }

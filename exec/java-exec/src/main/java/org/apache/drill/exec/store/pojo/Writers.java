@@ -22,9 +22,9 @@ import io.netty.buffer.DrillBuf;
 import java.lang.reflect.Field;
 import java.sql.Timestamp;
 
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.expr.holders.NullableVarCharHolder;
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.BigIntVector;
 import org.apache.drill.exec.vector.BitVector;
 import org.apache.drill.exec.vector.Float8Vector;

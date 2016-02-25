@@ -19,10 +19,12 @@ package org.apache.drill.exec.vector.complex;
 
 import org.apache.drill.common.expression.PathSegment;
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos.DataMode;
-import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MinorType;
+import org.apache.drill.common.types.TypeProtos;
+import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.record.TypedFieldId;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.ValueVector;
 
 import java.util.List;
@@ -140,7 +142,8 @@ public class FieldIdUtil {
         }
         builder.finalType(v.getField().getType());
       } else {
-        builder.finalType(v.getField().getType().toBuilder().setMode(DataMode.OPTIONAL).build());
+        MajorType mt = v.getField().getType();
+        builder.finalType(new MajorType(mt.getMinorType(), DataMode.OPTIONAL, mt.getPrecision(), mt.getScale(), mt.getTimezone(), mt.getSubTypes()));
       }
 
       if (seg.isLastPath()) {
@@ -151,8 +154,8 @@ public class FieldIdUtil {
           if (addToBreadCrumb) {
             builder.remainder(child);
           }
-          builder.withIndex();
-          builder.finalType(v.getField().getType().toBuilder().setMode(DataMode.OPTIONAL).build());
+          MajorType mt = v.getField().getType();
+          builder.finalType(new MajorType(mt.getMinorType(), DataMode.OPTIONAL, mt.getPrecision(), mt.getScale(), mt.getTimezone(), mt.getSubTypes()));
           return builder.build();
         } else {
           logger.warn("You tried to request a complex type inside a scalar object or path or type is wrong.");
@@ -175,11 +178,11 @@ public class FieldIdUtil {
     if (vector instanceof UnionVector) {
       builder.addId(id).remainder(expectedPath.getRootSegment().getChild());
       List<MinorType> minorTypes = ((UnionVector) vector).getSubTypes();
-      MajorType.Builder majorTypeBuilder = MajorType.newBuilder().setMinorType(MinorType.UNION);
+      TypeProtos.MajorType.Builder majorTypeBuilder = TypeProtos.MajorType.newBuilder().setMinorType(TypeProtos.MinorType.UNION);
       for (MinorType type : minorTypes) {
-        majorTypeBuilder.addSubType(type);
+        majorTypeBuilder.addSubType(MajorTypeHelper.getDrillMinorType(type));
       }
-      MajorType majorType = majorTypeBuilder.build();
+      MajorType majorType = MajorTypeHelper.getArrowMajorType(majorTypeBuilder.build());
       builder.intermediateType(majorType);
       if (seg.isLastPath()) {
         builder.finalType(majorType);
@@ -211,7 +214,8 @@ public class FieldIdUtil {
         if (child.isArray() && child.isLastPath()) {
           builder.remainder(child);
           builder.withIndex();
-          builder.finalType(vector.getField().getType().toBuilder().setMode(DataMode.OPTIONAL).build());
+          MajorType mt = vector.getField().getType();
+          builder.finalType(new MajorType(mt.getMinorType(), DataMode.OPTIONAL, mt.getPrecision(), mt.getScale(), mt.getTimezone(), mt.getSubTypes()));
           return builder.build();
         } else {
           return null;

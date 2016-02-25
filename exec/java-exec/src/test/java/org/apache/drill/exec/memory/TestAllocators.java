@@ -48,6 +48,9 @@ import org.apache.drill.exec.server.DrillbitContext;
 import org.apache.drill.exec.server.RemoteServiceSet;
 import org.apache.drill.exec.store.StoragePluginRegistry;
 import org.apache.drill.exec.store.StoragePluginRegistryImpl;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.BitVector;
 import org.apache.drill.exec.vector.IntVector;
 import org.apache.drill.test.DrillTest;
@@ -91,11 +94,8 @@ public class TestAllocators extends DrillTest {
     final DrillConfig config = DrillConfig.create(props);
 
     final BufferAllocator allc = RootAllocatorFactory.newRoot(config);
-    final TypeProtos.MajorType.Builder builder = TypeProtos.MajorType.newBuilder();
-    builder.setMinorType(TypeProtos.MinorType.INT);
-    builder.setMode(TypeProtos.DataMode.REQUIRED);
-
-    final IntVector iv = new IntVector(MaterializedField.create("Field", builder.build()), allc);
+    MajorType mt = new MajorType(MinorType.INT, DataMode.OPTIONAL);
+    final IntVector iv = new IntVector(MaterializedField.create("Field", mt), allc);
     iv.allocateNew();
 
     // Write data to DrillBuf
@@ -135,11 +135,9 @@ public class TestAllocators extends DrillTest {
     final DrillConfig config = DrillConfig.create(props);
 
     final BufferAllocator allc = RootAllocatorFactory.newRoot(config);
-    final TypeProtos.MajorType.Builder builder = TypeProtos.MajorType.newBuilder();
-    builder.setMinorType(TypeProtos.MinorType.BIT);
-    builder.setMode(TypeProtos.DataMode.REQUIRED);
 
-    final BitVector bv = new BitVector(MaterializedField.create("Field", builder.build()), allc);
+    MajorType mt = new MajorType(MinorType.BIT, DataMode.REQUIRED);
+    final BitVector bv = new BitVector(MaterializedField.create("Field", mt), allc);
     bv.getMutator().setValueCount(1);
     assertEquals(bv.getAccessor().getValueCount(), 1);
 

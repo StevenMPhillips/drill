@@ -19,6 +19,7 @@ package org.apache.drill.exec.record;
 
 import org.apache.drill.exec.proto.UserBitShared.NamePart;
 import org.apache.drill.exec.proto.UserBitShared.SerializedField;
+import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.vector.BaseValueVector;
 
 import java.util.LinkedHashSet;

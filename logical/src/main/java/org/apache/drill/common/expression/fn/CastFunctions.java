@@ -17,12 +17,13 @@
  */
 package org.apache.drill.common.expression.fn;
 
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MinorType;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.TypeProtos.MinorType;
 
 public class CastFunctions {
 
@@ -109,12 +110,12 @@ public class CastFunctions {
   * @param dataMode data mode of the input data
   * @return
   */
-  public static String getReplacingCastFunction(String originalCastFunction, org.apache.drill.common.types.TypeProtos.DataMode dataMode) {
-    if(dataMode == TypeProtos.DataMode.OPTIONAL) {
+  public static String getReplacingCastFunction(String originalCastFunction, DataMode dataMode) {
+    if(dataMode == DataMode.OPTIONAL) {
       return getReplacingCastFunctionFromNullable(originalCastFunction);
     }
 
-    if(dataMode == TypeProtos.DataMode.REQUIRED) {
+    if(dataMode == DataMode.REQUIRED) {
       return getReplacingCastFunctionFromNonNullable(originalCastFunction);
     }
 

@@ -30,7 +30,6 @@ import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.logical.data.Order.Ordering;
 import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.cache.CachedVectorContainer;
 import org.apache.drill.exec.cache.Counter;
 import org.apache.drill.exec.cache.DistributedCache;
@@ -57,6 +56,7 @@ import org.apache.drill.exec.physical.impl.sort.SortRecordBatchBuilder;
 import org.apache.drill.exec.physical.impl.sort.Sorter;
 import org.apache.drill.exec.record.AbstractRecordBatch;
 import org.apache.drill.exec.record.BatchSchema;
+import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TransferPair;
@@ -66,11 +66,12 @@ import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.WritableBatch;
 import org.apache.drill.exec.record.selection.SelectionVector4;
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.IntVector;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.calcite.rel.RelFieldCollation.Direction;
-import org.apache.calcite.rel.RelFieldCollation.NullDirection;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -150,7 +151,7 @@ public class OrderedPartitionRecordBatch extends AbstractRecordBatch<OrderedPart
     this.minorFragmentSampleCount = cache.getCounter(mapKey);
 
     SchemaPath outputPath = popConfig.getRef();
-    MaterializedField outputField = MaterializedField.create(outputPath.getAsNamePart().getName(), Types.required(TypeProtos.MinorType.INT));
+    MaterializedField outputField = MaterializedField.create(outputPath.getAsNamePart().getName(), Types.required(MinorType.INT));
     this.partitionKeyVector = (IntVector) TypeHelper.getNewVector(outputField, oContext.getAllocator());
 
   }
@@ -427,10 +428,11 @@ public class OrderedPartitionRecordBatch extends AbstractRecordBatch<OrderedPart
     for (Ordering od : orderings) {
       final LogicalExpression expr = ExpressionTreeMaterializer.materialize(od.getExpr(), incoming, collector, context.getFunctionRegistry());
       SchemaPath schemaPath = SchemaPath.getSimplePath("f" + i++);
-      TypeProtos.MajorType.Builder builder = TypeProtos.MajorType.newBuilder().mergeFrom(expr.getMajorType())
-          .clearMode().setMode(TypeProtos.DataMode.REQUIRED);
-      TypeProtos.MajorType newType = builder.build();
-      MaterializedField outputField = MaterializedField.create(schemaPath.getAsUnescapedPath(), newType);
+//      TypeProtos.MajorType.Builder builder = TypeProtos.MajorType.newBuilder().mergeFrom(expr.getMajorType())
+//          .clearMode().setMode(TypeProtos.DataMode.REQUIRED);
+//      TypeProtos.MajorType newType = builder.build();
+      TypeProtos.MajorType newType = null; // This class is not used currently, so not worried about this code right now
+      MaterializedField outputField = MaterializedField.create(schemaPath.getAsUnescapedPath(), MajorTypeHelper.getArrowMajorType(newType));
       if (collector.hasErrors()) {
         throw new SchemaChangeException(String.format(
             "Failure while trying to materialize incoming schema.  Errors:\n %s.", collector.toErrorString()));

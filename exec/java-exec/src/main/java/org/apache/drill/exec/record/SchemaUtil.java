@@ -22,18 +22,19 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos.DataMode;
-import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.physical.impl.sort.RecordBatchData;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.UnionVector;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,7 +66,7 @@ public class SchemaUtil {
           throw new RuntimeException("Schema change not currently supported for schemas with complex types");
         }
         if (newType == MinorType.UNION) {
-          for (MinorType subType : field.getType().getSubTypeList()) {
+          for (MinorType subType : field.getType().getSubTypes()) {
             currentTypes.add(subType);
           }
         } else {
@@ -79,11 +80,12 @@ public class SchemaUtil {
     for (SchemaPath path : typeSetMap.keySet()) {
       Set<MinorType> types = typeSetMap.get(path);
       if (types.size() > 1) {
-        MajorType.Builder builder = MajorType.newBuilder().setMinorType(MinorType.UNION).setMode(DataMode.OPTIONAL);
+        List<MinorType> subTypeList = new ArrayList<>();
         for (MinorType t : types) {
-          builder.addSubType(t);
+          subTypeList.add(t);
         }
-        MaterializedField field = MaterializedField.create(path.getAsUnescapedPath(), builder.build());
+        MajorType mt = new MajorType(MinorType.UNION, DataMode.OPTIONAL, 0, 0, 0, subTypeList);
+        MaterializedField field = MaterializedField.create(path.getAsUnescapedPath(), mt);
         fields.add(field);
       } else {
         MaterializedField field = MaterializedField.create(path.getAsUnescapedPath(), Types.optional(types.iterator().next()));
@@ -105,8 +107,8 @@ public class SchemaUtil {
       if (v.getField().getType().getMinorType().equals(field.getType().getMinorType())) {
         if (field.getType().getMinorType() == MinorType.UNION) {
           UnionVector u = (UnionVector) tp.getTo();
-          for (MinorType t : field.getType().getSubTypeList()) {
-            if (u.getField().getType().getSubTypeList().contains(t)) {
+          for (MinorType t : field.getType().getSubTypes()) {
+            if (u.getField().getType().getSubTypes().contains(t)) {
               continue;
             }
             u.addSubType(t);
@@ -126,8 +128,8 @@ public class SchemaUtil {
             u.getMutator().setType(i, MinorType.LATE);
           }
         }
-        for (MinorType t : field.getType().getSubTypeList()) {
-          if (u.getField().getType().getSubTypeList().contains(t)) {
+        for (MinorType t : field.getType().getSubTypes()) {
+          if (u.getField().getType().getSubTypes().contains(t)) {
             continue;
           }
           u.addSubType(t);

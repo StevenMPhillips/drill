@@ -21,8 +21,8 @@ import java.util.Arrays;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.drill.common.expression.PathSegment;
-import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.expr.BasicTypeHelper;
+import org.apache.drill.exec.types.Types.MajorType;
 import org.apache.drill.exec.vector.ValueVector;
 
 import com.carrotsearch.hppc.IntArrayList;

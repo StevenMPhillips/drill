@@ -47,8 +47,11 @@ import org.apache.drill.exec.expr.holders.BitHolder;
 import org.apache.drill.exec.expr.holders.NullableBitHolder;
 import org.apache.drill.exec.expr.holders.ValueHolder;
 import org.apache.drill.exec.ops.UdfUtilities;
+import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.VectorAccessible;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
 import org.apache.drill.exec.vector.ValueHolderHelper;
 import org.apache.drill.exec.vector.ValueVector;
 
@@ -251,7 +254,7 @@ public class InterpreterEvaluator {
         // In case function use "NULL_IF_NULL" policy.
         if (holder.getNullHandling() == FunctionTemplate.NullHandling.NULL_IF_NULL) {
           // Case 1: parameter is non-nullable, argument is nullable.
-          if (holder.getParameters()[i].getType().getMode() == TypeProtos.DataMode.REQUIRED && TypeHelper.getValueHolderType(args[i]).getMode() == TypeProtos.DataMode.OPTIONAL) {
+          if (holder.getParameters()[i].getType().getMode() == DataMode.REQUIRED && TypeHelper.getValueHolderType(args[i]).getMode() == DataMode.OPTIONAL) {
             // Case 1.1 : argument is null, return null value holder directly.
             if (TypeHelper.isNull(args[i])) {
               return TypeHelper.createValueHolder(holderExpr.getMajorType());
@@ -259,7 +262,7 @@ public class InterpreterEvaluator {
               // Case 1.2: argument is nullable but not null value, deNullify it.
               args[i] = TypeHelper.deNullify(args[i]);
             }
-          } else if (holder.getParameters()[i].getType().getMode() == TypeProtos.DataMode.OPTIONAL && TypeHelper.getValueHolderType(args[i]).getMode() == TypeProtos.DataMode.REQUIRED) {
+          } else if (holder.getParameters()[i].getType().getMode() == DataMode.OPTIONAL && TypeHelper.getValueHolderType(args[i]).getMode() == DataMode.REQUIRED) {
             // Case 2: parameter is nullable, argument is non-nullable. Nullify it.
             args[i] = TypeHelper.nullify(args[i]);
           }
@@ -308,11 +311,11 @@ public class InterpreterEvaluator {
         interpreter.eval();
         ValueHolder out = (ValueHolder) outField.get(interpreter);
 
-        if (TypeHelper.getValueHolderType(out).getMode() == TypeProtos.DataMode.OPTIONAL &&
-            holderExpr.getMajorType().getMode() == TypeProtos.DataMode.REQUIRED) {
+        if (TypeHelper.getValueHolderType(out).getMode() == DataMode.OPTIONAL &&
+            holderExpr.getMajorType().getMode() == DataMode.REQUIRED) {
           return TypeHelper.deNullify(out);
-        } else if (TypeHelper.getValueHolderType(out).getMode() == TypeProtos.DataMode.REQUIRED &&
-              holderExpr.getMajorType().getMode() == TypeProtos.DataMode.OPTIONAL) {
+        } else if (TypeHelper.getValueHolderType(out).getMode() == DataMode.REQUIRED &&
+              holderExpr.getMajorType().getMode() == DataMode.OPTIONAL) {
           return TypeHelper.nullify(out);
         } else {
           return out;
@@ -394,7 +397,7 @@ public class InterpreterEvaluator {
 
     protected ValueHolder visitValueVectorReadExpression(ValueVectorReadExpression e, Integer inIndex)
         throws RuntimeException {
-      TypeProtos.MajorType type = e.getMajorType();
+      MajorType type = e.getMajorType();
 
       ValueVector vv;
       ValueHolder holder;
@@ -402,7 +405,7 @@ public class InterpreterEvaluator {
         switch (type.getMode()) {
           case OPTIONAL:
           case REQUIRED:
-            vv = incoming.getValueAccessorById(TypeHelper.getValueVectorClass(type.getMinorType(),type.getMode()), e.getFieldId().getFieldIds()).getValueVector();
+            vv = incoming.getValueAccessorById(TypeHelper.getValueVectorClass(type.getMinorType(), type.getMode()), e.getFieldId().getFieldIds()).getValueVector();
             holder = TypeHelper.getValue(vv, inIndex.intValue());
             return holder;
           default:
@@ -435,7 +438,7 @@ public class InterpreterEvaluator {
 
         switch (flag) {
           case FALSE:
-            return op.getMajorType().getMode() == TypeProtos.DataMode.OPTIONAL? TypeHelper.nullify(ValueHolderHelper.getBitHolder(0)) : ValueHolderHelper.getBitHolder(0);
+            return op.getMajorType().getMode() == DataMode.OPTIONAL? TypeHelper.nullify(ValueHolderHelper.getBitHolder(0)) : ValueHolderHelper.getBitHolder(0);
           case NULL:
             hasNull = true;
           case TRUE:
@@ -445,7 +448,7 @@ public class InterpreterEvaluator {
       if (hasNull) {
         return ValueHolderHelper.getNullableBitHolder(true, 0);
       } else {
-        return op.getMajorType().getMode() == TypeProtos.DataMode.OPTIONAL? TypeHelper.nullify(ValueHolderHelper.getBitHolder(1)) : ValueHolderHelper.getBitHolder(1);
+        return op.getMajorType().getMode() == DataMode.OPTIONAL? TypeHelper.nullify(ValueHolderHelper.getBitHolder(1)) : ValueHolderHelper.getBitHolder(1);
       }
     }
 
@@ -466,7 +469,7 @@ public class InterpreterEvaluator {
 
         switch (flag) {
           case TRUE:
-            return op.getMajorType().getMode() == TypeProtos.DataMode.OPTIONAL? TypeHelper.nullify(ValueHolderHelper.getBitHolder(1)) : ValueHolderHelper.getBitHolder(1);
+            return op.getMajorType().getMode() == DataMode.OPTIONAL? TypeHelper.nullify(ValueHolderHelper.getBitHolder(1)) : ValueHolderHelper.getBitHolder(1);
           case NULL:
             hasNull = true;
           case FALSE:
@@ -476,7 +479,7 @@ public class InterpreterEvaluator {
       if (hasNull) {
         return ValueHolderHelper.getNullableBitHolder(true, 0);
       } else {
-        return op.getMajorType().getMode() == TypeProtos.DataMode.OPTIONAL? TypeHelper.nullify(ValueHolderHelper.getBitHolder(0)) : ValueHolderHelper.getBitHolder(0);
+        return op.getMajorType().getMode() == DataMode.OPTIONAL? TypeHelper.nullify(ValueHolderHelper.getBitHolder(0)) : ValueHolderHelper.getBitHolder(0);
       }
     }
 

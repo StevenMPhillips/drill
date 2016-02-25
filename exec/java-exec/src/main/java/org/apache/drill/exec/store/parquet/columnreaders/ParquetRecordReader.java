@@ -59,6 +59,10 @@ import org.apache.parquet.schema.PrimitiveType;
 
 import com.google.common.collect.Lists;
 
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowDataMode;
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowMinorType;
+
 public class ParquetRecordReader extends AbstractRecordReader {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ParquetRecordReader.class);
 
@@ -246,7 +250,7 @@ public class ParquetRecordReader extends AbstractRecordReader {
       SchemaElement se = schemaElements.get(column.getPath()[0]);
       MajorType mt = ParquetToDrillTypeConverter.toMajorType(column.getType(), se.getType_length(),
           getDataMode(column), se, fragmentContext.getOptions());
-      field = MaterializedField.create(toFieldName(column.getPath()), mt);
+      field = MaterializedField.create(toFieldName(column.getPath()), getArrowMajorType(mt));
       if ( ! fieldSelected(field)) {
         continue;
       }
@@ -298,14 +302,14 @@ public class ParquetRecordReader extends AbstractRecordReader {
         schemaElement = schemaElements.get(column.getPath()[0]);
         MajorType type = ParquetToDrillTypeConverter.toMajorType(column.getType(), schemaElement.getType_length(),
             getDataMode(column), schemaElement, fragmentContext.getOptions());
-        field = MaterializedField.create(toFieldName(column.getPath()), type);
+        field = MaterializedField.create(toFieldName(column.getPath()), getArrowMajorType(type));
         // the field was not requested to be read
         if ( ! fieldSelected(field)) {
           continue;
         }
 
         fieldFixedLength = column.getType() != PrimitiveType.PrimitiveTypeName.BINARY;
-        vector = output.addField(field, (Class<? extends ValueVector>) TypeHelper.getValueVectorClass(type.getMinorType(), type.getMode()));
+        vector = output.addField(field, (Class<? extends ValueVector>) TypeHelper.getValueVectorClass(getArrowMinorType(type.getMinorType()), getArrowDataMode(type.getMode())));
         if (column.getType() != PrimitiveType.PrimitiveTypeName.BINARY) {
           if (column.getMaxRepetitionLevel() > 0) {
             final RepeatedValueVector repeatedVector = RepeatedValueVector.class.cast(vector);
@@ -335,8 +339,8 @@ public class ParquetRecordReader extends AbstractRecordReader {
           assert col!=null;
           if ( ! columnsFound[i] && !col.equals(STAR_COLUMN)) {
             nullFilledVectors.add((NullableIntVector)output.addField(MaterializedField.create(col.getAsUnescapedPath(),
-                    Types.optional(TypeProtos.MinorType.INT)),
-                (Class<? extends ValueVector>) TypeHelper.getValueVectorClass(TypeProtos.MinorType.INT, DataMode.OPTIONAL)));
+                    getArrowMajorType(Types.optional(TypeProtos.MinorType.INT))),
+                (Class<? extends ValueVector>) TypeHelper.getValueVectorClass(getArrowMinorType(TypeProtos.MinorType.INT), getArrowDataMode(DataMode.OPTIONAL))));
 
           }
         }

@@ -62,6 +62,7 @@ import org.apache.drill.exec.record.RawFragmentBatchProvider;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.RecordBatchLoader;
 import org.apache.drill.exec.record.SchemaBuilder;
+import org.apache.drill.exec.record.SerializedFieldHelper;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorAccessible;
 import org.apache.drill.exec.record.VectorContainer;
@@ -485,7 +486,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
         }
         tempBatchHolder[i] = batch;
         for (final SerializedField field : batch.getHeader().getDef().getFieldList()) {
-          final ValueVector v = outgoingContainer.addOrGet(MaterializedField.create(field));
+          final ValueVector v = outgoingContainer.addOrGet(SerializedFieldHelper.create(field));
           v.allocateNew();
         }
         break;

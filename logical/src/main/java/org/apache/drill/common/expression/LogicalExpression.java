@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 public interface LogicalExpression extends Iterable<LogicalExpression>{
   static final Logger logger = LoggerFactory.getLogger(LogicalExpression.class);
 
-  public abstract MajorType getMajorType();
+  public abstract org.apache.drill.exec.types.Types.MajorType getMajorType();
 
   public <T, V, E extends Exception> T accept(ExprVisitor<T, V, E> visitor, V value) throws E;
 

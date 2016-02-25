@@ -28,9 +28,9 @@ import java.util.Set;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.expr.TypeHelper;
-import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
+import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.vector.SchemaChangeCallBack;
 import org.apache.drill.exec.vector.ValueVector;
 
@@ -135,7 +135,7 @@ public class VectorContainer implements Iterable<VectorWrapper<?>>, VectorAccess
   }
 
   public <T extends ValueVector> T addOrGet(String name, MajorType type, Class<T> clazz) {
-    MaterializedField field = MaterializedField.create(name, type);
+    MaterializedField field = MaterializedField.create(name, MajorTypeHelper.getArrowMajorType(type));
     return addOrGet(field);
   }
 

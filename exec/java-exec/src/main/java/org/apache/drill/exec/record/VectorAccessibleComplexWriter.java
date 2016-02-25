@@ -17,7 +17,8 @@
  */
 package org.apache.drill.exec.record;
 
-import org.apache.drill.common.types.TypeProtos.MajorType;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.MapVector;
 import org.apache.drill.exec.vector.complex.impl.ComplexWriterImpl;
@@ -35,7 +36,7 @@ public class VectorAccessibleComplexWriter extends MapVector {
 
   @Override
   public <T extends ValueVector> T addOrGet(String name, MajorType type, Class<T> clazz) {
-    final ValueVector v = vc.addOrGet(name, type, clazz);
+    final ValueVector v = vc.addOrGet(name, MajorTypeHelper.getDrillMajorType(type), clazz);
     putChild(name, v);
     return this.typeify(v, clazz);
 

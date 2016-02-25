@@ -26,7 +26,6 @@ import org.apache.drill.common.expression.ErrorCollectorImpl;
 import org.apache.drill.common.expression.IfExpression;
 import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.logical.data.NamedExpression;
-import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.exec.compile.sig.GeneratorMapping;
 import org.apache.drill.exec.compile.sig.MappingSet;
 import org.apache.drill.exec.exception.ClassTransformationException;
@@ -45,12 +44,14 @@ import org.apache.drill.exec.physical.config.StreamingAggregate;
 import org.apache.drill.exec.physical.impl.aggregate.StreamingAggregator.AggOutcome;
 import org.apache.drill.exec.record.AbstractRecordBatch;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
+import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
+import org.apache.drill.exec.types.Types.DataMode;
 import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.FixedWidthVector;
 import org.apache.drill.exec.vector.ValueVector;
@@ -211,7 +212,7 @@ public class StreamingAggBatch extends AbstractRecordBatch<StreamingAggregate> {
       final ValueVector vv = vw.getValueVector();
       AllocationHelper.allocateNew(vv, SPECIAL_BATCH_COUNT);
       vv.getMutator().setValueCount(SPECIAL_BATCH_COUNT);
-      if (vv.getField().getType().getMode() == TypeProtos.DataMode.REQUIRED) {
+      if (vv.getField().getType().getMode() == DataMode.REQUIRED) {
         if (vv instanceof FixedWidthVector) {
           /*
            * The only case we should have a required vector in the aggregate is for count function whose output is

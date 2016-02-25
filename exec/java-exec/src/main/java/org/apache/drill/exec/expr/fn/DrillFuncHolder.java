@@ -19,10 +19,8 @@ package org.apache.drill.exec.expr.fn;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.UserException;
@@ -30,9 +28,6 @@ import org.apache.drill.common.expression.ExpressionPosition;
 import org.apache.drill.common.expression.FunctionHolderExpression;
 import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.TypeProtos.DataMode;
-import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.compile.bytecode.ScalarReplacementTypes;
 import org.apache.drill.exec.compile.sig.SignatureHolder;
@@ -44,6 +39,10 @@ import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.NullHandling;
 import org.apache.drill.exec.ops.UdfUtilities;
+import org.apache.drill.common.util.MajorTypeHelper;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
 import com.google.common.base.Preconditions;
@@ -52,6 +51,8 @@ import com.sun.codemodel.JBlock;
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JType;
 import com.sun.codemodel.JVar;
+
+import static org.apache.drill.common.util.MajorTypeHelper.getDrillMajorType;
 
 public abstract class DrillFuncHolder extends AbstractFuncHolder {
 
@@ -191,7 +192,7 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
 
         ValueReference parameter = parameters[i];
         HoldingContainer inputVariable = inputVariables[i];
-        if (parameter.isFieldReader && ! inputVariable.isReader() && ! Types.isComplex(inputVariable.getMajorType()) && inputVariable.getMinorType() != MinorType.UNION) {
+        if (parameter.isFieldReader && ! inputVariable.isReader() && ! Types.isComplex(getDrillMajorType(inputVariable.getMajorType())) && inputVariable.getMinorType() != MinorType.UNION) {
           JType singularReaderClass = g.getModel()._ref(TypeHelper.getHolderReaderImpl(inputVariable.getMajorType().getMinorType(),
               inputVariable.getMajorType().getMode()));
           JType fieldReadClass = g.getModel()._ref(FieldReader.class);
@@ -266,21 +267,21 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
 
   public MajorType getReturnType(List<LogicalExpression> args) {
     if (returnValue.type.getMinorType() == MinorType.UNION) {
-      Set<MinorType> subTypes = Sets.newHashSet();
+      Set<TypeProtos.MinorType> subTypes = Sets.newHashSet();
       for (ValueReference ref : parameters) {
-        subTypes.add(ref.getType().getMinorType());
+        subTypes.add(MajorTypeHelper.getDrillMinorType(ref.getType().getMinorType()));
       }
-      MajorType.Builder builder = MajorType.newBuilder().setMinorType(MinorType.UNION).setMode(DataMode.OPTIONAL);
-      for (MinorType subType : subTypes) {
+      TypeProtos.MajorType.Builder builder = TypeProtos.MajorType.newBuilder().setMinorType(TypeProtos.MinorType.UNION).setMode(TypeProtos.DataMode.OPTIONAL);
+      for (TypeProtos.MinorType subType : subTypes) {
         builder.addSubType(subType);
       }
-      return builder.build();
+      return MajorTypeHelper.getArrowMajorType(builder.build());
     }
     if (nullHandling == NullHandling.NULL_IF_NULL) {
       // if any one of the input types is nullable, then return nullable return type
       for (LogicalExpression e : args) {
-        if (e.getMajorType().getMode() == TypeProtos.DataMode.OPTIONAL) {
-          return Types.optional(returnValue.type.getMinorType());
+        if (e.getMajorType().getMode() == DataMode.OPTIONAL) {
+          return org.apache.drill.exec.types.Types.optional(returnValue.type.getMinorType());
         }
       }
     }
@@ -293,7 +294,7 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
   }
 
   private boolean softCompare(MajorType a, MajorType b) {
-    return Types.softEquals(a, b, getNullHandling() == NullHandling.NULL_IF_NULL);
+    return Types.softEquals(getDrillMajorType(a), getDrillMajorType(b), getNullHandling() == NullHandling.NULL_IF_NULL);
   }
 
   public String[] getRegisteredNames() {
@@ -309,7 +310,7 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
     final int maxLen = 10;
     return this.getClass().getSimpleName()
         + " [functionNames=" + Arrays.toString(registeredNames)
-        + ", returnType=" + Types.toString(returnValue.type)
+        + ", returnType=" + Types.toString(getDrillMajorType(returnValue.type))
         + ", nullHandling=" + nullHandling
         + ", parameters=" + (parameters != null ? Arrays.asList(parameters).subList(0, Math.min(parameters.length, maxLen)) : null) + "]";
   }
@@ -351,11 +352,11 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
 
     @Override
     public String toString() {
-      return "ValueReference [type=" + Types.toString(type) + ", name=" + name + "]";
+      return "ValueReference [type=" + Types.toString(getDrillMajorType(type)) + ", name=" + name + "]";
     }
 
     public static ValueReference createFieldReaderRef(String name) {
-      MajorType type = Types.required(MinorType.LATE);
+      MajorType type = org.apache.drill.exec.types.Types.required(MinorType.LATE);
       ValueReference ref = new ValueReference(type, name);
       ref.isFieldReader = true;
 
@@ -363,7 +364,7 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
     }
 
     public static ValueReference createComplexWriterRef(String name) {
-      MajorType type = Types.required(MinorType.LATE);
+      MajorType type = org.apache.drill.exec.types.Types.required(MinorType.LATE);
       ValueReference ref = new ValueReference(type, name);
       ref.isComplexWriter = true;
       return ref;

@@ -17,12 +17,13 @@
  */
 package org.apache.drill.common.expression;
 
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
+
 import java.util.List;
 
-import org.apache.drill.common.types.TypeProtos.DataMode;
-import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.Types;
 
 public interface OutputTypeDeterminer {
 

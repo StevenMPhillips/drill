@@ -20,8 +20,8 @@ package org.apache.drill.exec.vector.complex.fn;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.apache.drill.common.types.TypeProtos.DataMode;
-import org.apache.drill.common.types.TypeProtos.MinorType;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
 import com.fasterxml.jackson.core.JsonFactory;

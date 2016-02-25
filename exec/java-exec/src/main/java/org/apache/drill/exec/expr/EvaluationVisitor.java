@@ -54,10 +54,6 @@ import org.apache.drill.common.expression.ValueExpressions.QuotedString;
 import org.apache.drill.common.expression.ValueExpressions.TimeExpression;
 import org.apache.drill.common.expression.ValueExpressions.TimeStampExpression;
 import org.apache.drill.common.expression.visitors.AbstractExprVisitor;
-import org.apache.drill.common.expression.visitors.ExprVisitor;
-import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.compile.sig.ConstantExpressionIdentifier;
 import org.apache.drill.exec.compile.sig.GeneratorMapping;
 import org.apache.drill.exec.compile.sig.MappingSet;
@@ -66,6 +62,9 @@ import org.apache.drill.exec.expr.ClassGenerator.HoldingContainer;
 import org.apache.drill.exec.expr.fn.AbstractFuncHolder;
 import org.apache.drill.exec.expr.fn.FunctionImplementationRegistry;
 import org.apache.drill.exec.physical.impl.filter.ReturnValueExpression;
+import org.apache.drill.exec.types.Types;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 import org.apache.drill.exec.vector.ValueHolderHelper;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 
@@ -79,6 +78,9 @@ import com.sun.codemodel.JInvocation;
 import com.sun.codemodel.JLabel;
 import com.sun.codemodel.JType;
 import com.sun.codemodel.JVar;
+
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
+import static org.apache.drill.common.util.MajorTypeHelper.getDrillMajorType;
 
 /**
  * Visitor that generates code for eval
@@ -367,7 +369,7 @@ public class EvaluationVisitor {
       // Otherwise, input is a holder and we use vv mutator to set value.
       if (inputContainer.isReader()) {
         JType writerImpl = generator.getModel()._ref(
-            TypeHelper.getWriterImpl(inputContainer.getMinorType(), inputContainer.getMajorType().getMode()));
+                TypeHelper.getWriterImpl(inputContainer.getMinorType(), inputContainer.getMajorType().getMode()));
         JType writerIFace = generator.getModel()._ref(
             TypeHelper.getWriterInterface(inputContainer.getMinorType(), inputContainer.getMajorType().getMode()));
         JVar writer = generator.declareClassField("writer", writerIFace);
@@ -376,7 +378,7 @@ public class EvaluationVisitor {
         String copyMethod = inputContainer.isSingularRepeated() ? "copyAsValueSingle" : "copyAsValue";
         generator.getEvalBlock().add(inputContainer.getHolder().invoke(copyMethod).arg(writer));
         if (e.isSafe()) {
-          HoldingContainer outputContainer = generator.declare(Types.REQUIRED_BIT);
+          HoldingContainer outputContainer = generator.declare(Types.required(MinorType.BIT));
           generator.getEvalBlock().assign(outputContainer.getValue(), JExpr.lit(1));
           return outputContainer;
         }
@@ -412,8 +414,8 @@ public class EvaluationVisitor {
       HoldingContainer out = generator.declare(e.getMajorType());
 
       final boolean hasReadPath = e.hasReadPath();
-      final boolean complex = Types.isComplex(e.getMajorType());
-      final boolean repeated = Types.isRepeated(e.getMajorType());
+      final boolean complex = org.apache.drill.common.types.Types.isComplex(getDrillMajorType(e.getMajorType()));
+      final boolean repeated = org.apache.drill.common.types.Types.isRepeated(getDrillMajorType(e.getMajorType()));
       final boolean listVector = e.getTypedFieldId().isListVector();
 
       int[] fieldIds = e.getFieldId().getFieldIds();
@@ -569,7 +571,7 @@ public class EvaluationVisitor {
       JExpression buffer = generator.getMappingSet().getIncoming().invoke("getContext").invoke("getManagedBuffer");
       setup.assign(var,
           generator.getModel().ref(ValueHolderHelper.class).staticInvoke("getVarCharHolder").arg(buffer).arg(stringLiteral));
-      return new HoldingContainer(majorType, var, null, null);
+      return new HoldingContainer((majorType), var, null, null);
     }
 
     @Override

@@ -32,6 +32,11 @@ public class TestComplexTypeReader extends BaseTestQuery{
   }
 
   @Test
+  public void q() throws Exception {
+    test("select z from cp.`jsoninput/input2.json`");
+  }
+
+  @Test
   // Repeated map (map) -> json.
   public void testX() throws Exception{
     test("select convert_to(z[0], 'JSON') from cp.`jsoninput/input2.json`;");

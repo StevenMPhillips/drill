@@ -20,11 +20,11 @@ package org.apache.drill.common.expression;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.apache.drill.common.config.DrillConfig;
-import org.apache.drill.common.types.TypeProtos.MajorType;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import org.apache.drill.exec.types.Types.MajorType;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

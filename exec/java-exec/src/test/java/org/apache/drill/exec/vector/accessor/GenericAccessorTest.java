@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.vector.accessor;
 
+import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.proto.UserBitShared;
 import org.apache.drill.exec.vector.ValueVector;
 import org.junit.Before;
@@ -76,7 +77,7 @@ public class GenericAccessorTest {
     metadata = UserBitShared.SerializedField.getDefaultInstance();
     valueVector = mock(ValueVector.class);
     when(valueVector.getAccessor()).thenReturn(accessor);
-    when(valueVector.getMetadata()).thenReturn(metadata);
+    when(TypeHelper.getMetadata(valueVector)).thenReturn(metadata);
 
     genericAccessor = new GenericAccessor(valueVector);
   }

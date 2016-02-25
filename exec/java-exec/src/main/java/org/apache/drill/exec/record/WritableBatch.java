@@ -21,6 +21,7 @@ import io.netty.buffer.DrillBuf;
 
 import java.util.List;
 
+import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.proto.UserBitShared.RecordBatchDef;
 import org.apache.drill.exec.proto.UserBitShared.SerializedField;
@@ -104,7 +105,7 @@ public class WritableBatch implements AutoCloseable {
           ValueVector v = vv.getValueVector();
           DrillBuf bb = newBuf.slice(bufferOffset, fmd.getBufferLength());
 //        v.load(fmd, cbb.slice(bufferOffset, fmd.getBufferLength()));
-          v.load(fmd, bb);
+          TypeHelper.load(v, fmd, bb);
           vectorIndex++;
           bufferOffset += fmd.getBufferLength();
         }
@@ -153,7 +154,7 @@ public class WritableBatch implements AutoCloseable {
     List<SerializedField> metadata = Lists.newArrayList();
 
     for (ValueVector vv : vectors) {
-      metadata.add(vv.getMetadata());
+      metadata.add(TypeHelper.getMetadata(vv));
 
       // don't try to get the buffers if we don't have any records. It is possible the buffers are dead buffers.
       if (recordCount == 0) {

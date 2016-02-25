@@ -19,8 +19,6 @@
 package org.apache.drill.exec.planner.sql;
 
 import com.google.common.base.Preconditions;
-import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlCall;
@@ -32,16 +30,19 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
+import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.drill.exec.types.Types.MinorType;
 
 public class DrillSqlOperator extends SqlFunction {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DrillSqlOperator.class);
 
-  private static final MajorType NONE = MajorType.getDefaultInstance();
+  private static final MajorType NONE = new MajorType(MinorType.LATE, DataMode.OPTIONAL);
   private final MajorType returnType;
   private final boolean isDeterministic;
 
   public DrillSqlOperator(String name, int argCount, boolean isDeterministic) {
-    this(name, argCount, MajorType.getDefaultInstance(), isDeterministic);
+    this(name, argCount, new MajorType(MinorType.LATE, DataMode.OPTIONAL), isDeterministic);
   }
 
   public DrillSqlOperator(String name, int argCount, MajorType returnType, boolean isDeterminisitic) {
