@@ -49,7 +49,7 @@ import org.apache.drill.exec.server.options.OptionValue.OptionType;
 import org.apache.drill.exec.util.ByteBufUtil.HadoopWritables;
 import org.apache.drill.exec.util.VectorUtil;
 import org.apache.arrow.vector.ValueVector;
-import org.apache.drill.exec.vector.VarCharVector;
+import org.apache.arrow.vector.VarCharVector;
 import org.joda.time.DateTime;
 import org.junit.BeforeClass;
 import org.junit.Ignore;

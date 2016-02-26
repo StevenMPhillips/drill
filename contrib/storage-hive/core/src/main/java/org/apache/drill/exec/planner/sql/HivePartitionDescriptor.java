@@ -19,6 +19,8 @@ package org.apache.drill.exec.planner.sql;
 
 import io.netty.buffer.ArrowBuf;
 
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.util.BitSets;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
@@ -48,6 +50,8 @@ import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
 
 import com.google.common.collect.Lists;
+
+import static org.apache.drill.common.util.MajorTypeHelper.getDrillMinorType;
 
 // Partition descriptor for hive tables
 public class HivePartitionDescriptor extends AbstractPartitionDescriptor {
@@ -129,8 +133,8 @@ public class HivePartitionDescriptor extends AbstractPartitionDescriptor {
     String hiveType = partitionNameTypeMap.get(partitionName);
     PrimitiveTypeInfo primitiveTypeInfo = (PrimitiveTypeInfo) TypeInfoUtils.getTypeInfoFromTypeString(hiveType);
 
-    TypeProtos.MinorType partitionType = HiveUtilities.getMinorTypeFromHivePrimitiveTypeInfo(primitiveTypeInfo,
-        plannerSettings.getOptions());
+    TypeProtos.MinorType partitionType = getDrillMinorType(HiveUtilities.getMinorTypeFromHivePrimitiveTypeInfo(primitiveTypeInfo,
+            plannerSettings.getOptions()));
     return TypeProtos.MajorType.newBuilder().setMode(TypeProtos.DataMode.OPTIONAL).setMinorType(partitionType).build();
   }
 

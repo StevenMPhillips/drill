@@ -24,9 +24,9 @@ import org.apache.drill.common.config.DrillConfig;
 import org.apache.drill.common.expression.FunctionCall;
 import org.apache.drill.common.scanner.ClassPathScanner;
 import org.apache.drill.common.scanner.persistence.ScanResult;
-import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.Types;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types;
 import org.apache.drill.exec.expr.fn.impl.hive.ObjectInspectorHelper;
 import org.apache.drill.exec.planner.sql.DrillOperatorTable;
 import org.apache.drill.exec.planner.sql.HiveUDFOperator;
@@ -131,7 +131,7 @@ public class HiveFunctionRegistry implements PluggableFunctionRegistry{
       try {
         argTypes[i] = call.args.get(i).getMajorType();
         if (convertVarCharToVar16Char && argTypes[i].getMinorType() == MinorType.VARCHAR) {
-          argTypes[i] = Types.withMode(MinorType.VAR16CHAR, argTypes[i].getMode());
+          argTypes[i] = new MajorType(MinorType.VAR16CHAR, argTypes[i].getMode());
         }
         argOIs[i] = ObjectInspectorHelper.getDrillObjectInspector(argTypes[i].getMode(), argTypes[i].getMinorType());
       } catch(Exception e) {

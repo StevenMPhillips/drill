@@ -41,7 +41,7 @@ public class HiveFuncHolderExpr extends FunctionHolderExpression implements Iter
 
   @Override
   public MajorType getMajorType() {
-    return getArrowMajorType(holder.getReturnType());
+    return holder.getReturnType();
   }
 
   @Override
