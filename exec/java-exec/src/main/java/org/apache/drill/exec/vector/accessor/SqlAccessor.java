@@ -17,7 +17,7 @@
  */
 package org.apache.drill.exec.vector.accessor;
 
-import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MajorType;
 
 import java.io.InputStream;
 import java.io.Reader;

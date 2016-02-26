@@ -28,25 +28,25 @@ import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.exec.expr.ExpressionTreeMaterializer;
 import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.expr.fn.FunctionImplementationRegistry;
-import org.apache.drill.exec.expr.fn.impl.DateUtility;
+import org.apache.arrow.vector.util.DateUtility;
 import org.apache.drill.exec.expr.fn.impl.StringFunctionHelpers;
 import org.apache.drill.exec.expr.fn.interpreter.InterpreterEvaluator;
-import org.apache.drill.exec.expr.holders.BigIntHolder;
-import org.apache.drill.exec.expr.holders.BitHolder;
-import org.apache.drill.exec.expr.holders.DateHolder;
-import org.apache.drill.exec.expr.holders.Decimal18Holder;
-import org.apache.drill.exec.expr.holders.Decimal28SparseHolder;
-import org.apache.drill.exec.expr.holders.Decimal38SparseHolder;
-import org.apache.drill.exec.expr.holders.Decimal9Holder;
-import org.apache.drill.exec.expr.holders.Float4Holder;
-import org.apache.drill.exec.expr.holders.Float8Holder;
-import org.apache.drill.exec.expr.holders.IntHolder;
-import org.apache.drill.exec.expr.holders.IntervalDayHolder;
-import org.apache.drill.exec.expr.holders.IntervalYearHolder;
-import org.apache.drill.exec.expr.holders.TimeHolder;
-import org.apache.drill.exec.expr.holders.TimeStampHolder;
-import org.apache.drill.exec.expr.holders.ValueHolder;
-import org.apache.drill.exec.expr.holders.VarCharHolder;
+import org.apache.arrow.vector.holders.BigIntHolder;
+import org.apache.arrow.vector.holders.BitHolder;
+import org.apache.arrow.vector.holders.DateHolder;
+import org.apache.arrow.vector.holders.Decimal18Holder;
+import org.apache.arrow.vector.holders.Decimal28SparseHolder;
+import org.apache.arrow.vector.holders.Decimal38SparseHolder;
+import org.apache.arrow.vector.holders.Decimal9Holder;
+import org.apache.arrow.vector.holders.Float4Holder;
+import org.apache.arrow.vector.holders.Float8Holder;
+import org.apache.arrow.vector.holders.IntHolder;
+import org.apache.arrow.vector.holders.IntervalDayHolder;
+import org.apache.arrow.vector.holders.IntervalYearHolder;
+import org.apache.arrow.vector.holders.TimeHolder;
+import org.apache.arrow.vector.holders.TimeStampHolder;
+import org.apache.arrow.vector.holders.ValueHolder;
+import org.apache.arrow.vector.holders.VarCharHolder;
 import org.apache.drill.exec.ops.UdfUtilities;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rel.type.RelDataType;
@@ -58,8 +58,8 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.NlsString;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MinorType;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -252,7 +252,7 @@ public class DrillConstExecutor implements RelOptPlanner.Executor {
           case DECIMAL28SPARSE:
             Decimal28SparseHolder decimal28Out = (Decimal28SparseHolder)output;
             reducedValues.add(rexBuilder.makeLiteral(
-                org.apache.drill.exec.util.DecimalUtility.getBigDecimalFromSparse(
+                org.apache.arrow.vector.util.DecimalUtility.getBigDecimalFromSparse(
                     decimal28Out.buffer,
                     decimal28Out.start * 20,
                     5,
@@ -264,7 +264,7 @@ public class DrillConstExecutor implements RelOptPlanner.Executor {
           case DECIMAL38SPARSE:
             Decimal38SparseHolder decimal38Out = (Decimal38SparseHolder)output;
             reducedValues.add(rexBuilder.makeLiteral(
-                org.apache.drill.exec.util.DecimalUtility.getBigDecimalFromSparse(
+                org.apache.arrow.vector.util.DecimalUtility.getBigDecimalFromSparse(
                     decimal38Out.buffer,
                     decimal38Out.start * 24,
                     6,

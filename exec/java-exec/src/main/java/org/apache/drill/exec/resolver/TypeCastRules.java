@@ -29,10 +29,10 @@ import com.google.common.collect.Sets;
 import org.apache.drill.common.expression.FunctionCall;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.NullHandling;
 import org.apache.drill.exec.expr.fn.DrillFuncHolder;
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.types.Types.MinorType;
-import org.apache.drill.exec.util.DecimalUtility;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MinorType;
+import org.apache.arrow.vector.util.DecimalUtility;
 
 import static org.apache.drill.common.util.MajorTypeHelper.getDrillMajorType;
 import static org.apache.drill.common.util.MajorTypeHelper.getDrillMinorType;
@@ -855,7 +855,7 @@ public class TypeCastRules {
      * the function can fit the precision that we need based on the input types.
      */
     if (holder.checkPrecisionRange() == true) {
-      if (DecimalUtility.getMaxPrecision(getDrillMinorType(holder.getReturnType().getMinorType())) < holder.getReturnType(call.args).getPrecision()) {
+      if (DecimalUtility.getMaxPrecision(holder.getReturnType().getMinorType()) < holder.getReturnType(call.args).getPrecision()) {
         return -1;
       }
     }

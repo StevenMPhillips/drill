@@ -21,7 +21,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.drill.common.util.DrillStringUtils;
-import org.apache.drill.exec.record.MaterializedField;
+import org.apache.arrow.vector.types.MaterializedField;
 import org.apache.drill.exec.record.VectorAccessible;
 import org.apache.drill.exec.record.VectorWrapper;
 

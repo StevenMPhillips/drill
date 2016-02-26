@@ -33,10 +33,10 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
-import org.apache.drill.exec.types.Types;
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 

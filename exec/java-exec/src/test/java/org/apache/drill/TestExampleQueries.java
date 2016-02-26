@@ -27,7 +27,7 @@ import org.apache.drill.common.util.FileUtils;
 import org.apache.drill.common.util.TestTools;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.compile.ClassTransformer;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 import org.junit.Ignore;
 import org.junit.Test;
 

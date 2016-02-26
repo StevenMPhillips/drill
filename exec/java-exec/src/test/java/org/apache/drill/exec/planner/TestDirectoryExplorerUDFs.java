@@ -19,10 +19,10 @@ package org.apache.drill.exec.planner;
 
 import java.util.List;
 
+import org.apache.arrow.vector.util.JsonStringArrayList;
 import org.apache.drill.PlanTestBase;
 import org.apache.drill.exec.fn.interp.TestConstantFolding;
-import org.apache.drill.exec.util.JsonStringArrayList;
-import org.apache.drill.exec.util.Text;
+import org.apache.arrow.vector.util.Text;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;

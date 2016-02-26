@@ -33,20 +33,20 @@ import java.util.Set;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.HyperVectorValueIterator;
 import org.apache.drill.exec.exception.SchemaChangeException;
-import org.apache.drill.exec.memory.BufferAllocator;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.drill.exec.proto.UserBitShared;
 import org.apache.drill.exec.proto.UserBitShared.QueryType;
 import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.HyperVectorWrapper;
 import org.apache.drill.common.util.MajorTypeHelper;
-import org.apache.drill.exec.record.MaterializedField;
+import org.apache.arrow.vector.types.MaterializedField;
 import org.apache.drill.exec.record.RecordBatchLoader;
-import org.apache.drill.exec.record.SerializedFieldHelper;
+import org.apache.arrow.vector.types.SerializedFieldHelper;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.rpc.user.QueryDataBatch;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.util.Text;
-import org.apache.drill.exec.vector.ValueVector;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.util.Text;
+import org.apache.arrow.vector.ValueVector;
 
 /**
  * An object to encapsulate the options for a Drill unit test, as well as the execution methods to perform the tests and

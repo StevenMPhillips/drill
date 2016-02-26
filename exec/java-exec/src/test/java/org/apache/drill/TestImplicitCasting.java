@@ -19,7 +19,7 @@ package org.apache.drill;
 
 import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.exec.resolver.TypeCastRules;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;

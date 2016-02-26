@@ -27,10 +27,7 @@ package org.apache.drill.exec.expr;
 
 <#include "/@includes/vv_imports.ftl" />
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.vector.accessor.*;
-import org.apache.drill.exec.vector.complex.RepeatedMapVector;
-import org.apache.drill.exec.util.CallBack;
 
 public class TypeHelper extends BasicTypeHelper {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TypeHelper.class);
@@ -89,7 +86,7 @@ public class TypeHelper extends BasicTypeHelper {
     throw new UnsupportedOperationException(buildErrorMessage("get holder type", type,mode));
   }
 
-  public static void load(ValueVector v, SerializedField metadata, DrillBuf buffer) {
+  public static void load(ValueVector v, SerializedField metadata, ArrowBuf buffer) {
     MinorType type = v.getField().getType().getMinorType();
     DataMode mode = v.getField().getType().getMode();
     switch(type) {

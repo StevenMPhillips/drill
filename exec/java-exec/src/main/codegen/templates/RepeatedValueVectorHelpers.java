@@ -18,7 +18,7 @@
 
 import java.lang.Override;
 
-import org.apache.drill.exec.record.TransferPair;
+import org.apache.arrow.vector.util.TransferPair;
 import org.apache.drill.exec.vector.complex.BaseRepeatedValueVector;
 import org.mortbay.jetty.servlet.Holder;
 
@@ -28,10 +28,10 @@ import org.mortbay.jetty.servlet.Holder;
 <#assign friendlyType = (minor.friendlyType!minor.boxedType!type.boxedType) />
 <#assign fields = minor.fields!type.fields />
 
-<@pp.changeOutputFile name="/org/apache/drill/exec/vector/Repeated${minor.class}VectorHelper.java" />
+<@pp.changeOutputFile name="/org/apache/arrow/vector/Repeated${minor.class}VectorHelper.java" />
 <#include "/@includes/license.ftl" />
 
-package org.apache.drill.exec.vector;
+package org.apache.arrow.vector;
 
 <#include "/@includes/vv_imports.ftl" />
 

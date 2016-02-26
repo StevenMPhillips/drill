@@ -19,6 +19,8 @@ package org.apache.drill.exec.record;
 
 import io.netty.buffer.ByteBuf;
 
+import org.apache.arrow.vector.types.MaterializedField;
+import org.apache.arrow.vector.types.SerializedFieldHelper;
 import org.apache.drill.exec.proto.BitData.FragmentRecordBatch;
 import org.apache.drill.exec.proto.UserBitShared.QueryId;
 import org.apache.drill.exec.proto.UserBitShared.RecordBatchDef;

@@ -18,8 +18,8 @@
 package org.apache.drill.exec;
 
 import org.apache.drill.exec.record.HyperVectorWrapper;
-import org.apache.drill.exec.record.MaterializedField;
-import org.apache.drill.exec.vector.ValueVector;
+import org.apache.arrow.vector.types.MaterializedField;
+import org.apache.arrow.vector.ValueVector;
 
 import java.util.Iterator;
 

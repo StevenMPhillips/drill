@@ -23,10 +23,10 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
+import org.apache.arrow.memory.BufferAllocator;
 
 import java.util.concurrent.ExecutionException;
 
-import org.apache.drill.exec.memory.BufferAllocator;
 
 public abstract class RemoteConnection implements ConnectionThrottle, AutoCloseable {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RemoteConnection.class);

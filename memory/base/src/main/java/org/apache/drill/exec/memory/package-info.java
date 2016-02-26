@@ -21,4 +21,4 @@
  *  See the README.md file in this directory for detailed information about Drill's memory allocation subsystem.
  *
  */
-package org.apache.drill.exec.memory;
+package org.apache.arrow.memory;

@@ -25,8 +25,8 @@ import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.selection.SelectionVector2;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.vector.AllocationHelper;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.AllocationHelper;
 
 import static org.apache.drill.common.util.MajorTypeHelper.getDrillMajorType;
 

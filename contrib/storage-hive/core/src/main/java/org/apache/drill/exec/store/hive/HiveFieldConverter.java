@@ -19,12 +19,12 @@ package org.apache.drill.exec.store.hive;
 
 import java.util.Map;
 
-import org.apache.drill.exec.expr.holders.Decimal18Holder;
-import org.apache.drill.exec.expr.holders.Decimal28SparseHolder;
-import org.apache.drill.exec.expr.holders.Decimal38SparseHolder;
-import org.apache.drill.exec.expr.holders.Decimal9Holder;
+import org.apache.arrow.vector.holders.Decimal18Holder;
+import org.apache.arrow.vector.holders.Decimal28SparseHolder;
+import org.apache.arrow.vector.holders.Decimal38SparseHolder;
+import org.apache.arrow.vector.holders.Decimal9Holder;
 import org.apache.drill.exec.ops.FragmentContext;
-import org.apache.drill.exec.util.DecimalUtility;
+import org.apache.arrow.vector.util.DecimalUtility;
 import org.apache.drill.exec.vector.NullableBigIntVector;
 import org.apache.drill.exec.vector.NullableBitVector;
 import org.apache.drill.exec.vector.NullableDateVector;
@@ -40,7 +40,7 @@ import org.apache.drill.exec.vector.NullableTimeStampVector;
 import org.apache.drill.exec.vector.NullableTinyIntVector;
 import org.apache.drill.exec.vector.NullableVarBinaryVector;
 import org.apache.drill.exec.vector.NullableVarCharVector;
-import org.apache.drill.exec.vector.ValueVector;
+import org.apache.arrow.vector.ValueVector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BinaryObjectInspector;

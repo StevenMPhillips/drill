@@ -22,9 +22,9 @@ import java.util.Iterator;
 import org.apache.drill.common.expression.visitors.ExprVisitor;
 
 import com.google.common.collect.Iterators;
-import org.apache.drill.exec.types.Types;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 
 public class NullExpression implements LogicalExpression{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(NullExpression.class);

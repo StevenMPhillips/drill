@@ -24,10 +24,10 @@ import java.lang.Override;
 <#assign friendlyType = (minor.friendlyType!minor.boxedType!type.boxedType) />
 
 <#if type.major == "Fixed">
-<@pp.changeOutputFile name="/org/apache/drill/exec/vector/${minor.class}VectorHelper.java" />
+<@pp.changeOutputFile name="/org/apache/arrow/vector/${minor.class}VectorHelper.java" />
 <#include "/@includes/license.ftl" />
 
-package org.apache.drill.exec.vector;
+package org.apache.arrow.vector;
 
 <#include "/@includes/vv_imports.ftl" />
 
@@ -41,7 +41,7 @@ public final class ${minor.class}VectorHelper extends BaseValueVectorHelper {
     this.vector = vector;
   }
 
-  public void load(SerializedField metadata, DrillBuf buffer) {
+  public void load(SerializedField metadata, ArrowBuf buffer) {
     Preconditions.checkArgument(vector.field.getPath().equals(metadata.getNamePart().getName()), "The field %s doesn't match the provided metadata %s.", vector.field, metadata);
     final int actualLength = metadata.getBufferLength();
     final int valueCount = metadata.getValueCount();

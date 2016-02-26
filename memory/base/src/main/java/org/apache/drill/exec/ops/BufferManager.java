@@ -17,17 +17,17 @@
  ******************************************************************************/
 package org.apache.drill.exec.ops;
 
-import io.netty.buffer.DrillBuf;
+import io.netty.buffer.ArrowBuf;
 
 /**
- * Manages a list of {@link DrillBuf}s that can be reallocated as needed. Upon
+ * Manages a list of {@link ArrowBuf}s that can be reallocated as needed. Upon
  * re-allocation the old buffer will be freed. Managing a list of these buffers
  * prevents some parts of the system from needing to define a correct location
  * to place the final call to free them.
  *
  * The current uses of these types of buffers are within the pluggable components of Drill.
  * In UDFs, memory management should not be a concern. We provide access to re-allocatable
- * DrillBufs to give UDF writers general purpose buffers we can account for. To prevent the need
+ * ArrowBufs to give UDF writers general purpose buffers we can account for. To prevent the need
  * for UDFs to contain boilerplate to close all of the buffers they request, this list
  * is tracked at a higher level and all of the buffers are freed once we are sure that
  * the code depending on them is done executing (currently {@link FragmentContext}
@@ -44,14 +44,14 @@ public interface BufferManager extends AutoCloseable {
    *          Size of new replacement buffer.
    * @return
    */
-  public DrillBuf replace(DrillBuf old, int newSize);
+  public ArrowBuf replace(ArrowBuf old, int newSize);
 
   /**
    * Get a managed buffer of indeterminate size.
    *
    * @return A buffer.
    */
-  public DrillBuf getManagedBuffer();
+  public ArrowBuf getManagedBuffer();
 
   /**
    * Get a managed buffer of at least a certain size.
@@ -60,7 +60,7 @@ public interface BufferManager extends AutoCloseable {
    *          The desired size
    * @return A buffer
    */
-  public DrillBuf getManagedBuffer(int size);
+  public ArrowBuf getManagedBuffer(int size);
 
   public void close();
 }

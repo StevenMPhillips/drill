@@ -23,6 +23,7 @@ import java.util.Iterator;
 import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.RecognitionException;
+import org.apache.arrow.vector.types.Types.MajorType;
 import org.apache.drill.common.expression.PathSegment.ArraySegment;
 import org.apache.drill.common.expression.PathSegment.NameSegment;
 import org.apache.drill.common.expression.parser.ExprLexer;
@@ -38,7 +39,6 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
-import org.apache.drill.exec.types.Types.MajorType;
 
 import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
 

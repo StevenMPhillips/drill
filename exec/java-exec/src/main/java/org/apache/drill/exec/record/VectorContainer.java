@@ -25,14 +25,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.arrow.vector.SchemaChangeCallBack;
+import org.apache.arrow.vector.types.MaterializedField;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.common.util.MajorTypeHelper;
-import org.apache.drill.exec.vector.SchemaChangeCallBack;
-import org.apache.drill.exec.vector.ValueVector;
+import org.apache.arrow.vector.ValueVector;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;

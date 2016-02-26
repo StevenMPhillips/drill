@@ -36,7 +36,7 @@ import org.apache.drill.common.expression.ValueExpressions.QuotedString;
 import org.apache.drill.common.expression.ValueExpressions.TimeExpression;
 import org.apache.drill.common.expression.ValueExpressions.TimeStampExpression;
 import org.apache.drill.common.expression.visitors.AbstractExprVisitor;
-import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MajorType;
 import org.joda.time.Period;
 
 import com.google.common.collect.ImmutableList;

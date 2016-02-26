@@ -19,7 +19,7 @@ package org.apache.drill.exec.store.hive;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.netty.buffer.DrillBuf;
+import io.netty.buffer.ArrowBuf;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.exceptions.UserException;
@@ -27,13 +27,13 @@ import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.common.types.TypeProtos.DataMode;
 import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.exec.expr.holders.Decimal18Holder;
-import org.apache.drill.exec.expr.holders.Decimal28SparseHolder;
-import org.apache.drill.exec.expr.holders.Decimal38SparseHolder;
-import org.apache.drill.exec.expr.holders.Decimal9Holder;
+import org.apache.arrow.vector.holders.Decimal18Holder;
+import org.apache.arrow.vector.holders.Decimal28SparseHolder;
+import org.apache.arrow.vector.holders.Decimal38SparseHolder;
+import org.apache.arrow.vector.holders.Decimal9Holder;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
 import org.apache.drill.exec.server.options.OptionManager;
-import org.apache.drill.exec.util.DecimalUtility;
+import org.apache.arrow.vector.util.DecimalUtility;
 import org.apache.drill.exec.vector.NullableBigIntVector;
 import org.apache.drill.exec.vector.NullableBitVector;
 import org.apache.drill.exec.vector.NullableDateVector;
@@ -47,7 +47,7 @@ import org.apache.drill.exec.vector.NullableIntVector;
 import org.apache.drill.exec.vector.NullableTimeStampVector;
 import org.apache.drill.exec.vector.NullableVarBinaryVector;
 import org.apache.drill.exec.vector.NullableVarCharVector;
-import org.apache.drill.exec.vector.ValueVector;
+import org.apache.arrow.vector.ValueVector;
 import org.apache.drill.exec.work.ExecErrorConstants;
 
 import org.apache.hadoop.hive.common.type.HiveDecimal;
@@ -134,7 +134,7 @@ public class HiveUtilities {
     return null;
   }
 
-  public static void populateVector(final ValueVector vector, final DrillBuf managedBuffer, final Object val,
+  public static void populateVector(final ValueVector vector, final ArrowBuf managedBuffer, final Object val,
       final int start, final int end) {
     TypeProtos.MinorType type = vector.getField().getType().getMinorType();
 

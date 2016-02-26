@@ -17,21 +17,23 @@
  */
 package org.apache.drill.exec.record;
 
-import io.netty.buffer.DrillBuf;
+import io.netty.buffer.ArrowBuf;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.arrow.vector.AllocationHelper;
+import org.apache.arrow.vector.types.MaterializedField;
+import org.apache.arrow.vector.types.SerializedFieldHelper;
 import org.apache.drill.common.StackTrace;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.expr.TypeHelper;
-import org.apache.drill.exec.memory.BufferAllocator;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.drill.exec.proto.UserBitShared.RecordBatchDef;
 import org.apache.drill.exec.proto.UserBitShared.SerializedField;
-import org.apache.drill.exec.vector.AllocationHelper;
-import org.apache.drill.exec.vector.ValueVector;
+import org.apache.arrow.vector.ValueVector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +71,7 @@ public class RecordBatchLoader implements VectorAccessible, Iterable<VectorWrapp
    * @throws SchemaChangeException
    *   TODO:  Clean:  DRILL-2933  load(...) never actually throws SchemaChangeException.
    */
-  public boolean load(RecordBatchDef def, DrillBuf buf) throws SchemaChangeException {
+  public boolean load(RecordBatchDef def, ArrowBuf buf) throws SchemaChangeException {
     if (logger.isTraceEnabled()) {
       logger.trace("Loading record batch with def {} and data {}", def, buf);
       logger.trace("Load, ThreadID: {}\n{}", Thread.currentThread().getId(), new StackTrace());

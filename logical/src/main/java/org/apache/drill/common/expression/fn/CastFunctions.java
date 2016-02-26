@@ -17,8 +17,8 @@
  */
 package org.apache.drill.common.expression.fn;
 
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MinorType;
 
 import java.util.HashMap;
 import java.util.HashSet;

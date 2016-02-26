@@ -55,6 +55,11 @@
       <artifactId>commons-pool2</artifactId>
       <version>2.1</version>
     </dependency>
+    <dependency>
+      <artifactId>vector</artifactId>
+      <version>0.1-SNAPSHOT</version>
+      <groupId>org.apache.arrow</groupId>
+    </dependency>
     
     <dependency>
       <groupId>com.univocity</groupId>
@@ -291,16 +296,6 @@
     <dependency>
       <groupId>org.apache.drill.exec</groupId>
       <artifactId>drill-rpc</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.drill.memory</groupId>
-      <artifactId>drill-memory-base</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.drill.exec</groupId>
-      <artifactId>vector</artifactId>
       <version>${project.version}</version>
     </dependency>
     <!-- <dependency> -->
@@ -546,7 +541,7 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.apache.drill.exec</groupId>
+                  <groupId>org.apache.arrow</groupId>
                   <artifactId>vector</artifactId>
                   <type>jar</type>
                   <overWrite>true</overWrite>

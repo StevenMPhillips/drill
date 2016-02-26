@@ -24,9 +24,9 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 import org.apache.drill.common.expression.visitors.ExprVisitor;
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -18,7 +18,7 @@
 
 import java.lang.Override;
 
-import org.apache.drill.exec.exception.OutOfMemoryException;
+import org.apache.arrow.memory.OutOfMemoryException;
 import org.apache.drill.exec.vector.BaseDataValueVector;
 import org.apache.drill.exec.vector.BaseValueVector;
 import org.apache.drill.exec.vector.VariableWidthVector;
@@ -30,11 +30,11 @@ import org.apache.drill.exec.vector.VariableWidthVector;
 <#assign friendlyType = (minor.friendlyType!minor.boxedType!type.boxedType) />
 
 <#if type.major == "VarLen">
-<@pp.changeOutputFile name="/org/apache/drill/exec/vector/${minor.class}VectorHelper.java" />
+<@pp.changeOutputFile name="/org/apache/arrow/vector/${minor.class}VectorHelper.java" />
 
 <#include "/@includes/license.ftl" />
 
-package org.apache.drill.exec.vector;
+package org.apache.arrow.vector;
 
 <#include "/@includes/vv_imports.ftl" />
 
@@ -56,7 +56,7 @@ public final class ${minor.class}VectorHelper extends BaseValueVectorHelper {
              .build();
   }
 
-  public void load(SerializedField metadata, DrillBuf buffer) {
+  public void load(SerializedField metadata, ArrowBuf buffer) {
 //     the bits vector is the first child (the order in which the children are added in getMetadataBuilder is significant)
     final SerializedField offsetField = metadata.getChild(0);
     TypeHelper.load(vector.offsetVector, offsetField, buffer);

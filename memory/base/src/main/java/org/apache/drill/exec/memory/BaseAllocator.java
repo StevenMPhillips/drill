@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.memory;
+package org.apache.arrow.memory;
 
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.DrillBuf;
+import io.netty.buffer.ArrowBuf;
 import io.netty.buffer.UnsafeDirectLittleEndian;
 
 import java.util.Arrays;
@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.drill.common.HistoricalLog;
-import org.apache.drill.exec.exception.OutOfMemoryException;
-import org.apache.drill.exec.memory.AllocationManager.BufferLedger;
+import org.apache.arrow.memory.OutOfMemoryException;
+import org.apache.arrow.memory.AllocationManager.BufferLedger;
 import org.apache.drill.exec.ops.BufferManager;
 import org.apache.drill.exec.util.AssertionUtil;
 
@@ -51,7 +51,7 @@ public abstract class BaseAllocator extends Accountant implements BufferAllocato
   private final BaseAllocator parentAllocator;
   private final ByteBufAllocator thisAsByteBufAllocator;
   private final IdentityHashMap<BaseAllocator, Object> childAllocators;
-  private final DrillBuf empty;
+  private final ArrowBuf empty;
 
   private volatile boolean isClosed = false; // the allocator has been closed
 
@@ -116,7 +116,7 @@ public abstract class BaseAllocator extends Accountant implements BufferAllocato
   }
 
   @Override
-  public DrillBuf getEmpty() {
+  public ArrowBuf getEmpty() {
     assertOpen();
     return empty;
   }
@@ -185,20 +185,20 @@ public abstract class BaseAllocator extends Accountant implements BufferAllocato
   }
 
   @Override
-  public DrillBuf buffer(final int initialRequestSize) {
+  public ArrowBuf buffer(final int initialRequestSize) {
     assertOpen();
 
     return buffer(initialRequestSize, null);
   }
 
-  private DrillBuf createEmpty(){
+  private ArrowBuf createEmpty(){
     assertOpen();
 
-    return new DrillBuf(new AtomicInteger(), null, AllocationManager.INNER_ALLOCATOR.empty, null, null, 0, 0, true);
+    return new ArrowBuf(new AtomicInteger(), null, AllocationManager.INNER_ALLOCATOR.empty, null, null, 0, 0, true);
   }
 
   @Override
-  public DrillBuf buffer(final int initialRequestSize, BufferManager manager) {
+  public ArrowBuf buffer(final int initialRequestSize, BufferManager manager) {
     assertOpen();
 
     Preconditions.checkArgument(initialRequestSize >= 0, "the requested size must be non-negative");
@@ -218,7 +218,7 @@ public abstract class BaseAllocator extends Accountant implements BufferAllocato
 
     boolean success = false;
     try {
-      DrillBuf buffer = bufferWithoutReservation(actualRequestSize, manager);
+      ArrowBuf buffer = bufferWithoutReservation(actualRequestSize, manager);
       success = true;
       return buffer;
     } finally {
@@ -233,12 +233,12 @@ public abstract class BaseAllocator extends Accountant implements BufferAllocato
    * Used by usual allocation as well as for allocating a pre-reserved buffer. Skips the typical accounting associated
    * with creating a new buffer.
    */
-  private DrillBuf bufferWithoutReservation(final int size, BufferManager bufferManager) throws OutOfMemoryException {
+  private ArrowBuf bufferWithoutReservation(final int size, BufferManager bufferManager) throws OutOfMemoryException {
     assertOpen();
 
     final AllocationManager manager = new AllocationManager(this, size);
     final BufferLedger ledger = manager.associate(this); // +1 ref cnt (required)
-    final DrillBuf buffer = ledger.newDrillBuf(0, size, bufferManager);
+    final ArrowBuf buffer = ledger.newArrowBuf(0, size, bufferManager);
 
     // make sure that our allocation is equal to what we expected.
     Preconditions.checkArgument(buffer.capacity() == size,
@@ -310,15 +310,15 @@ public abstract class BaseAllocator extends Accountant implements BufferAllocato
       return true;
     }
 
-    public DrillBuf allocateBuffer() {
+    public ArrowBuf allocateBuffer() {
       assertOpen();
 
       Preconditions.checkState(!closed, "Attempt to allocate after closed");
       Preconditions.checkState(!used, "Attempt to allocate more than once");
 
-      final DrillBuf drillBuf = allocate(nBytes);
+      final ArrowBuf ArrowBuf = allocate(nBytes);
       used = true;
-      return drillBuf;
+      return ArrowBuf;
     }
 
     public int getSize() {
@@ -388,7 +388,7 @@ public abstract class BaseAllocator extends Accountant implements BufferAllocato
      *          the size of the buffer requested
      * @return the buffer, or null, if the request cannot be satisfied
      */
-    private DrillBuf allocate(int nBytes) {
+    private ArrowBuf allocate(int nBytes) {
       assertOpen();
 
       boolean success = false;
@@ -399,13 +399,13 @@ public abstract class BaseAllocator extends Accountant implements BufferAllocato
        * as well, so we need to return the same number back to avoid double-counting them.
        */
       try {
-        final DrillBuf drillBuf = BaseAllocator.this.bufferWithoutReservation(nBytes, null);
+        final ArrowBuf ArrowBuf = BaseAllocator.this.bufferWithoutReservation(nBytes, null);
 
         if (DEBUG) {
-          historicalLog.recordEvent("allocate() => %s", String.format("DrillBuf[%d]", drillBuf.getId()));
+          historicalLog.recordEvent("allocate() => %s", String.format("ArrowBuf[%d]", ArrowBuf.getId()));
         }
         success = true;
-        return drillBuf;
+        return ArrowBuf;
       } finally {
         if (!success) {
           releaseBytes(nBytes);
@@ -567,7 +567,7 @@ public abstract class BaseAllocator extends Accountant implements BufferAllocato
    * Verifies the accounting state of the allocator. Only works for DEBUG.
    *
    * <p>
-   * This overload is used for recursive calls, allowing for checking that DrillBufs are unique across all allocators
+   * This overload is used for recursive calls, allowing for checking that ArrowBufs are unique across all allocators
    * that are checked.
    * </p>
    *
@@ -596,7 +596,7 @@ public abstract class BaseAllocator extends Accountant implements BufferAllocato
        * Verify my relationships with my descendants.
        *
        * The sum of direct child allocators' owned memory must be <= my allocated memory; my allocated memory also
-       * includes DrillBuf's directly allocated by me.
+       * includes ArrowBuf's directly allocated by me.
        */
       long childTotal = 0;
       for (final BaseAllocator childAllocator : childSet) {
@@ -625,11 +625,11 @@ public abstract class BaseAllocator extends Accountant implements BufferAllocato
 
         final UnsafeDirectLittleEndian udle = ledger.getUnderlying();
         /*
-         * Even when shared, DrillBufs are rewrapped, so we should never see the same instance twice.
+         * Even when shared, ArrowBufs are rewrapped, so we should never see the same instance twice.
          */
         final BaseAllocator otherOwner = buffersSeen.get(udle);
         if (otherOwner != null) {
-          throw new IllegalStateException("This allocator's drillBuf already owned by another allocator");
+          throw new IllegalStateException("This allocator's ArrowBuf already owned by another allocator");
         }
         buffersSeen.put(udle, this);
 

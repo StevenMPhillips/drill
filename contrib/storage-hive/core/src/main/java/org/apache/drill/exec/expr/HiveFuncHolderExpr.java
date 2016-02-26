@@ -26,7 +26,7 @@ import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.expression.fn.FuncHolder;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate;
 import org.apache.drill.exec.expr.fn.HiveFuncHolder;
-import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MajorType;
 
 import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
 

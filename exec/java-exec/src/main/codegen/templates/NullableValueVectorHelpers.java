@@ -29,11 +29,11 @@ import java.lang.UnsupportedOperationException;
 <#assign valuesName = "${minor.class}Vector" />
 <#assign friendlyType = (minor.friendlyType!minor.boxedType!type.boxedType) />
 
-<@pp.changeOutputFile name="/org/apache/drill/exec/vector/${className}.java" />
+<@pp.changeOutputFile name="/org/apache/arrow/vector/${className}.java" />
 
 <#include "/@includes/license.ftl" />
 
-package org.apache.drill.exec.vector;
+package org.apache.arrow.vector;
 
 <#include "/@includes/vv_imports.ftl" />
 
@@ -61,7 +61,7 @@ public final class ${className} extends BaseValueVectorHelper {
       .addChild(TypeHelper.getMetadata(vector.values));
   }
 
-  public void load(SerializedField metadata, DrillBuf buffer) {
+  public void load(SerializedField metadata, ArrowBuf buffer) {
     vector.clear();
 //         the bits vector is the first child (the order in which the children are added in getMetadataBuilder is significant)
     final SerializedField bitsField = metadata.getChild(0);

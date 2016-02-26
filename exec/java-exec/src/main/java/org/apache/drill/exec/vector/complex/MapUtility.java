@@ -17,15 +17,15 @@
  */
 package org.apache.drill.exec.vector.complex;
 
+import org.apache.arrow.vector.complex.writer.BaseWriter;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 
 import org.apache.drill.exec.expr.fn.impl.MappifyUtility;
-import org.apache.drill.exec.record.MaterializedField;
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.types.Types.MinorType;
-import org.apache.drill.exec.vector.complex.reader.FieldReader;
-import org.apache.drill.exec.vector.complex.writer.BaseWriter;
+import org.apache.arrow.vector.types.MaterializedField;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MinorType;
+import org.apache.arrow.vector.complex.reader.FieldReader;
 
 public class MapUtility {
   private final static String TYPE_MISMATCH_ERROR = "Mappify/kvgen does not support heterogeneous value types. All values in the input map must be of the same type. The field [%s] has a differing type [%s].";

@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 
 import com.google.common.collect.Lists;
-import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MajorType;
 
 import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
 

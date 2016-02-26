@@ -27,9 +27,9 @@ import org.apache.drill.exec.expr.DrillSimpleFunc;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.FunctionScope;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.NullHandling;
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.util.DecimalUtility;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.util.DecimalUtility;
 
 import static org.apache.drill.common.util.MajorTypeHelper.getArrowMinorType;
 import static org.apache.drill.common.util.MajorTypeHelper.getDrillMinorType;
@@ -69,7 +69,7 @@ public class DrillDecimalModScaleFuncHolder extends DrillSimpleFuncHolder{
     DecimalScalePrecisionModFunction outputScalePrec =
         new DecimalScalePrecisionModFunction(args.get(0).getMajorType().getPrecision(), args.get(0).getMajorType().getScale(),
             args.get(1).getMajorType().getPrecision(), args.get(1).getMajorType().getScale());
-    return new MajorType(getArrowMinorType(DecimalUtility.getDecimalDataType(outputScalePrec.getOutputPrecision())), mode, outputScalePrec.getOutputPrecision(), outputScalePrec.getOutputPrecision());
+    return new MajorType(DecimalUtility.getDecimalDataType(outputScalePrec.getOutputPrecision()), mode, outputScalePrec.getOutputPrecision(), outputScalePrec.getOutputPrecision());
   }
 
   @Override

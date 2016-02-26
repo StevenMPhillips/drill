@@ -32,8 +32,8 @@ import org.apache.drill.exec.expr.ValueVectorWriteExpression;
 import org.apache.drill.exec.expr.fn.FunctionImplementationRegistry;
 import org.apache.drill.exec.physical.impl.project.Projector;
 import org.apache.drill.exec.record.TypedFieldId;
-import org.apache.drill.exec.types.Types;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types;
+import org.apache.arrow.vector.types.Types.MinorType;
 import org.junit.Test;
 
 public class TestEvaluationVisitor {

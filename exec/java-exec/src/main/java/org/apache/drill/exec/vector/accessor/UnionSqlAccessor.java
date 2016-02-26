@@ -17,12 +17,11 @@
  */
 package org.apache.drill.exec.vector.accessor;
 
-import org.apache.drill.exec.types.Types;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.types.Types.MinorType;
-import org.apache.drill.exec.vector.complex.UnionVector;
-import org.apache.drill.exec.vector.complex.impl.UnionWriter;
-import org.apache.drill.exec.vector.complex.reader.FieldReader;
+import org.apache.arrow.vector.complex.UnionVector;
+import org.apache.arrow.vector.complex.reader.FieldReader;
+import org.apache.arrow.vector.types.Types;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 
 import java.io.InputStream;
 import java.io.Reader;

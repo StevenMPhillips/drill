@@ -19,6 +19,8 @@ package org.apache.drill.exec.physical.impl.aggregate;
 
 import java.io.IOException;
 
+import org.apache.arrow.vector.AllocationHelper;
+import org.apache.arrow.vector.FixedWidthVector;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.expression.ErrorCollector;
@@ -29,7 +31,7 @@ import org.apache.drill.common.logical.data.NamedExpression;
 import org.apache.drill.exec.compile.sig.GeneratorMapping;
 import org.apache.drill.exec.compile.sig.MappingSet;
 import org.apache.drill.exec.exception.ClassTransformationException;
-import org.apache.drill.exec.exception.OutOfMemoryException;
+import org.apache.arrow.memory.OutOfMemoryException;
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.expr.ClassGenerator;
 import org.apache.drill.exec.expr.ClassGenerator.HoldingContainer;
@@ -45,16 +47,14 @@ import org.apache.drill.exec.physical.impl.aggregate.StreamingAggregator.AggOutc
 import org.apache.drill.exec.record.AbstractRecordBatch;
 import org.apache.drill.exec.record.BatchSchema.SelectionVectorMode;
 import org.apache.drill.common.util.MajorTypeHelper;
-import org.apache.drill.exec.record.MaterializedField;
+import org.apache.arrow.vector.types.MaterializedField;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.vector.AllocationHelper;
-import org.apache.drill.exec.vector.FixedWidthVector;
-import org.apache.drill.exec.vector.ValueVector;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.ValueVector;
 
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JVar;

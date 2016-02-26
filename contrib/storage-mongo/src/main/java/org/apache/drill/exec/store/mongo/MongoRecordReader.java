@@ -36,7 +36,7 @@ import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.bson.BsonRecordReader;
 import org.apache.drill.exec.vector.BaseValueVector;
 import org.apache.drill.exec.vector.complex.fn.JsonReader;
-import org.apache.drill.exec.vector.complex.impl.VectorContainerWriter;
+import org.apache.arrow.vector.complex.impl.VectorContainerWriter;
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentReader;
 import org.bson.Document;

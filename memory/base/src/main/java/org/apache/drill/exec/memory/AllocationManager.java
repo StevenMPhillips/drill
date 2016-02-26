@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.memory;
+package org.apache.arrow.memory;
 
-import static org.apache.drill.exec.memory.BaseAllocator.indent;
-import io.netty.buffer.DrillBuf;
+import static org.apache.arrow.memory.BaseAllocator.indent;
+import io.netty.buffer.ArrowBuf;
 import io.netty.buffer.PooledByteBufAllocatorL;
 import io.netty.buffer.UnsafeDirectLittleEndian;
 
@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.drill.common.HistoricalLog;
 import org.apache.drill.common.concurrent.AutoCloseableLock;
-import org.apache.drill.exec.memory.BaseAllocator.Verbosity;
+import org.apache.arrow.memory.BaseAllocator.Verbosity;
 import org.apache.drill.exec.metrics.DrillMetrics;
 import org.apache.drill.exec.ops.BufferManager;
 
@@ -42,7 +42,7 @@ import com.google.common.base.Preconditions;
  * This class is also responsible for managing when memory is allocated and returned to the Netty-based
  * PooledByteBufAllocatorL.
  *
- * The only reason that this isn't package private is we're forced to put DrillBuf in Netty's package which need access
+ * The only reason that this isn't package private is we're forced to put ArrowBuf in Netty's package which need access
  * to these objects or methods.
  *
  * Threading: AllocationManager manages thread-safety internally. Operations within the context of a single BufferLedger
@@ -186,13 +186,13 @@ public class AllocationManager {
 
   /**
    * The reference manager that binds an allocator manager to a particular BaseAllocator. Also responsible for creating
-   * a set of DrillBufs that share a common fate and set of reference counts.
-   * As with AllocationManager, the only reason this is public is due to DrillBuf being in io.netty.buffer package.
+   * a set of ArrowBufs that share a common fate and set of reference counts.
+   * As with AllocationManager, the only reason this is public is due to ArrowBuf being in io.netty.buffer package.
    */
   public class BufferLedger {
 
-    private final IdentityHashMap<DrillBuf, Object> buffers =
-        BaseAllocator.DEBUG ? new IdentityHashMap<DrillBuf, Object>() : null;
+    private final IdentityHashMap<ArrowBuf, Object> buffers =
+        BaseAllocator.DEBUG ? new IdentityHashMap<ArrowBuf, Object>() : null;
 
     private final long ledgerId = LEDGER_ID_GENERATOR.incrementAndGet(); // unique ID assigned to each ledger
     private final AtomicInteger bufRefCnt = new AtomicInteger(0); // start at zero so we can manage request for retain
@@ -288,7 +288,7 @@ public class AllocationManager {
           sb.append("] holds ")
               .append(buffers.size())
               .append(" buffers. \n");
-          for (DrillBuf buf : buffers.keySet()) {
+          for (ArrowBuf buf : buffers.keySet()) {
             buf.print(sb, indent + 2, verbosity);
             sb.append('\n');
           }
@@ -323,7 +323,7 @@ public class AllocationManager {
     /**
      * Returns the ledger associated with a particular BufferAllocator. If the BufferAllocator doesn't currently have a
      * ledger associated with this AllocationManager, a new one is created. This is placed on BufferLedger rather than
-     * AllocationManager directly because DrillBufs don't have access to AllocationManager and they are the ones
+     * AllocationManager directly because ArrowBufs don't have access to AllocationManager and they are the ones
      * responsible for exposing the ability to associate multiple allocators with a particular piece of underlying
      * memory. Note that this will increment the reference count of this ledger by one to ensure the ledger isn't
      * destroyed before use.
@@ -336,35 +336,35 @@ public class AllocationManager {
     }
 
     /**
-     * Create a new DrillBuf associated with this AllocationManager and memory. Does not impact reference count.
+     * Create a new ArrowBuf associated with this AllocationManager and memory. Does not impact reference count.
      * Typically used for slicing.
      * @param offset
-     *          The offset in bytes to start this new DrillBuf.
+     *          The offset in bytes to start this new ArrowBuf.
      * @param length
-     *          The length in bytes that this DrillBuf will provide access to.
-     * @return A new DrillBuf that shares references with all DrillBufs associated with this BufferLedger
+     *          The length in bytes that this ArrowBuf will provide access to.
+     * @return A new ArrowBuf that shares references with all ArrowBufs associated with this BufferLedger
      */
-    public DrillBuf newDrillBuf(int offset, int length) {
+    public ArrowBuf newArrowBuf(int offset, int length) {
       allocator.assertOpen();
-      return newDrillBuf(offset, length, null);
+      return newArrowBuf(offset, length, null);
     }
 
     /**
-     * Create a new DrillBuf associated with this AllocationManager and memory.
+     * Create a new ArrowBuf associated with this AllocationManager and memory.
      * @param offset
-     *          The offset in bytes to start this new DrillBuf.
+     *          The offset in bytes to start this new ArrowBuf.
      * @param length
-     *          The length in bytes that this DrillBuf will provide access to.
+     *          The length in bytes that this ArrowBuf will provide access to.
      * @param manager
-     *          An optional BufferManager argument that can be used to manage expansion of this DrillBuf
+     *          An optional BufferManager argument that can be used to manage expansion of this ArrowBuf
      * @param retain
      *          Whether or not the newly created buffer should get an additional reference count added to it.
-     * @return A new DrillBuf that shares references with all DrillBufs associated with this BufferLedger
+     * @return A new ArrowBuf that shares references with all ArrowBufs associated with this BufferLedger
      */
-    public DrillBuf newDrillBuf(int offset, int length, BufferManager manager) {
+    public ArrowBuf newArrowBuf(int offset, int length, BufferManager manager) {
       allocator.assertOpen();
 
-      final DrillBuf buf = new DrillBuf(
+      final ArrowBuf buf = new ArrowBuf(
           bufRefCnt,
           this,
           underlying,
@@ -376,7 +376,7 @@ public class AllocationManager {
 
       if (BaseAllocator.DEBUG) {
         historicalLog.recordEvent(
-            "DrillBuf(BufferLedger, BufferAllocator[%s], UnsafeDirectLittleEndian[identityHashCode == "
+            "ArrowBuf(BufferLedger, BufferAllocator[%s], UnsafeDirectLittleEndian[identityHashCode == "
                 + "%d](%s)) => ledger hc == %d",
             allocator.name, System.identityHashCode(buf), buf.toString(),
             System.identityHashCode(this));

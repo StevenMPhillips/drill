@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.memory;
+package org.apache.arrow.memory;
 
-import io.netty.buffer.DrillBuf;
+import io.netty.buffer.ArrowBuf;
 
 /**
  * Supports cumulative allocation reservation. Clients may increase the size of the reservation repeatedly until they
@@ -59,7 +59,7 @@ public interface AllocationReservation extends AutoCloseable {
    * @return the buffer, or null, if the request cannot be satisfied
    * @throws IllegalStateException if called called more than once
    */
-  DrillBuf allocateBuffer();
+  ArrowBuf allocateBuffer();
 
   /**
    * Get the current size of the reservation (the sum of all the add()s).

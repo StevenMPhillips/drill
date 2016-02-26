@@ -18,7 +18,7 @@
 
 package org.apache.drill.exec.resolver;
 
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 
 import java.util.HashMap;
 import java.util.HashSet;

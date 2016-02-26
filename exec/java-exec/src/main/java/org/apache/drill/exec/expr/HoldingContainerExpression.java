@@ -25,7 +25,7 @@ import org.apache.drill.common.expression.visitors.ExprVisitor;
 import org.apache.drill.exec.expr.ClassGenerator.HoldingContainer;
 
 import com.google.common.collect.Iterators;
-import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MajorType;
 
 public class HoldingContainerExpression implements LogicalExpression{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HoldingContainerExpression.class);

@@ -24,7 +24,7 @@ import java.util.List;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import org.apache.drill.exec.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.DataMode;
 
 public class ListSchema implements RecordSchema {
     private List<Field> fields;

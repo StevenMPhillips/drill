@@ -50,7 +50,7 @@ import org.apache.drill.exec.planner.types.DrillRelDataTypeSystem;
 import org.apache.drill.exec.store.StoragePluginRegistry;
 import org.apache.drill.exec.testing.ControlsInjector;
 import org.apache.drill.exec.testing.ControlsInjectorFactory;
-import org.apache.drill.exec.util.Pointer;
+import org.apache.arrow.memory.util.Pointer;
 import org.apache.drill.exec.work.foreman.ForemanSetupException;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.rules.ReduceExpressionsRule;

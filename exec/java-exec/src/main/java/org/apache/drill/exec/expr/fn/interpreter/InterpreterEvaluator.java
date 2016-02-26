@@ -18,10 +18,11 @@
 package org.apache.drill.exec.expr.fn.interpreter;
 
 import com.google.common.base.Preconditions;
-import io.netty.buffer.DrillBuf;
+import io.netty.buffer.ArrowBuf;
 
 import java.lang.reflect.Field;
 
+import org.apache.arrow.vector.ValueHolderHelper;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.expression.BooleanOperator;
 import org.apache.drill.common.expression.ConvertExpression;
@@ -43,17 +44,16 @@ import org.apache.drill.exec.expr.annotations.FunctionTemplate;
 import org.apache.drill.exec.expr.annotations.Output;
 import org.apache.drill.exec.expr.annotations.Param;
 import org.apache.drill.exec.expr.fn.DrillSimpleFuncHolder;
-import org.apache.drill.exec.expr.holders.BitHolder;
-import org.apache.drill.exec.expr.holders.NullableBitHolder;
-import org.apache.drill.exec.expr.holders.ValueHolder;
+import org.apache.arrow.vector.holders.BitHolder;
+import org.apache.arrow.vector.holders.NullableBitHolder;
+import org.apache.arrow.vector.holders.ValueHolder;
 import org.apache.drill.exec.ops.UdfUtilities;
 import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.VectorAccessible;
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.vector.ValueHolderHelper;
-import org.apache.drill.exec.vector.ValueVector;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.ValueVector;
 
 import javax.inject.Inject;
 import java.lang.reflect.Method;
@@ -156,7 +156,7 @@ public class InterpreterEvaluator {
       this.udfUtilities = udfUtilities;
     }
 
-    public DrillBuf getManagedBufferIfAvailable() {
+    public ArrowBuf getManagedBufferIfAvailable() {
       return udfUtilities.getManagedBuffer();
     }
 

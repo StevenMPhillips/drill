@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.memory;
+package org.apache.arrow.memory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -26,7 +26,7 @@ import io.netty.buffer.ExpandableByteBuf;
  * An implementation of ByteBufAllocator that wraps a Drill BufferAllocator. This allows the RPC layer to be accounted
  * and managed using Drill's BufferAllocator infrastructure. The only thin different from a typical BufferAllocator is
  * the signature and the fact that this Allocator returns ExpandableByteBufs which enable otherwise non-expandable
- * DrillBufs to be expandable.
+ * ArrowBufs to be expandable.
  */
 public class DrillByteBufAllocator implements ByteBufAllocator {
 

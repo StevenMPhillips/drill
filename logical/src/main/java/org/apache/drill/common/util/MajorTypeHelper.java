@@ -17,9 +17,9 @@
  */
 package org.apache.drill.common.util;
 
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,18 +59,10 @@ public class MajorTypeHelper {
     if (arrowMajorType.getMode() != null) {
       builder.setMode(getDrillDataMode(arrowMajorType.getMode()));
     }
-    if (arrowMajorType.getPrecision() != null) {
-      builder.setPrecision(arrowMajorType.getPrecision());
-    }
-    if (arrowMajorType.getScale() != null) {
-      builder.setScale(arrowMajorType.getScale());
-    }
-    if (arrowMajorType.getTimezone() != null) {
-      builder.setTimeZone(arrowMajorType.getTimezone());
-    }
-    if (arrowMajorType.getWidth() != null) {
-      builder.setWidth(arrowMajorType.getWidth());
-    }
+    builder.setPrecision(arrowMajorType.getPrecision())
+            .setScale(arrowMajorType.getScale())
+            .setTimeZone(arrowMajorType.getTimezone())
+            .setWidth(arrowMajorType.getWidth());
     if (arrowMajorType.getSubTypes() != null) {
       for (MinorType subType : arrowMajorType.getSubTypes()) {
         builder.addSubType(getDrillMinorType(subType));

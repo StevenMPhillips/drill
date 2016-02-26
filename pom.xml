@@ -1932,8 +1932,6 @@
   </profiles>
   <modules>
     <module>tools</module>
-    <module>memory</module>
-    <module>vector</module>
     <module>protocol</module>
     <module>common</module>
     <module>logical</module>

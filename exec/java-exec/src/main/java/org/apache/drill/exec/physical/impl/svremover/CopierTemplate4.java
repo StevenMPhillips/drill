@@ -19,6 +19,7 @@ package org.apache.drill.exec.physical.impl.svremover;
 
 import javax.inject.Named;
 
+import org.apache.arrow.vector.AllocationHelper;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.ops.FragmentContext;
@@ -26,8 +27,7 @@ import org.apache.drill.common.util.MajorTypeHelper;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.VectorWrapper;
 import org.apache.drill.exec.record.selection.SelectionVector4;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.vector.AllocationHelper;
+import org.apache.arrow.vector.types.Types.MajorType;
 
 public abstract class CopierTemplate4 implements Copier{
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CopierTemplate4.class);

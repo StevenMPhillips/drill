@@ -19,6 +19,7 @@ package org.apache.drill.common.expression;
 
 import java.io.IOException;
 
+import org.apache.arrow.vector.types.Types.MajorType;
 import org.apache.drill.common.expression.FieldReference.De;
 import org.apache.drill.common.expression.FieldReference.Se;
 import org.apache.drill.common.expression.PathSegment.NameSegment;
@@ -33,7 +34,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import org.apache.drill.exec.types.Types.MajorType;
 
 @JsonSerialize(using = Se.class)
 @JsonDeserialize(using = De.class)

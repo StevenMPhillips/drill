@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
+import org.apache.arrow.vector.complex.reader.FieldReader;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.expression.ExpressionPosition;
@@ -40,10 +41,9 @@ import org.apache.drill.exec.expr.annotations.FunctionTemplate;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.NullHandling;
 import org.apache.drill.exec.ops.UdfUtilities;
 import org.apache.drill.common.util.MajorTypeHelper;
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.types.Types.MinorType;
-import org.apache.drill.exec.vector.complex.reader.FieldReader;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -281,7 +281,7 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
       // if any one of the input types is nullable, then return nullable return type
       for (LogicalExpression e : args) {
         if (e.getMajorType().getMode() == DataMode.OPTIONAL) {
-          return org.apache.drill.exec.types.Types.optional(returnValue.type.getMinorType());
+          return org.apache.arrow.vector.types.Types.optional(returnValue.type.getMinorType());
         }
       }
     }
@@ -356,7 +356,7 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
     }
 
     public static ValueReference createFieldReaderRef(String name) {
-      MajorType type = org.apache.drill.exec.types.Types.required(MinorType.LATE);
+      MajorType type = org.apache.arrow.vector.types.Types.required(MinorType.LATE);
       ValueReference ref = new ValueReference(type, name);
       ref.isFieldReader = true;
 
@@ -364,7 +364,7 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
     }
 
     public static ValueReference createComplexWriterRef(String name) {
-      MajorType type = org.apache.drill.exec.types.Types.required(MinorType.LATE);
+      MajorType type = org.apache.arrow.vector.types.Types.required(MinorType.LATE);
       ValueReference ref = new ValueReference(type, name);
       ref.isComplexWriter = true;
       return ref;

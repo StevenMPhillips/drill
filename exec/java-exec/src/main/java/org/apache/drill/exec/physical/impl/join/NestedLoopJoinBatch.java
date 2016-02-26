@@ -20,11 +20,12 @@ package org.apache.drill.exec.physical.impl.join;
 import java.io.IOException;
 import java.util.LinkedList;
 
+import org.apache.arrow.vector.AllocationHelper;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.exec.compile.sig.GeneratorMapping;
 import org.apache.drill.exec.compile.sig.MappingSet;
 import org.apache.drill.exec.exception.ClassTransformationException;
-import org.apache.drill.exec.exception.OutOfMemoryException;
+import org.apache.arrow.memory.OutOfMemoryException;
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.expr.ClassGenerator;
 import org.apache.drill.exec.expr.CodeGenerator;
@@ -34,12 +35,11 @@ import org.apache.drill.exec.physical.impl.sort.RecordBatchData;
 import org.apache.drill.exec.record.AbstractRecordBatch;
 import org.apache.drill.exec.record.BatchSchema;
 import org.apache.drill.exec.record.ExpandableHyperContainer;
-import org.apache.drill.exec.record.MaterializedField;
+import org.apache.arrow.vector.types.MaterializedField;
 import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorWrapper;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.vector.AllocationHelper;
+import org.apache.arrow.vector.types.Types.MajorType;
 
 import com.google.common.base.Preconditions;
 import com.sun.codemodel.JExpr;

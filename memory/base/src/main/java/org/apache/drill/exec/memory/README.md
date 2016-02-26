@@ -36,9 +36,9 @@ Memory management can be broken into the following main components:
   - `ChildAllocator` - A child allocator that derives from the root allocator
 - Buffer ownership and transfer capabilities
   - `AllocationManager` - Responsible for managing the relationship between multiple allocators and a single chunk of memory
-  - `BufferLedger` - Responsible for allowing maintaining the relationship between an `AllocationManager`, a `BufferAllocator` and one or more individual `DrillBuf`s 
+  - `BufferLedger` - Responsible for allowing maintaining the relationship between an `AllocationManager`, a `BufferAllocator` and one or more individual `ArrowBuf`s
 - Memory access
-  - `DrillBuf` - The facade for interacting directly with a chunk of memory.
+  - `ArrowBuf` - The facade for interacting directly with a chunk of memory.
  
 
 ## Memory Management Overview
@@ -66,9 +66,9 @@ Drill provides two different ways to reserve memory:
 ## Memory Ownership, Reference Counts and Sharing
 Many BufferAllocators can reference the same piece of memory at the same time. The most common situation for this is in the case of a Broadcast Join: in this situation many downstream operators in the same Drillbit will receive the same physical memory. Each of these operators will be operating within its own Allocator context. We therefore have multiple allocators all pointing at the same physical memory. It is the AllocationManager's responsibility to ensure that in this situation, that all memory is accurately accounted for from the Root's perspective and also to ensure that the memory is correctly released once all BufferAllocators have stopped using that memory.
 
-For simplicity of accounting, we treat that memory as being used by one of the BufferAllocators associated with the memory. When that allocator releases its claim on that memory, the memory ownership is then moved to another BufferLedger belonging to the same AllocationManager. Note that because a DrillBuf.release() is what actually causes memory ownership transfer to occur, we always precede with ownership transfer (even if that violates an allocator limit). It is the responsibility of the application owning a particular allocator to frequently confirm whether the allocator is over its memory limit (BufferAllocator.isOverLimit()) and if so, attempt to aggresively release memory to ameliorate the situation.
+For simplicity of accounting, we treat that memory as being used by one of the BufferAllocators associated with the memory. When that allocator releases its claim on that memory, the memory ownership is then moved to another BufferLedger belonging to the same AllocationManager. Note that because a ArrowBuf.release() is what actually causes memory ownership transfer to occur, we always precede with ownership transfer (even if that violates an allocator limit). It is the responsibility of the application owning a particular allocator to frequently confirm whether the allocator is over its memory limit (BufferAllocator.isOverLimit()) and if so, attempt to aggresively release memory to ameliorate the situation.
 
-All DrillBufs (direct or sliced) related to a single BufferLedger/BufferAllocator combination share the same reference count and either all will be valid or all will be invalid.
+All ArrowBufs (direct or sliced) related to a single BufferLedger/BufferAllocator combination share the same reference count and either all will be valid or all will be invalid.
 
 ## Object Hierarchy
 
@@ -81,13 +81,13 @@ There are two main ways that someone can look at the object hierarchy for Drill'
 |-- UnsignedDirectLittleEndian (One per AllocationManager)
 |
 |-+ BufferLedger 1 ==> Allocator A (owning)
-| ` - DrillBuf 1
+| ` - ArrowBuf 1
 |-+ BufferLedger 2 ==> Allocator B (non-owning)
-| ` - DrillBuf 2
+| ` - ArrowBuf 2
 |-+ BufferLedger 3 ==> Allocator C (non-owning)
-  | - DrillBuf 3
-  | - DrillBuf 4
-  ` - DrillBuf 5
+  | - ArrowBuf 3
+  | - ArrowBuf 4
+  ` - ArrowBuf 5
 </pre>
 
 In this picture, a piece of memory is owned by an allocator manager. An allocator manager is responsible for that piece of memory no matter which allocator(s) it is working with. An allocator manager will have relationships with a piece of raw memory (via its reference to UnsignedDirectLittleEndian) as well as references to each BufferAllocator it has a relationship to. 
@@ -103,19 +103,19 @@ In this picture, a piece of memory is owned by an allocator manager. An allocato
 |-+ ChildAllocator 3
 | |
 | |-+ BufferLedger 1 ==> AllocationManager 1 (owning) ==> UDLE
-| | `- DrillBuf 1
+| | `- ArrowBuf 1
 | `-+ BufferLedger 2 ==> AllocationManager 2 (non-owning)==> UDLE
-| 	`- DrillBuf 2
+| 	`- ArrowBuf 2
 |
 |-+ BufferLedger 3 ==> AllocationManager 1 (non-owning)==> UDLE
-| ` - DrillBuf 3
+| ` - ArrowBuf 3
 |-+ BufferLedger 4 ==> AllocationManager 2 (owning) ==> UDLE
-  | - DrillBuf 4
-  | - DrillBuf 5
-  ` - DrillBuf 6
+  | - ArrowBuf 4
+  | - ArrowBuf 5
+  ` - ArrowBuf 6
 </pre>
 
-In this picture, a RootAllocator owns three ChildAllocators. The first ChildAllocator (ChildAllocator 1) owns a subsequent ChildAllocator. ChildAllocator has two BufferLedgers/AllocationManager references. Coincidentally, each of these AllocationManager's is also associated with the RootAllocator. In this case, one of the these AllocationManagers is owned by ChildAllocator 3 (AllocationManager 1) while the other AllocationManager (AllocationManager 2) is owned/accounted for by the RootAllocator. Note that in this scenario, DrillBuf 1 is sharing the underlying memory as DrillBuf 3. However the subset of that memory (e.g. through slicing) might be different. Also note that DrillBuf 2 and DrillBuf 4, 5 and 6 are also sharing the same underlying memory. Also note that DrillBuf 4, 5 and 6 all share the same reference count and fate.
+In this picture, a RootAllocator owns three ChildAllocators. The first ChildAllocator (ChildAllocator 1) owns a subsequent ChildAllocator. ChildAllocator has two BufferLedgers/AllocationManager references. Coincidentally, each of these AllocationManager's is also associated with the RootAllocator. In this case, one of the these AllocationManagers is owned by ChildAllocator 3 (AllocationManager 1) while the other AllocationManager (AllocationManager 2) is owned/accounted for by the RootAllocator. Note that in this scenario, ArrowBuf 1 is sharing the underlying memory as ArrowBuf 3. However the subset of that memory (e.g. through slicing) might be different. Also note that ArrowBuf 2 and ArrowBuf 4, 5 and 6 are also sharing the same underlying memory. Also note that ArrowBuf 4, 5 and 6 all share the same reference count and fate.
 
 ## Debugging Issues
 The Allocator object provides a useful set of tools to better understand the status of the allocator. If in `DEBUG` mode, the allocator and supporting classes will record additional debug tracking information to better track down memory leaks and issues. To enable DEBUG mode, either enable Java assertions with `-ea` or pass the following system property to the VM when starting `-Ddrill.memory.debug.allocator=true`. The BufferAllocator also provides a `BufferAllocator.toVerboseString()` which can be used in DEBUG mode to get extensive stacktrace information and events associated with various Allocator behaviors.

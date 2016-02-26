@@ -56,10 +56,10 @@ import org.apache.calcite.util.NlsString;
 
 import com.google.common.collect.Lists;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
-import org.apache.drill.exec.types.Types;
-import org.apache.drill.exec.types.Types.DataMode;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types;
+import org.apache.arrow.vector.types.Types.DataMode;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.drill.exec.work.ExecErrorConstants;
 
 import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
@@ -264,7 +264,7 @@ public class DrillOptiq {
       switch(call.getType().getSqlTypeName().getName()){
       case "VARCHAR":
       case "CHAR":
-        castType = new MajorType(MinorType.VARCHAR, DataMode.OPTIONAL, 0, 0, 0, null, call.getType().getPrecision());
+        castType = new MajorType(MinorType.VARCHAR, DataMode.OPTIONAL, 0, 0, 0, 0, null);
         break;
 
       case "INTEGER": castType = Types.required(MinorType.INT); break;

@@ -27,7 +27,7 @@ import org.apache.drill.exec.expr.ClassGenerator;
 import org.apache.drill.exec.expr.ClassGenerator.HoldingContainer;
 
 import com.sun.codemodel.JVar;
-import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MajorType;
 
 public abstract class AbstractFuncHolder implements FuncHolder {
 

@@ -37,7 +37,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.resolver.TypeCastRules;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 
 import static org.apache.drill.common.util.MajorTypeHelper.getArrowMinorType;
 

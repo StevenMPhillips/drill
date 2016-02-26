@@ -24,7 +24,7 @@ import org.apache.drill.common.expression.visitors.ExprVisitor;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MajorType;
 
 public class FunctionCall extends LogicalExpressionBase implements Iterable<LogicalExpression> {
   private final String name;

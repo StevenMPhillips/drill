@@ -44,7 +44,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.apache.drill.exec.types.Types.MinorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 
 import static org.apache.drill.common.util.MajorTypeHelper.getDrillMajorType;
 

@@ -17,14 +17,15 @@
  */
 package org.apache.drill.exec.ops;
 
-import io.netty.buffer.DrillBuf;
 
-import org.apache.drill.exec.memory.BufferAllocator;
+import io.netty.buffer.ArrowBuf;
+import org.apache.arrow.memory.BufferAllocator;
 
 import com.carrotsearch.hppc.LongObjectHashMap;
+import org.apache.arrow.memory.BufferManager;
 
 public class BufferManagerImpl implements BufferManager {
-  private LongObjectHashMap<DrillBuf> managedBuffers = new LongObjectHashMap<>();
+  private LongObjectHashMap<ArrowBuf> managedBuffers = new LongObjectHashMap<>();
   private final BufferAllocator allocator;
 
   public BufferManagerImpl(BufferAllocator allocator) {
@@ -35,7 +36,7 @@ public class BufferManagerImpl implements BufferManager {
   public void close() {
     final Object[] mbuffers = ((LongObjectHashMap<Object>) (Object) managedBuffers).values;
     for (int i = 0; i < mbuffers.length; i++) {
-      final DrillBuf buf = (DrillBuf) mbuffers[i];
+      final ArrowBuf buf = (ArrowBuf) mbuffers[i];
       if (buf != null) {
         buf.release();
       }
@@ -43,7 +44,7 @@ public class BufferManagerImpl implements BufferManager {
     managedBuffers.clear();
   }
 
-  public DrillBuf replace(DrillBuf old, int newSize) {
+  public ArrowBuf replace(ArrowBuf old, int newSize) {
     if (managedBuffers.remove(old.memoryAddress()) == null) {
       throw new IllegalStateException("Tried to remove unmanaged buffer.");
     }
@@ -51,12 +52,12 @@ public class BufferManagerImpl implements BufferManager {
     return getManagedBuffer(newSize);
   }
 
-  public DrillBuf getManagedBuffer() {
+  public ArrowBuf getManagedBuffer() {
     return getManagedBuffer(256);
   }
 
-  public DrillBuf getManagedBuffer(int size) {
-    DrillBuf newBuf = allocator.buffer(size, this);
+  public ArrowBuf getManagedBuffer(int size) {
+    ArrowBuf newBuf = allocator.buffer(size, this);
     managedBuffers.put(newBuf.memoryAddress(), newBuf);
     return newBuf;
   }

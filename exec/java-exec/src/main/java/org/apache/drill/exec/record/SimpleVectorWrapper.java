@@ -17,25 +17,18 @@
  */
 package org.apache.drill.exec.record;
 
-import com.google.common.collect.Lists;
-import org.apache.drill.common.expression.PathSegment;
+import org.apache.arrow.vector.types.MaterializedField;
+import org.apache.arrow.vector.util.TransferPair;
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.TypeProtos.DataMode;
-import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MajorTypeOrBuilder;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.Types;
-import org.apache.drill.exec.memory.BufferAllocator;
-import org.apache.drill.exec.vector.ValueVector;
-import org.apache.drill.exec.vector.complex.AbstractContainerVector;
-import org.apache.drill.exec.vector.complex.AbstractMapVector;
-import org.apache.drill.exec.vector.complex.FieldIdUtil;
-import org.apache.drill.exec.vector.complex.ListVector;
-import org.apache.drill.exec.vector.complex.MapVector;
-import org.apache.drill.exec.vector.complex.UnionVector;
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.vector.ValueVector;
+import org.apache.arrow.vector.complex.AbstractContainerVector;
+import org.apache.arrow.vector.complex.AbstractMapVector;
+import org.apache.arrow.vector.complex.FieldIdUtil;
+import org.apache.arrow.vector.complex.ListVector;
+import org.apache.arrow.vector.complex.MapVector;
+import org.apache.arrow.vector.complex.UnionVector;
 
-import java.util.List;
 import com.google.common.base.Preconditions;
 
 public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper<T>{

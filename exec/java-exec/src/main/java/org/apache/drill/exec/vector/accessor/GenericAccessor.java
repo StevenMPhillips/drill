@@ -17,10 +17,10 @@
  */
 package org.apache.drill.exec.vector.accessor;
 
+import org.apache.arrow.vector.ValueVector;
 import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.common.util.MajorTypeHelper;
-import org.apache.drill.exec.types.Types.MajorType;
-import org.apache.drill.exec.vector.ValueVector;
+import org.apache.arrow.vector.types.Types.MajorType;
 
 
 public class GenericAccessor extends AbstractSqlAccessor {

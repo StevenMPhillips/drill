@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.drill.exec.memory;
+package org.apache.arrow.memory;
 
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.DrillBuf;
+import io.netty.buffer.ArrowBuf;
 
-import org.apache.drill.exec.exception.OutOfMemoryException;
+import org.apache.arrow.memory.OutOfMemoryException;
 import org.apache.drill.exec.ops.BufferManager;
 
 /**
@@ -33,11 +33,11 @@ public interface BufferAllocator extends AutoCloseable {
    *
    * @param size
    *          The size in bytes.
-   * @return a new DrillBuf, or null if the request can't be satisfied
+   * @return a new ArrowBuf, or null if the request can't be satisfied
    * @throws OutOfMemoryException
    *           if buffer cannot be allocated
    */
-  public DrillBuf buffer(int size);
+  public ArrowBuf buffer(int size);
 
   /**
    * Allocate a new or reused buffer of the provided size. Note that the buffer may technically be larger than the
@@ -47,11 +47,11 @@ public interface BufferAllocator extends AutoCloseable {
    *          The size in bytes.
    * @param manager
    *          A buffer manager to manage reallocation.
-   * @return a new DrillBuf, or null if the request can't be satisfied
+   * @return a new ArrowBuf, or null if the request can't be satisfied
    * @throws OutOfMemoryException
    *           if buffer cannot be allocated
    */
-  public DrillBuf buffer(int size, BufferManager manager);
+  public ArrowBuf buffer(int size, BufferManager manager);
 
   /**
    * Returns the allocator this allocator falls back to when it needs more memory.
@@ -124,7 +124,7 @@ public interface BufferAllocator extends AutoCloseable {
    * Get a reference to the empty buffer associated with this allocator. Empty buffers are special because we don't
    * worry about them leaking or managing reference counts on them since they don't actually point to any memory.
    */
-  public DrillBuf getEmpty();
+  public ArrowBuf getEmpty();
 
   /**
    * Return the name of this allocator. This is a human readable name that can help debugging. Typically provides

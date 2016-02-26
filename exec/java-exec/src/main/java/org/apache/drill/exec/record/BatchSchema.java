@@ -23,7 +23,8 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.drill.exec.types.Types.MajorType;
+import org.apache.arrow.vector.types.MaterializedField;
+import org.apache.arrow.vector.types.Types.MajorType;
 
 
 public class BatchSchema implements Iterable<MaterializedField> {

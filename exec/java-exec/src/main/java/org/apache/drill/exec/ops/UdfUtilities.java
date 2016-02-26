@@ -18,7 +18,7 @@
 package org.apache.drill.exec.ops;
 
 import com.google.common.collect.ImmutableMap;
-import io.netty.buffer.DrillBuf;
+import io.netty.buffer.ArrowBuf;
 import org.apache.drill.exec.store.PartitionExplorer;
 
 /**
@@ -33,7 +33,7 @@ public interface UdfUtilities {
   // used for code generation
   public static final ImmutableMap<Class, String> INJECTABLE_GETTER_METHODS =
       new ImmutableMap.Builder<Class, String>()
-          .put(DrillBuf.class, "getManagedBuffer")
+          .put(ArrowBuf.class, "getManagedBuffer")
           .put(PartitionExplorer.class, "getPartitionExplorer")
           .put(ContextInformation.class, "getContextInformation")
           .build();
@@ -53,13 +53,13 @@ public interface UdfUtilities {
 
   /**
    * For UDFs to allocate general purpose intermediate buffers we provide the
-   * DrillBuf type as an injectable, which provides access to an off-heap
+   * ArrowBuf type as an injectable, which provides access to an off-heap
    * buffer that can be tracked by Drill and re-allocated as needed.
    *
    * @return - a buffer managed by Drill, connected to the fragment allocator
    *           for memory management
    */
-  DrillBuf getManagedBuffer();
+  ArrowBuf getManagedBuffer();
 
   /**
    * A partition explorer allows UDFs to view the sub-partitions below a
