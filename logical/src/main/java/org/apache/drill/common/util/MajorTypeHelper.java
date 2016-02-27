@@ -32,6 +32,7 @@ public class MajorTypeHelper {
             drillMajorType.getPrecision(),
             drillMajorType.getScale(),
             drillMajorType.getTimeZone(),
+            drillMajorType.getWidth(),
             getArrowSubtypes(drillMajorType.getSubTypeList()));
   }
 
