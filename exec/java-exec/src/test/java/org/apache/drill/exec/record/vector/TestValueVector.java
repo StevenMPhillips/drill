@@ -714,23 +714,23 @@ the interface to load has changed
    */
   private void testVectors(VectorVerifier test) throws Exception {
     final MaterializedField[] fields = {
-        MaterializedField.create(EMPTY_SCHEMA_PATH, UInt4Holder.TYPE),
-        MaterializedField.create(EMPTY_SCHEMA_PATH, BitHolder.TYPE),
-        MaterializedField.create(EMPTY_SCHEMA_PATH, VarCharHolder.TYPE),
-        MaterializedField.create(EMPTY_SCHEMA_PATH, NullableVarCharHolder.TYPE),
+//        MaterializedField.create(EMPTY_SCHEMA_PATH, UInt4Holder.TYPE),
+//        MaterializedField.create(EMPTY_SCHEMA_PATH, BitHolder.TYPE),
+//        MaterializedField.create(EMPTY_SCHEMA_PATH, VarCharHolder.TYPE),
+//        MaterializedField.create(EMPTY_SCHEMA_PATH, NullableVarCharHolder.TYPE),
         MaterializedField.create(EMPTY_SCHEMA_PATH, RepeatedListVector.TYPE),
-        MaterializedField.create(EMPTY_SCHEMA_PATH, MapVector.TYPE),
+//        MaterializedField.create(EMPTY_SCHEMA_PATH, MapVector.TYPE),
         MaterializedField.create(EMPTY_SCHEMA_PATH, RepeatedMapVector.TYPE)
     };
 
     final ValueVector[] vectors = {
-        new UInt4Vector(fields[0], allocator),
-        new BitVector(fields[1], allocator),
-        new VarCharVector(fields[2], allocator),
-        new NullableVarCharVector(fields[3], allocator),
-        new RepeatedListVector(fields[4], allocator, null),
-        new MapVector(fields[5], allocator, null),
-        new RepeatedMapVector(fields[6], allocator, null)
+//        new UInt4Vector(fields[0], allocator),
+//        new BitVector(fields[1], allocator),
+//        new VarCharVector(fields[2], allocator),
+//        new NullableVarCharVector(fields[3], allocator),
+        new RepeatedListVector(fields[0], allocator, null),
+//        new MapVector(fields[5], allocator, null),
+        new RepeatedMapVector(fields[1], allocator, null)
     };
 
     try {

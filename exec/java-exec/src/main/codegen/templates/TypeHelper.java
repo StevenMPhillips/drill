@@ -90,6 +90,9 @@ public class TypeHelper extends BasicTypeHelper {
     MinorType type = v.getField().getType().getMinorType();
     DataMode mode = v.getField().getType().getMode();
     switch(type) {
+    case LATE:
+      new ZeroVectorHelper((ZeroVector) v).load(metadata, buffer);
+      return;
     case UNION:
       new UnionVectorHelper((UnionVector) v).load(metadata, buffer);
       return;
@@ -170,6 +173,8 @@ public class TypeHelper extends BasicTypeHelper {
     MinorType type = v.getField().getType().getMinorType();
     DataMode mode = v.getField().getType().getMode();
     switch(type) {
+    case LATE:
+      return new ZeroVectorHelper((ZeroVector) v).getMetadata();
     case UNION:
       return new UnionVectorHelper((UnionVector) v).getMetadata();
     case LIST:

@@ -31,6 +31,7 @@ import org.antlr.runtime.RecognitionException;
 import org.apache.arrow.vector.util.JsonStringArrayList;
 import org.apache.arrow.vector.util.JsonStringHashMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.expression.parser.ExprLexer;
 import org.apache.drill.common.expression.parser.ExprParser;
@@ -457,6 +458,7 @@ public class TestBuilder {
       if (baselineColumns.length == 0) {
         throw new Exception("Baseline CSV files require passing column names, please call the baselineColumns() method on the test builder.");
       }
+      TypeProtos.MinorType.FLOAT4.name();
 
       if (baselineTypes != null) {
         assertEquals("Must pass the same number of types as column names if types are provided.", baselineTypes.length, baselineColumns.length);
@@ -483,7 +485,7 @@ public class TestBuilder {
           precision = "(65000)";
         }
         aliasedExpectedColumns[i] = "cast(" + aliasedExpectedColumns[i] + " as " +
-            majorType.getMinorType().name() + precision +  " ) " + baselineColumns[i];
+            getNameOfMinorType(majorType.getMinorType()) + precision +  " ) " + baselineColumns[i];
       }
       String query = "select " + Joiner.on(", ").join(aliasedExpectedColumns) + " from cp.`" + baselineFilePath + "`";
       return query;
@@ -622,5 +624,56 @@ public class TestBuilder {
       map.put(String.class.cast(keyValueSequence[i]), value);
     }
     return map;
+  }
+
+  public static String getNameOfMinorType(final org.apache.arrow.vector.types.Types.MinorType type) {
+    switch (type) {
+    case BIT:
+      return "bool";
+    case TINYINT:
+      return "tinyint";
+    case UINT1:
+      return "uint1";
+    case SMALLINT:
+      return "smallint";
+    case UINT2:
+      return "uint2";
+    case INT:
+      return "int";
+    case UINT4:
+      return "uint4";
+    case BIGINT:
+      return "bigint";
+    case UINT8:
+      return "uint8";
+    case FLOAT4:
+      return "float";
+    case FLOAT8:
+      return "double";
+    case DECIMAL9:
+      return "decimal";
+    case DECIMAL18:
+      return "decimal";
+    case DECIMAL28SPARSE:
+      return "decimal";
+    case DECIMAL38SPARSE:
+      return "decimal";
+    case VARCHAR:
+      return "varchar";
+    case VAR16CHAR:
+      return "utf16";
+    case DATE:
+      return "date";
+    case TIME:
+      return "time";
+    case TIMESTAMP:
+      return "timestamp";
+    case VARBINARY:
+      return "binary";
+    case LATE:
+      throw new DrillRuntimeException("The late type should never appear in execution or an SQL query, so it does not have a name to refer to it.");
+    default:
+      throw new DrillRuntimeException("Unrecognized type " + type);
+    }
   }
 }
