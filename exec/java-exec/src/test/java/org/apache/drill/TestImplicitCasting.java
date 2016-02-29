@@ -36,6 +36,6 @@ public class TestImplicitCasting {
     inputTypes.add(MinorType.TIMESTAMP);
     final MinorType result = TypeCastRules.getLeastRestrictiveType(inputTypes);
 
-    assertEquals(result, TypeProtos.MinorType.TIME);
+    assertEquals(result, MinorType.TIME);
   }
 }

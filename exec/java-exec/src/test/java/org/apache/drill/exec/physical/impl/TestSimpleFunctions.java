@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.physical.impl;
 
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowDataMode;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -148,7 +149,7 @@ public class TestSimpleFunctions extends ExecTest {
     );
     final FunctionResolver resolver = FunctionResolverFactory.getResolver(call);
     final DrillFuncHolder matchedFuncHolder = registry.findDrillFunction(resolver, call);
-    assertEquals( expectedBestInputMode, matchedFuncHolder.getParmMajorType(0).getMode());
+    assertEquals( getArrowDataMode(expectedBestInputMode), matchedFuncHolder.getParmMajorType(0).getMode());
   }
 
   @Test
