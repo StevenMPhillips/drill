@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.record.vector;
 
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -702,7 +703,7 @@ the interface to load has changed
       for (int i = 0; i < types.length; i++) {
         final UserBitShared.SerializedField child = metadata.getChild(i);
 
-        assertEquals(hint, types[i], child.getMajorType());
+        assertEquals(hint, types[i], getArrowMajorType(child.getMajorType()));
       }
     }
   }
@@ -714,23 +715,23 @@ the interface to load has changed
    */
   private void testVectors(VectorVerifier test) throws Exception {
     final MaterializedField[] fields = {
-//        MaterializedField.create(EMPTY_SCHEMA_PATH, UInt4Holder.TYPE),
-//        MaterializedField.create(EMPTY_SCHEMA_PATH, BitHolder.TYPE),
-//        MaterializedField.create(EMPTY_SCHEMA_PATH, VarCharHolder.TYPE),
-//        MaterializedField.create(EMPTY_SCHEMA_PATH, NullableVarCharHolder.TYPE),
+        MaterializedField.create(EMPTY_SCHEMA_PATH, UInt4Holder.TYPE),
+        MaterializedField.create(EMPTY_SCHEMA_PATH, BitHolder.TYPE),
+        MaterializedField.create(EMPTY_SCHEMA_PATH, VarCharHolder.TYPE),
+        MaterializedField.create(EMPTY_SCHEMA_PATH, NullableVarCharHolder.TYPE),
         MaterializedField.create(EMPTY_SCHEMA_PATH, RepeatedListVector.TYPE),
-//        MaterializedField.create(EMPTY_SCHEMA_PATH, MapVector.TYPE),
+        MaterializedField.create(EMPTY_SCHEMA_PATH, MapVector.TYPE),
         MaterializedField.create(EMPTY_SCHEMA_PATH, RepeatedMapVector.TYPE)
     };
 
     final ValueVector[] vectors = {
-//        new UInt4Vector(fields[0], allocator),
-//        new BitVector(fields[1], allocator),
-//        new VarCharVector(fields[2], allocator),
-//        new NullableVarCharVector(fields[3], allocator),
-        new RepeatedListVector(fields[0], allocator, null),
-//        new MapVector(fields[5], allocator, null),
-        new RepeatedMapVector(fields[1], allocator, null)
+        new UInt4Vector(fields[0], allocator),
+        new BitVector(fields[1], allocator),
+        new VarCharVector(fields[2], allocator),
+        new NullableVarCharVector(fields[3], allocator),
+        new RepeatedListVector(fields[4], allocator, null),
+        new MapVector(fields[5], allocator, null),
+        new RepeatedMapVector(fields[6], allocator, null)
     };
 
     try {
@@ -751,8 +752,8 @@ the interface to load has changed
     builder.put(UInt4Vector.class, noChild);
     builder.put(BitVector.class, noChild);
     builder.put(VarCharVector.class, offsetChild);
-    builder.put(NullableVarCharVector.class, new ChildVerifier(UInt1Holder.TYPE, Types.optional(MinorType.VARCHAR)));
-    builder.put(RepeatedListVector.class, new ChildVerifier(UInt4Holder.TYPE, new MajorType(MinorType.LATE, DataMode.OPTIONAL)));
+    builder.put(NullableVarCharVector.class, new ChildVerifier(UInt1Holder.TYPE, Types.required(MinorType.VARCHAR)));
+    builder.put(RepeatedListVector.class, new ChildVerifier(UInt4Holder.TYPE, new MajorType(MinorType.LATE, DataMode.REQUIRED)));
     builder.put(MapVector.class, noChild);
     builder.put(RepeatedMapVector.class, offsetChild);
     final ImmutableMap<Class, VectorVerifier> children = builder.build();
