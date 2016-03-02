@@ -57,6 +57,7 @@ message RunQuery {
   optional QueryResultsMode results_mode = 1;
   optional exec.shared.QueryType type = 2;
   optional string plan = 3;
+  optional bytes application_id = 4;
 }
 
 enum QueryResultsMode {

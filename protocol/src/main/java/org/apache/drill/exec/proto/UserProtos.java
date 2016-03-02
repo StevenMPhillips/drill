@@ -3533,6 +3533,16 @@ public final class UserProtos {
      */
     com.google.protobuf.ByteString
         getPlanBytes();
+
+    // optional bytes application_id = 4;
+    /**
+     * <code>optional bytes application_id = 4;</code>
+     */
+    boolean hasApplicationId();
+    /**
+     * <code>optional bytes application_id = 4;</code>
+     */
+    com.google.protobuf.ByteString getApplicationId();
   }
   /**
    * Protobuf type {@code exec.user.RunQuery}
@@ -3610,6 +3620,11 @@ public final class UserProtos {
             case 26: {
               bitField0_ |= 0x00000004;
               plan_ = input.readBytes();
+              break;
+            }
+            case 34: {
+              bitField0_ |= 0x00000008;
+              applicationId_ = input.readBytes();
               break;
             }
           }
@@ -3727,10 +3742,27 @@ public final class UserProtos {
       }
     }
 
+    // optional bytes application_id = 4;
+    public static final int APPLICATION_ID_FIELD_NUMBER = 4;
+    private com.google.protobuf.ByteString applicationId_;
+    /**
+     * <code>optional bytes application_id = 4;</code>
+     */
+    public boolean hasApplicationId() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>optional bytes application_id = 4;</code>
+     */
+    public com.google.protobuf.ByteString getApplicationId() {
+      return applicationId_;
+    }
+
     private void initFields() {
       resultsMode_ = org.apache.drill.exec.proto.UserProtos.QueryResultsMode.STREAM_FULL;
       type_ = org.apache.drill.exec.proto.UserBitShared.QueryType.SQL;
       plan_ = "";
+      applicationId_ = com.google.protobuf.ByteString.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -3753,6 +3785,9 @@ public final class UserProtos {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeBytes(3, getPlanBytes());
       }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(4, applicationId_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -3773,6 +3808,10 @@ public final class UserProtos {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(3, getPlanBytes());
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(4, applicationId_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -3896,6 +3935,8 @@ public final class UserProtos {
         bitField0_ = (bitField0_ & ~0x00000002);
         plan_ = "";
         bitField0_ = (bitField0_ & ~0x00000004);
+        applicationId_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
 
@@ -3936,6 +3977,10 @@ public final class UserProtos {
           to_bitField0_ |= 0x00000004;
         }
         result.plan_ = plan_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.applicationId_ = applicationId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -3962,6 +4007,9 @@ public final class UserProtos {
           bitField0_ |= 0x00000004;
           plan_ = other.plan_;
           onChanged();
+        }
+        if (other.hasApplicationId()) {
+          setApplicationId(other.getApplicationId());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -4132,6 +4180,42 @@ public final class UserProtos {
   }
   bitField0_ |= 0x00000004;
         plan_ = value;
+        onChanged();
+        return this;
+      }
+
+      // optional bytes application_id = 4;
+      private com.google.protobuf.ByteString applicationId_ = com.google.protobuf.ByteString.EMPTY;
+      /**
+       * <code>optional bytes application_id = 4;</code>
+       */
+      public boolean hasApplicationId() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional bytes application_id = 4;</code>
+       */
+      public com.google.protobuf.ByteString getApplicationId() {
+        return applicationId_;
+      }
+      /**
+       * <code>optional bytes application_id = 4;</code>
+       */
+      public Builder setApplicationId(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        applicationId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bytes application_id = 4;</code>
+       */
+      public Builder clearApplicationId() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        applicationId_ = getDefaultInstance().getApplicationId();
         onChanged();
         return this;
       }
@@ -4997,23 +5081,24 @@ public final class UserProtos {
       "es\030\006 \001(\010:\005false\022\036\n\017support_timeout\030\007 \001(\010" +
       ":\005false\"S\n\016RequestResults\022&\n\010query_id\030\001 " +
       "\001(\0132\024.exec.shared.QueryId\022\031\n\021maximum_res" +
-      "ponses\030\002 \001(\005\"q\n\010RunQuery\0221\n\014results_mode" +
-      "\030\001 \001(\0162\033.exec.user.QueryResultsMode\022$\n\004t" +
-      "ype\030\002 \001(\0162\026.exec.shared.QueryType\022\014\n\004pla" +
-      "n\030\003 \001(\t\"|\n\022BitToUserHandshake\022\023\n\013rpc_ver" +
-      "sion\030\002 \001(\005\022*\n\006status\030\003 \001(\0162\032.exec.user.H" +
-      "andshakeStatus\022\017\n\007errorId\030\004 \001(\t\022\024\n\014error" +
-      "Message\030\005 \001(\t*\341\001\n\007RpcType\022\r\n\tHANDSHAKE\020\000",
-      "\022\007\n\003ACK\020\001\022\013\n\007GOODBYE\020\002\022\r\n\tRUN_QUERY\020\003\022\020\n" +
-      "\014CANCEL_QUERY\020\004\022\023\n\017REQUEST_RESULTS\020\005\022\027\n\023" +
-      "RESUME_PAUSED_QUERY\020\013\022\016\n\nQUERY_DATA\020\006\022\020\n" +
-      "\014QUERY_HANDLE\020\007\022\026\n\022REQ_META_FUNCTIONS\020\010\022" +
-      "\026\n\022RESP_FUNCTION_LIST\020\t\022\020\n\014QUERY_RESULT\020" +
-      "\n*#\n\020QueryResultsMode\022\017\n\013STREAM_FULL\020\001*^" +
-      "\n\017HandshakeStatus\022\013\n\007SUCCESS\020\001\022\030\n\024RPC_VE" +
-      "RSION_MISMATCH\020\002\022\017\n\013AUTH_FAILED\020\003\022\023\n\017UNK" +
-      "NOWN_FAILURE\020\004B+\n\033org.apache.drill.exec." +
-      "protoB\nUserProtosH\001"
+      "ponses\030\002 \001(\005\"\211\001\n\010RunQuery\0221\n\014results_mod" +
+      "e\030\001 \001(\0162\033.exec.user.QueryResultsMode\022$\n\004" +
+      "type\030\002 \001(\0162\026.exec.shared.QueryType\022\014\n\004pl" +
+      "an\030\003 \001(\t\022\026\n\016application_id\030\004 \001(\014\"|\n\022BitT" +
+      "oUserHandshake\022\023\n\013rpc_version\030\002 \001(\005\022*\n\006s" +
+      "tatus\030\003 \001(\0162\032.exec.user.HandshakeStatus\022" +
+      "\017\n\007errorId\030\004 \001(\t\022\024\n\014errorMessage\030\005 \001(\t*\341",
+      "\001\n\007RpcType\022\r\n\tHANDSHAKE\020\000\022\007\n\003ACK\020\001\022\013\n\007GO" +
+      "ODBYE\020\002\022\r\n\tRUN_QUERY\020\003\022\020\n\014CANCEL_QUERY\020\004" +
+      "\022\023\n\017REQUEST_RESULTS\020\005\022\027\n\023RESUME_PAUSED_Q" +
+      "UERY\020\013\022\016\n\nQUERY_DATA\020\006\022\020\n\014QUERY_HANDLE\020\007" +
+      "\022\026\n\022REQ_META_FUNCTIONS\020\010\022\026\n\022RESP_FUNCTIO" +
+      "N_LIST\020\t\022\020\n\014QUERY_RESULT\020\n*#\n\020QueryResul" +
+      "tsMode\022\017\n\013STREAM_FULL\020\001*^\n\017HandshakeStat" +
+      "us\022\013\n\007SUCCESS\020\001\022\030\n\024RPC_VERSION_MISMATCH\020" +
+      "\002\022\017\n\013AUTH_FAILED\020\003\022\023\n\017UNKNOWN_FAILURE\020\004B" +
+      "+\n\033org.apache.drill.exec.protoB\nUserProt",
+      "osH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -5049,7 +5134,7 @@ public final class UserProtos {
           internal_static_exec_user_RunQuery_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_exec_user_RunQuery_descriptor,
-              new java.lang.String[] { "ResultsMode", "Type", "Plan", });
+              new java.lang.String[] { "ResultsMode", "Type", "Plan", "ApplicationId", });
           internal_static_exec_user_BitToUserHandshake_descriptor =
             getDescriptor().getMessageTypes().get(5);
           internal_static_exec_user_BitToUserHandshake_fieldAccessorTable = new

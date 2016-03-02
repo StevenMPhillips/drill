@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.drill.common.AutoCloseables;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.exceptions.UserRemoteException;
@@ -308,13 +307,17 @@ public class QueryManager implements AutoCloseable {
     return queryState;
   }
 
-  void writeFinalProfile(UserException ex) {
+  QueryProfile writeFinalProfile(UserException ex) {
+    QueryProfile profile = getQueryProfile(ex);
+
     try {
-      // TODO(DRILL-2362) when do these ever get deleted?
-      profileStore.put(stringQueryId, getQueryProfile(ex));
+      profileStore.put(stringQueryId, profile);
     } catch (Exception e) {
       logger.error("Failure while storing Query Profile", e);
     }
+
+    return profile;
+
   }
 
   private QueryInfo getQueryInfo() {

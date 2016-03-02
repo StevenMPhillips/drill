@@ -64,6 +64,7 @@ import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
 import org.apache.drill.exec.proto.ExecProtos.FragmentHandle;
 import org.apache.drill.exec.proto.GeneralRPCProtos.Ack;
 import org.apache.drill.exec.proto.UserBitShared.QueryId;
+import org.apache.drill.exec.proto.UserBitShared.QueryProfile;
 import org.apache.drill.exec.proto.UserBitShared.QueryResult;
 import org.apache.drill.exec.proto.UserBitShared.QueryResult.QueryState;
 import org.apache.drill.exec.proto.UserProtos.RunQuery;
@@ -74,6 +75,7 @@ import org.apache.drill.exec.rpc.control.ControlTunnel;
 import org.apache.drill.exec.rpc.control.Controller;
 import org.apache.drill.exec.rpc.user.UserServer.UserClientConnection;
 import org.apache.drill.exec.server.DrillbitContext;
+import org.apache.drill.exec.server.QueryLifecycleListener;
 import org.apache.drill.exec.server.options.OptionManager;
 import org.apache.drill.exec.testing.ControlsInjector;
 import org.apache.drill.exec.testing.ControlsInjectorFactory;
@@ -124,6 +126,7 @@ public class Foreman implements Runnable {
   private final WorkerBee bee; // provides an interface to submit tasks
   private final DrillbitContext drillbitContext;
   private final UserClientConnection initiatingClient; // used to send responses
+  private final QueryLifecycleListener listener;
   private volatile QueryState state;
   private boolean resume = false;
 
@@ -154,9 +157,16 @@ public class Foreman implements Runnable {
       final UserClientConnection connection, final QueryId queryId, final RunQuery queryRequest) {
     this.bee = bee;
     this.queryId = queryId;
+    this.listener = drillbitContext.getQueryLifecycleListener();
     queryIdString = QueryIdHelper.getQueryId(queryId);
     this.queryRequest = queryRequest;
     this.drillbitContext = drillbitContext;
+
+    listener.queryStarted(queryId,
+        queryRequest.getType(),
+        queryRequest.getPlan(),
+        connection.getSession().getCredentials().getUserName(), "",
+        queryRequest.hasApplicationId() ? queryRequest.getApplicationId().toByteArray() : null);
 
     initiatingClient = connection;
     this.closeFuture = initiatingClient.getChannel().closeFuture();
@@ -748,7 +758,8 @@ public class Foreman implements Runnable {
       }
 
       // we store the final result here so we can capture any error/errorId in the profile for later debugging.
-      queryManager.writeFinalProfile(uex);
+      final QueryProfile profile = queryManager.writeFinalProfile(uex);
+      listener.queryCompleted(queryId, profile.getState(), profile);
 
       /*
        * If sending the result fails, we don't really have any way to modify the result we tried to send;
@@ -910,6 +921,7 @@ public class Foreman implements Runnable {
    * @param exception if not null, the exception that drove this state transition (usually a failure)
    */
   private void moveToState(final QueryState newState, final Exception exception) {
+    listener.queryStatusUpdate(queryId, queryManager.getQueryProfile());
     stateSwitch.moveToState(newState, exception);
   }
 
@@ -1182,7 +1194,9 @@ public class Foreman implements Runnable {
      */
     public void moveToState(final QueryState newState, final Exception ex) {
       acceptExternalEvents.awaitUninterruptibly();
-
+      if (queryManager != null) {
+        listener.queryStatusUpdate(queryId, queryManager.getQueryProfile());
+      }
       Foreman.this.moveToState(newState, ex);
     }
   }

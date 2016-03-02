@@ -33,6 +33,10 @@ import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.physical.impl.OperatorCreatorRegistry;
 import org.apache.drill.exec.planner.PhysicalPlanReader;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
+import org.apache.drill.exec.proto.UserBitShared.QueryId;
+import org.apache.drill.exec.proto.UserBitShared.QueryProfile;
+import org.apache.drill.exec.proto.UserBitShared.QueryResult.QueryState;
+import org.apache.drill.exec.proto.UserBitShared.QueryType;
 import org.apache.drill.exec.rpc.control.Controller;
 import org.apache.drill.exec.rpc.control.WorkEventBus;
 import org.apache.drill.exec.rpc.data.DataConnectionCreator;
@@ -42,6 +46,7 @@ import org.apache.drill.exec.store.StoragePluginRegistry;
 import org.apache.drill.exec.store.sys.PersistentStoreProvider;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.base.Preconditions;
 
 public class DrillbitContext implements AutoCloseable {
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DrillbitContext.class);
@@ -61,7 +66,7 @@ public class DrillbitContext implements AutoCloseable {
   private final CodeCompiler compiler;
   private final ScanResult classpathScan;
   private final LogicalPlanPersistence lpPersistence;
-
+  private volatile QueryLifecycleListener queryLifecycleListener = new NoOpLifecycleListener();
 
   public DrillbitContext(
       DrillbitEndpoint endpoint,
@@ -98,6 +103,15 @@ public class DrillbitContext implements AutoCloseable {
 
   public WorkEventBus getWorkBus() {
     return workBus;
+  }
+
+  public void setQueryLifecycleListener(QueryLifecycleListener listener) {
+    Preconditions.checkNotNull(listener);
+    this.queryLifecycleListener = listener;
+  }
+
+  public QueryLifecycleListener getQueryLifecycleListener() {
+    return queryLifecycleListener;
   }
 
   /**
@@ -183,5 +197,22 @@ public class DrillbitContext implements AutoCloseable {
   @Override
   public void close() throws Exception {
     getOptionManager().close();
+  }
+
+  private class NoOpLifecycleListener implements QueryLifecycleListener {
+
+    @Override
+    public void queryStarted(QueryId queryId, QueryType type, String query, String user, String client,
+        byte[] applicationId) {
+    }
+
+    @Override
+    public void queryStatusUpdate(QueryId queryId, QueryProfile profile) {
+    }
+
+    @Override
+    public void queryCompleted(QueryId queryId, QueryState state, QueryProfile profile) {
+    }
+
   }
 }

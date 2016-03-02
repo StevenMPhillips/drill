@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
+import com.dyuproject.protostuff.ByteString;
 import com.dyuproject.protostuff.GraphIOUtil;
 import com.dyuproject.protostuff.Input;
 import com.dyuproject.protostuff.Message;
@@ -50,6 +51,7 @@ public final class RunQuery implements Externalizable, Message<RunQuery>, Schema
     private QueryResultsMode resultsMode;
     private QueryType type;
     private String plan;
+    private ByteString applicationId;
 
     public RunQuery()
     {
@@ -94,6 +96,19 @@ public final class RunQuery implements Externalizable, Message<RunQuery>, Schema
     public RunQuery setPlan(String plan)
     {
         this.plan = plan;
+        return this;
+    }
+
+    // applicationId
+
+    public ByteString getApplicationId()
+    {
+        return applicationId;
+    }
+
+    public RunQuery setApplicationId(ByteString applicationId)
+    {
+        this.applicationId = applicationId;
         return this;
     }
 
@@ -160,6 +175,9 @@ public final class RunQuery implements Externalizable, Message<RunQuery>, Schema
                 case 3:
                     message.plan = input.readString();
                     break;
+                case 4:
+                    message.applicationId = input.readBytes();
+                    break;
                 default:
                     input.handleUnknownField(number, this);
             }   
@@ -177,6 +195,9 @@ public final class RunQuery implements Externalizable, Message<RunQuery>, Schema
 
         if(message.plan != null)
             output.writeString(3, message.plan, false);
+
+        if(message.applicationId != null)
+            output.writeBytes(4, message.applicationId, false);
     }
 
     public String getFieldName(int number)
@@ -186,6 +207,7 @@ public final class RunQuery implements Externalizable, Message<RunQuery>, Schema
             case 1: return "resultsMode";
             case 2: return "type";
             case 3: return "plan";
+            case 4: return "applicationId";
             default: return null;
         }
     }
@@ -202,6 +224,7 @@ public final class RunQuery implements Externalizable, Message<RunQuery>, Schema
         __fieldMap.put("resultsMode", 1);
         __fieldMap.put("type", 2);
         __fieldMap.put("plan", 3);
+        __fieldMap.put("applicationId", 4);
     }
     
 }

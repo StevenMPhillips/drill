@@ -549,6 +549,9 @@ public final class SchemaUserProtos
                     output.writeEnum(2, message.getType().getNumber(), false);
                 if(message.hasPlan())
                     output.writeString(3, message.getPlan(), false);
+                if(message.hasApplicationId())
+                    output.writeByteArray(4, message.getApplicationId().toByteArray(), false);
+
             }
             public boolean isInitialized(org.apache.drill.exec.proto.UserProtos.RunQuery message)
             {
@@ -597,6 +600,9 @@ public final class SchemaUserProtos
                         case 3:
                             builder.setPlan(input.readString());
                             break;
+                        case 4:
+                            builder.setApplicationId(com.google.protobuf.ByteString.copyFrom(input.readByteArray()));
+                            break;
                         default:
                             input.handleUnknownField(number, this);
                     }
@@ -640,6 +646,7 @@ public final class SchemaUserProtos
                 case 1: return "resultsMode";
                 case 2: return "type";
                 case 3: return "plan";
+                case 4: return "applicationId";
                 default: return null;
             }
         }
@@ -654,6 +661,7 @@ public final class SchemaUserProtos
             fieldMap.put("resultsMode", 1);
             fieldMap.put("type", 2);
             fieldMap.put("plan", 3);
+            fieldMap.put("applicationId", 4);
         }
     }
 
