@@ -20,6 +20,8 @@ package org.apache.drill.exec.client;
 import static com.google.common.base.Preconditions.checkState;
 import static org.apache.drill.exec.proto.UserProtos.QueryResultsMode.STREAM_FULL;
 import static org.apache.drill.exec.proto.UserProtos.RunQuery.newBuilder;
+
+import com.google.protobuf.ByteString;
 import io.netty.buffer.DrillBuf;
 import io.netty.channel.EventLoopGroup;
 
@@ -362,6 +364,18 @@ public class DrillClient implements Closeable, ConnectionThrottle {
    */
   public void runQuery(QueryType type, String plan, UserResultsListener resultsListener) {
     client.submitQuery(resultsListener, newBuilder().setResultsMode(STREAM_FULL).setType(type).setPlan(plan).build());
+  }
+
+  /**
+   * Submits a Logical plan for direct execution (bypasses parsing)
+   *
+   * @param  plan  the plan to execute
+   * @param  applicationId An opaque id set by client submitting the query.
+   *
+   */
+  public void runQuery(QueryType type, String plan, byte[] applicationId, UserResultsListener resultsListener) {
+    client.submitQuery(resultsListener, newBuilder().setResultsMode(STREAM_FULL).setType(type).setPlan(plan).
+            setApplicationId(ByteString.copyFrom(applicationId)).build());
   }
 
   private class ListHoldingResultsListener implements UserResultsListener {
