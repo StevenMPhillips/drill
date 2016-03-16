@@ -171,6 +171,11 @@ public class StreamAggPrule extends AggPruleBase {
                   OperatorPhase.PHASE_2of2);
             }
           }.go(aggregate, convertedInput);
+        } else {
+          DrillDistributionTrait singleDist = DrillDistributionTrait.SINGLETON;
+          final RelTraitSet singleDistTrait = call.getPlanner().emptyTraitSet().plus(Prel.DRILL_PHYSICAL)
+                  .plus(singleDist).plus(collation);
+          createTransformRequest(call, aggregate, input, singleDistTrait);
         }
       }
     } catch (InvalidRelException e) {

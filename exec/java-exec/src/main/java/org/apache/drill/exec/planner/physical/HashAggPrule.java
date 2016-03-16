@@ -61,20 +61,18 @@ public class HashAggPrule extends AggPruleBase {
       return;
     }
 
-    RelTraitSet traits = null;
-
     try {
+      DrillDistributionTrait singleDist = DrillDistributionTrait.SINGLETON;
+      RelTraitSet singletonTraits = call.getPlanner().emptyTraitSet().plus(Prel.DRILL_PHYSICAL).plus(singleDist);
       if (aggregate.getGroupSet().isEmpty()) {
-        DrillDistributionTrait singleDist = DrillDistributionTrait.SINGLETON;
-        traits = call.getPlanner().emptyTraitSet().plus(Prel.DRILL_PHYSICAL).plus(singleDist);
-        createTransformRequest(call, aggregate, input, traits);
+        createTransformRequest(call, aggregate, input, singletonTraits);
       } else {
         // hash distribute on all grouping keys
         DrillDistributionTrait distOnAllKeys =
             new DrillDistributionTrait(DrillDistributionTrait.DistributionType.HASH_DISTRIBUTED,
                                        ImmutableList.copyOf(getDistributionField(aggregate, true /* get all grouping keys */)));
 
-        traits = call.getPlanner().emptyTraitSet().plus(Prel.DRILL_PHYSICAL).plus(distOnAllKeys);
+        RelTraitSet traits = call.getPlanner().emptyTraitSet().plus(Prel.DRILL_PHYSICAL).plus(distOnAllKeys);
         createTransformRequest(call, aggregate, input, traits);
 
         // hash distribute on single grouping key
@@ -91,6 +89,8 @@ public class HashAggPrule extends AggPruleBase {
           RelNode convertedInput = convert(input, traits);
           new TwoPhaseSubset(call, distOnAllKeys).go(aggregate, convertedInput);
 
+        } else {
+          createTransformRequest(call, aggregate, input, singletonTraits);
         }
       }
     } catch (InvalidRelException e) {
