@@ -80,14 +80,17 @@ public abstract class DrillFilterRelBase extends Filter implements DrillRelNode 
   */
   private double estimateCpuCost() {
     RelNode child = this.getInput();
-    double compNum = RelMetadataQuery.getRowCount(child);
+    final double rows = RelMetadataQuery.getRowCount(child);
+    double compNum = rows;
+    double rowCompNum = child.getRowType().getFieldCount() * rows ;
+
 
     for (int i = 0; i< numConjuncts; i++) {
       RexNode conjFilter = RexUtil.composeConjunction(this.getCluster().getRexBuilder(), conjunctions.subList(0, i + 1), false);
       compNum += Filter.estimateFilteredRows(child, conjFilter);
     }
 
-    return compNum * DrillCostBase.COMPARE_CPU_COST;
+    return compNum * DrillCostBase.COMPARE_CPU_COST + rowCompNum * DrillCostBase.COPY_COST;
   }
 
 }

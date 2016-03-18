@@ -66,6 +66,9 @@ public class DrillCostBase implements DrillRelOptCost {
   public static final int COMPARE_CPU_COST = 4 * BASE_CPU_COST;
   public static final int AVG_FIELD_WIDTH = 8;
 
+  // cost of copying data (per cell)
+  public static final int COPY_COST = 1 * BASE_CPU_COST;
+
   /** For the costing formulas in computeSelfCost(), assume the following notations:
   * Let
   *   C = Cost per node.
