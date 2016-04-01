@@ -20,18 +20,58 @@ package org.apache.drill;
 import static org.apache.drill.TestBuilder.listOf;
 import static org.junit.Assert.assertEquals;
 
+import java.lang.management.ManagementFactory;
 import java.math.BigDecimal;
+import java.util.concurrent.CountDownLatch;
 
+import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.common.util.FileUtils;
 import org.apache.drill.common.util.TestTools;
 import org.apache.drill.exec.ExecConstants;
-import org.apache.drill.exec.compile.ClassTransformer;
+import org.apache.drill.exec.ops.ThreadStatCollector;
+import org.apache.drill.exec.proto.UserBitShared.QueryId;
+import org.apache.drill.exec.proto.UserBitShared.QueryResult.QueryState;
+import org.apache.drill.exec.proto.UserBitShared.QueryType;
+import org.apache.drill.exec.rpc.ConnectionThrottle;
+import org.apache.drill.exec.rpc.user.QueryDataBatch;
+import org.apache.drill.exec.rpc.user.UserResultsListener;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestExampleQueries extends BaseTestQuery {
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestExampleQueries.class);
+  @Test
+  public void q() throws Exception {
+    final CountDownLatch latch = new CountDownLatch(1);
+    UserResultsListener listener = new UserResultsListener() {
+      @Override
+      public void queryIdArrived(QueryId queryId) {
+
+      }
+
+      @Override
+      public void submissionFailed(UserException ex) {
+
+      }
+
+      @Override
+      public void dataArrived(QueryDataBatch result, ConnectionThrottle throttle) {
+        result.getData().clear();
+      }
+
+      @Override
+      public void queryCompleted(QueryState state) {
+        latch.countDown();
+      }
+    };
+    testWithListener(QueryType.SQL, "select count(*) from cp.`tpch/lineitem.parquet` c1 join cp.`tpch/lineitem.parquet` c2 on c1.l_tax = c2.l_tax", listener);
+    Thread.sleep(10000);
+    while (latch.getCount() > 0) {
+      test("select * from sys.threads");
+      Thread.sleep(1000);
+    }
+  }
 
   @Test // see DRILL-2328
   public void testConcatOnNull() throws Exception {

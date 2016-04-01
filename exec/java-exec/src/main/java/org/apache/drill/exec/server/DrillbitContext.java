@@ -30,6 +30,7 @@ import org.apache.drill.exec.compile.CodeCompiler;
 import org.apache.drill.exec.coord.ClusterCoordinator;
 import org.apache.drill.exec.expr.fn.FunctionImplementationRegistry;
 import org.apache.drill.exec.memory.BufferAllocator;
+import org.apache.drill.exec.ops.ThreadStatCollector;
 import org.apache.drill.exec.physical.impl.OperatorCreatorRegistry;
 import org.apache.drill.exec.planner.PhysicalPlanReader;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
@@ -170,6 +171,10 @@ public class DrillbitContext implements AutoCloseable {
 
   public ExecutorService getExecutor() {
     return context.getExecutor();
+  }
+
+  public ThreadStatCollector getThreadStatCollector() {
+    return context.getThreadStatCollector();
   }
 
   public LogicalPlanPersistence getLpPersistence() {

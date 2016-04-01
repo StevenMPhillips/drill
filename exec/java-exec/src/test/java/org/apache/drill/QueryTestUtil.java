@@ -109,7 +109,7 @@ public class QueryTestUtil {
     DrillConfig config = drillClient.getConfig();
     AwaitableUserResultsListener resultListener =
         new AwaitableUserResultsListener(
-            config.getBoolean(TEST_QUERY_PRINTING_SILENT) ?
+            config.getBoolean(TEST_QUERY_PRINTING_SILENT) && false ?
                 new SilentListener() :
                 new PrintingResultsListener(config, Format.TSV, VectorUtil.DEFAULT_COLUMN_WIDTH)
         );

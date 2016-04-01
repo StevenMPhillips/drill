@@ -20,54 +20,56 @@ package org.apache.drill.exec.store.sys;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 
+import com.google.common.collect.Lists;
 import org.apache.drill.exec.ops.FragmentContext;
+import org.apache.drill.exec.ops.ThreadStatCollector;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
 
 public class ThreadsIterator implements Iterator<Object> {
 
   private final FragmentContext context;
-  private final Iterator<ThreadInfo> threadInfoIter;
+  private final Iterator<Long> threadIdIterator;
+  private final ThreadMXBean threadMXBean;
+  private final ThreadStatCollector threadStatCollector;
 
   public ThreadsIterator(final FragmentContext context) {
     this.context = context;
-    final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-    ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds());
-    threadInfoIter = Arrays.asList(threadInfos).iterator();
+    threadMXBean = ManagementFactory.getThreadMXBean();
+    final long[] ids = threadMXBean.getAllThreadIds();
+    threadIdIterator = new ArrayList<Long>() {{
+      for (long id : ids) {
+        add(id);
+      }
+    }}.iterator();
+    this.threadStatCollector = context.getDrillbitContext().getThreadStatCollector();
   }
 
-  @Override
   public boolean hasNext() {
-    return threadInfoIter.hasNext();
+    return threadIdIterator.hasNext();
   }
 
   @Override
   public Object next() {
-    ThreadInfo currentThread = threadInfoIter.next();
+    long id = threadIdIterator.next();
+    ThreadInfo currentThread = threadMXBean.getThreadInfo(id);
     final ThreadSummary threadSummary = new ThreadSummary();
 
     final DrillbitEndpoint endpoint = context.getIdentity();
     threadSummary.hostname = endpoint.getAddress();
     threadSummary.user_port = endpoint.getUserPort();
     threadSummary.threadName = currentThread.getThreadName();
-//    threadSummary.priority = "HIGH";
     threadSummary.threadState = currentThread.getThreadState().name();
     threadSummary.threadId = currentThread.getThreadId();
-    threadSummary.blockedCount = currentThread.getBlockedCount();
-    threadSummary.blockedTime = currentThread.getBlockedTime();
-    threadSummary.waitedCount = currentThread.getWaitedCount();
-    threadSummary.waitedTime = currentThread.getWaitedTime();
-    threadSummary.lockName = currentThread.getLockName();
-//    threadSummary.lock = currentThread.getLockInfo().toString();
-    threadSummary.lockOwnerId = currentThread.getLockOwnerId();
-    threadSummary.lockOwnerName = currentThread.getLockOwnerName();
     threadSummary.inNative = currentThread.isInNative();
     threadSummary.suspended = currentThread.isSuspended();
+    threadSummary.cpuTime = threadStatCollector.getCpuTrailingAverage(id, 1);
+    threadSummary.userTime = threadStatCollector.getUserTrailingAverage(id, 1);
 
-//    threadSummary.total_threads = threadMXBean.getPeakThreadCount();
-//    threadSummary.busy_threads = threadMXBean.getThreadCount();
     return threadSummary;
   }
 
@@ -84,34 +86,12 @@ public class ThreadsIterator implements Iterator<Object> {
     public long user_port;
 
     // pulled out of java.lang.management.ThreadInfo
-    public String       threadName;
-    public long         threadId;
-    public long         blockedTime;
-    public long         blockedCount;
-    public long         waitedTime;
-    public long         waitedCount;
-//    public LockInfo     lock;
-    public String       lock;
-    public String       lockName;
-    public long         lockOwnerId;
-    public String       lockOwnerName;
-    public boolean      inNative;
-    public boolean      suspended;
-//    public Thread.State threadState;
-    public String       threadState;
-
-//    public StackTraceElement[] stackTrace;
-//    public MonitorInfo[]       lockedMonitors;
-//    public LockInfo[]          lockedSynchronizers;
-
-//    public static MonitorInfo[] EMPTY_MONITORS = new MonitorInfo[0];
-//    public static LockInfo[] EMPTY_SYNCS = new LockInfo[0];
-
-    // TODO - Not sure about this one
-//    public String priority;
-
-    // TODO - remove? from old threads table
-//    public long total_threads;
-//    public long busy_threads;
+    public String threadName;
+    public long threadId;
+    public boolean inNative;
+    public boolean suspended;
+    public String threadState;
+    public Integer cpuTime;
+    public Integer userTime;
   }
 }
