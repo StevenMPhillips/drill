@@ -102,7 +102,7 @@ public class WorkManager implements AutoCloseable {
       final DataConnectionCreator data,
       final ClusterCoordinator coord,
       final PersistentStoreProvider provider) {
-    dContext = new DrillbitContext(endpoint, bContext, coord, controller, data, workBus, provider);
+    dContext = new DrillbitContext(endpoint, bContext, coord, controller, data, workBus, provider, this);
     statusThread.start();
 
     // TODO remove try block once metrics moved from singleton, For now catch to avoid unit test failures
