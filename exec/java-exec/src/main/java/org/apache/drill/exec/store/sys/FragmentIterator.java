@@ -17,20 +17,68 @@
  */
 package org.apache.drill.exec.store.sys;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.proto.CoordinationProtos;
+import org.apache.drill.exec.proto.UserBitShared.MinorFragmentProfile;
+import org.apache.drill.exec.proto.UserBitShared.OperatorProfile;
+import org.apache.drill.exec.proto.UserBitShared.StreamProfile;
+import org.apache.drill.exec.proto.helper.QueryIdHelper;
 import org.apache.drill.exec.server.DrillbitContext;
+import org.apache.drill.exec.work.WorkManager;
+import org.apache.drill.exec.work.fragment.FragmentExecutor;
 
+import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.Iterator;
 
-public class FragmentIterator {
+public class FragmentIterator implements Iterator<Object> {
   //Drillbit, queryid, major fragmentid, minorfragmentid, coordinate, memory usage, rows processed, start time
-  private final DrillbitContext drillbitContext;
+  private final WorkManager workManager;
+  private final Iterator<FragmentExecutor> iter;
 
   public FragmentIterator(FragmentContext c) {
-    this.drillbitContext = c.getDrillbitContext();
-    Collection<CoordinationProtos.DrillbitEndpoint> bits = drillbitContext.getBits();
+    this.workManager = c.getDrillbitContext().getWorkManager();
+    iter = ImmutableList.copyOf(workManager.getRunningFragments()).iterator();
+  }
 
+  @Override
+  public boolean hasNext() {
+    return iter.hasNext();
+  }
+
+  @Override
+  public Object next() {
+    FragmentExecutor fragmentExecutor = iter.next();
+    MinorFragmentProfile profile = fragmentExecutor.getStatus().getProfile();
+    FragmentInfo fragmentInfo = new FragmentInfo();
+    fragmentInfo.hostname = workManager.getContext().getEndpoint().getAddress();
+    fragmentInfo.queryId = QueryIdHelper.getQueryId(fragmentExecutor.getContext().getHandle().getQueryId());
+    fragmentInfo.majorFragmentId = fragmentExecutor.getContext().getHandle().getMajorFragmentId();
+    fragmentInfo.minorFragmentId = fragmentExecutor.getContext().getHandle().getMinorFragmentId();
+    fragmentInfo.rowsProcessed = getRowsProcessed(profile);
+    fragmentInfo.memoryUsage = profile.getMemoryUsed();
+    fragmentInfo.startTime = new Timestamp(profile.getStartTime());
+    return fragmentInfo;
+  }
+
+  private long getRowsProcessed(MinorFragmentProfile profile) {
+    long maxRecords = 0;
+    for (OperatorProfile operatorProfile : profile.getOperatorProfileList()) {
+      long records = 0;
+      for (StreamProfile inputProfile :operatorProfile.getInputProfileList()) {
+        if (inputProfile.hasRecords()) {
+          records += inputProfile.getRecords();
+        }
+      }
+      maxRecords = Math.max(maxRecords, records);
+    }
+    return maxRecords;
+  }
+
+  @Override
+  public void remove() {
+    throw new UnsupportedOperationException();
   }
 
   public static class FragmentInfo {
@@ -38,12 +86,8 @@ public class FragmentIterator {
     public String queryId;
     public int majorFragmentId;
     public int minorFragmentId;
-    public int coordinate;
-    public long memoryUsage;
-    public long rowsProcessed;
-    // TODO - a datetime currently appears in the Version table, but
-    // it is returned as a String
-//    public DateTime startTime;
-    public long startTime;
+    public Long memoryUsage;
+    public Long rowsProcessed;
+    public Timestamp startTime;
   }
 }
