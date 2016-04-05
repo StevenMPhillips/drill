@@ -84,7 +84,11 @@ public class EventBasedRecordWriter {
         }
         FieldReader reader = w.getValueVector().getReader();
         FieldConverter converter = getConverter(recordWriter, fieldId++, w.getField().getLastName(), reader);
-        fieldConverters.add(converter);
+        if (converter == null) {
+          fieldId--;
+        } else {
+          fieldConverters.add(converter);
+        }
       }
     } catch(Exception e) {
       logger.error("Failed to create FieldWriter.", e);

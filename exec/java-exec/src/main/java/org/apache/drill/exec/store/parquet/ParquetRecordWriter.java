@@ -184,7 +184,10 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
       if (field.getPath().equalsIgnoreCase(WriterPrel.PARTITION_COMPARATOR_FIELD)) {
         continue;
       }
-      types.add(getType(field));
+      Type t = getType(field);
+      if (t != null) {
+        types.add(getType(field));
+      }
     }
     schema = new MessageType("root", types);
 
@@ -218,9 +221,12 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
       case MAP:
         List<Type> types = Lists.newArrayList();
         for (MaterializedField childField : field.getChildren()) {
-          types.add(getType(childField));
+          Type t = getType(childField);
+          if (t != null) {
+            types.add(t);
+          }
         }
-        return new GroupType(dataMode == DataMode.REPEATED ? Repetition.REPEATED : Repetition.OPTIONAL, field.getLastName(), types);
+        return types.size() == 0 ? null :  new GroupType(dataMode == DataMode.REPEATED ? Repetition.REPEATED : Repetition.OPTIONAL, field.getLastName(), types);
       case LIST:
         throw new UnsupportedOperationException("Unsupported type " + minorType);
       default:
@@ -287,6 +293,9 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
 
   @Override
   public FieldConverter getNewMapConverter(int fieldId, String fieldName, FieldReader reader) {
+    if (!reader.iterator().hasNext()) {
+      return null;
+    }
     return new MapParquetConverter(fieldId, fieldName, reader);
   }
 
@@ -298,7 +307,11 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
       int i = 0;
       for (String name : reader) {
         FieldConverter converter = EventBasedRecordWriter.getConverter(ParquetRecordWriter.this, i++, name, reader.reader(name));
-        converters.add(converter);
+        if (converter == null) {
+          i--;
+        } else {
+          converters.add(converter);
+        }
       }
     }
 
@@ -316,6 +329,9 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
 
   @Override
   public FieldConverter getNewRepeatedMapConverter(int fieldId, String fieldName, FieldReader reader) {
+    if (!reader.iterator().hasNext()) {
+      return null;
+    }
     return new RepeatedMapParquetConverter(fieldId, fieldName, reader);
   }
 
@@ -327,7 +343,11 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
       int i = 0;
       for (String name : reader) {
         FieldConverter converter = EventBasedRecordWriter.getConverter(ParquetRecordWriter.this, i++, name, reader.reader(name));
-        converters.add(converter);
+        if (converter == null) {
+          i--;
+        } else {
+          converters.add(converter);
+        }
       }
     }
 
