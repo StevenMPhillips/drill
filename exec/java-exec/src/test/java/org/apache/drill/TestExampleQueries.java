@@ -35,28 +35,7 @@ public class TestExampleQueries extends BaseTestQuery {
 
   @Test
   public void q() throws Exception {
-    System.out.println(getDfsTestTmpSchemaLocation());
-//    test("set `exec.enable_union_type` = true");
-//    test("select\n" +
-//            "   p.dealName,\n" +
-//            "   p.asofdate,\n" +
-//            "   sum(cast(regexp_replace(convert_from(p.rec.`INTEX$LOAN_INFO_CUR_CONTRIB_BALANCE`,\n" +
-//            "   'UTF8'),\n" +
-//            "   ',',\n" +
-//            "   '') as double) ) contrib_bal \n" +
-//            "from\n" +
-//            "   (select\n" +
-//            "      cast(w.deal.`INTEX$DEAL_NAME` as varchar(100)) as dealName,\n" +
-//            "      cast(w.deal.presumedTodaysDateYYYYMMDD as varchar(100)) as asofdate,\n" +
-//            "      flatten(asset) as rec \n" +
-//            "   from\n" +
-//            "      dfs.tmp.nomura2 w) p \n" +
-//            "where\n" +
-//            "   convert_from(p.rec.`INTEX$LOAN_INFO_CUR_CONTRIB_BALANCE`,'UTF8') not like '(%' \n" +
-//            "group by\n" +
-//            "   p.dealName,\n" +
-//            "   p.asofdate");
-    test("create table dfs_test.tmp.nomura as select * from dfs.tmp.nomura2");
+    test("select mask(x.a.b, 'c') from dfs.tmp.`file.json` x");
   }
 
   @Test // see DRILL-2328

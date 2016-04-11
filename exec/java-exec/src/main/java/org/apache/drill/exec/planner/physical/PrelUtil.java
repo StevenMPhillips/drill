@@ -294,6 +294,8 @@ public class PrelUtil {
           }
           return mapOrArray;
         }
+      } else if ("MASK".equals(call.getOperator().getName())) {
+
       } else {
         for (RexNode operand : call.operands) {
           addColumn(operand.accept(this));
