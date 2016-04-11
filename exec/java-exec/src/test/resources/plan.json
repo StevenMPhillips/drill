@@ -1,0 +1,188 @@
+{
+  "head" : {
+    "version" : 1,
+    "generator" : {
+      "type" : "ExplainHandler",
+      "info" : ""
+    },
+    "type" : "APACHE_DRILL_PHYSICAL",
+    "options" : [ {
+      "kind" : "LONG",
+      "type" : "SESSION",
+      "name" : "planner.slice_target",
+      "num_val" : 1
+    }, {
+      "kind" : "LONG",
+      "type" : "SESSION",
+      "name" : "planner.width.max_per_node",
+      "num_val" : 20
+    } ],
+    "queue" : 0,
+    "resultMode" : "EXEC"
+  },
+  "graph" : [ {
+    "pop" : "parquet-scan",
+    "@id" : 65541,
+    "userName" : "root",
+    "entries" : [ {
+      "path" : "file:/tmp/nomura_parquet/0_0_0.parquet"
+    } ],
+    "storage" : {
+      "type" : "file",
+      "enabled" : true,
+      "connection" : "file:///",
+      "config" : null,
+      "workspaces" : {
+        "root" : {
+          "location" : "/",
+          "writable" : false,
+          "defaultInputFormat" : null
+        },
+        "tmp" : {
+          "location" : "/tmp",
+          "writable" : true,
+          "defaultInputFormat" : null
+        },
+        "home" : {
+          "location" : "/root",
+          "writable" : true,
+          "defaultInputFormat" : null
+        },
+        "parquet" : {
+          "location" : "/root/parquet",
+          "writable" : true,
+          "defaultInputFormat" : null
+        }
+      },
+      "formats" : {
+        "psv" : {
+          "type" : "text",
+          "extensions" : [ "tbl" ],
+          "delimiter" : "|"
+        },
+        "csv" : {
+          "type" : "text",
+          "extensions" : [ "csv" ],
+          "delimiter" : ","
+        },
+        "tsv" : {
+          "type" : "text",
+          "extensions" : [ "tsv" ],
+          "delimiter" : "\t"
+        },
+        "parquet" : {
+          "type" : "parquet"
+        },
+        "json" : {
+          "type" : "json",
+          "extensions" : [ "json" ]
+        },
+        "avro" : {
+          "type" : "avro"
+        },
+        "sequencefile" : {
+          "type" : "sequencefile",
+          "extensions" : [ "seq" ]
+        },
+        "csvh" : {
+          "type" : "text",
+          "extensions" : [ "csvh" ],
+          "extractHeader" : true,
+          "delimiter" : ","
+        }
+      }
+    },
+    "format" : {
+      "type" : "parquet"
+    },
+    "columns" : [ "`wcmo_deal`.`INTEX$DEAL_NAME`", "`calculatedDealLevelData`.`CLO$presumedTodaysDateYYYYMMDD`", "`collatItems`.`INTEX$LOAN_INFO_CUR_CONTRIB_BALANCE`" ],
+    "selectionRoot" : "/tmp/nomura_parquet/",
+    "fileSet" : [ "/tmp/nomura_parquet/0_0_0.parquet" ],
+    "cost" : 10000.0
+  }, {
+    "pop" : "project",
+    "@id" : 65540,
+    "exprs" : [ {
+      "ref" : "`dealName`",
+      "expr" : "cast( (`wcmo_deal`.`INTEX$DEAL_NAME` ) as VARCHAR(100) )"
+    }, {
+      "ref" : "`asofdate`",
+      "expr" : "cast( (`calculatedDealLevelData`.`CLO$presumedTodaysDateYYYYMMDD` ) as VARCHAR(100) )"
+    }, {
+      "ref" : "`rec`",
+      "expr" : "`collatItems`"
+    } ],
+    "child" : 65541,
+    "initialAllocation" : 1000000,
+    "maxAllocation" : 10000000000,
+    "cost" : 10000.0
+  }, {
+    "pop" : "flatten",
+    "@id" : 65539,
+    "child" : 65540,
+    "column" : "`rec`",
+    "initialAllocation" : 1000000,
+    "maxAllocation" : 10000000000,
+    "cost" : 10000.0
+  }, {
+    "pop" : "project",
+    "@id" : 65538,
+    "exprs" : [ {
+      "ref" : "`$f0`",
+      "expr" : "0"
+    } ],
+    "child" : 65539,
+    "initialAllocation" : 1000000,
+    "maxAllocation" : 10000000000,
+    "cost" : 10000.0
+  }, {
+    "pop" : "streaming-aggregate",
+    "@id" : 65537,
+    "child" : 65538,
+    "keys" : [ ],
+    "exprs" : [ {
+      "ref" : "`EXPR$0`",
+      "expr" : "count(1) "
+    } ],
+    "initialAllocation" : 1000000,
+    "maxAllocation" : 10000000000,
+    "cost" : 1.0
+  }, {
+    "pop" : "union-exchange",
+    "@id" : 3,
+    "child" : 65537,
+    "initialAllocation" : 1000000,
+    "maxAllocation" : 10000000000,
+    "cost" : 1.0
+  }, {
+    "pop" : "streaming-aggregate",
+    "@id" : 2,
+    "child" : 3,
+    "keys" : [ ],
+    "exprs" : [ {
+      "ref" : "`EXPR$0`",
+      "expr" : "$sum0(`EXPR$0`) "
+    } ],
+    "initialAllocation" : 1000000,
+    "maxAllocation" : 10000000000,
+    "cost" : 1.0
+  }, {
+    "pop" : "project",
+    "@id" : 1,
+    "exprs" : [ {
+      "ref" : "`EXPR$0`",
+      "expr" : "`EXPR$0`"
+    } ],
+    "child" : 2,
+    "initialAllocation" : 1000000,
+    "maxAllocation" : 10000000000,
+    "cost" : 1.0
+  }, {
+    "pop" : "screen",
+    "@id" : 0,
+    "child" : 1,
+    "initialAllocation" : 1000000,
+    "maxAllocation" : 10000000000,
+    "cost" : 1.0
+  } ]
+}
