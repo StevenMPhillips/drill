@@ -369,9 +369,9 @@ public enum PlannerPhase {
         ).build());
   }
 
-  static final RuleSet DRILL_PHYSICAL_DISK = RuleSets.ofList(ImmutableSet.of(
-      ProjectPrule.INSTANCE
-    ));
+//  static final RuleSet DRILL_PHYSICAL_DISK = RuleSets.ofList(ImmutableSet.of(
+//      ProjectPrule.INSTANCE
+//    ));
 
   static final RuleSet getPhysicalRules(OptimizerRulesContext optimizerRulesContext) {
     final List<RelOptRule> ruleList = new ArrayList<RelOptRule>();
@@ -381,7 +381,7 @@ public enum PlannerPhase {
     ruleList.add(ConvertCountToDirectScan.AGG_ON_SCAN);
     ruleList.add(SortConvertPrule.INSTANCE);
     ruleList.add(SortPrule.INSTANCE);
-    ruleList.add(ProjectPrule.INSTANCE);
+    ruleList.add(new ProjectPrule(optimizerRulesContext.getFunctionRegistry()));
     ruleList.add(ScanPrule.INSTANCE);
     ruleList.add(ScreenPrule.INSTANCE);
     ruleList.add(ExpandConversionRule.INSTANCE);

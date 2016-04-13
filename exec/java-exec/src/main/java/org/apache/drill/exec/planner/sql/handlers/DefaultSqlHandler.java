@@ -478,22 +478,22 @@ public class DefaultSqlHandler extends AbstractSqlHandler {
      * We want to have smaller dataset on the right side, since hash table builds on right side.
      */
     if (context.getPlannerSettings().isHashJoinSwapEnabled()) {
-      phyRelNode = SwapHashJoinVisitor.swapHashJoin(phyRelNode, new Double(context.getPlannerSettings()
-          .getHashJoinSwapMarginFactor()));
+      phyRelNode = SwapHashJoinVisitor.swapHashJoin(phyRelNode, context.getPlannerSettings()
+          .getHashJoinSwapMarginFactor());
     }
 
     /*
      * 1.2) Break up all expressions with complex outputs into their own project operations
      */
-    phyRelNode = phyRelNode.accept(
-        new SplitUpComplexExpressions(config.getConverter().getTypeFactory(), context.getDrillOperatorTable(), context
-            .getPlannerSettings().functionImplementationRegistry), null);
+//    phyRelNode = phyRelNode.accept(
+//        new SplitUpComplexExpressions(config.getConverter().getTypeFactory(), context.getDrillOperatorTable(), context
+//            .getPlannerSettings().functionImplementationRegistry), null);
 
     /*
      * 1.3) Projections that contain reference to flatten are rewritten as Flatten operators followed by Project
      */
-    phyRelNode = phyRelNode.accept(
-        new RewriteProjectToFlatten(config.getConverter().getTypeFactory(), context.getDrillOperatorTable()), null);
+//    phyRelNode = phyRelNode.accept(
+//        new RewriteProjectToFlatten(config.getConverter().getTypeFactory(), context.getDrillOperatorTable()), null);
 
     /*
      * 2.)

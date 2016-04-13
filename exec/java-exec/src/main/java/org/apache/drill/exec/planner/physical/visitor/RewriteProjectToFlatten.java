@@ -37,30 +37,9 @@ import org.apache.drill.exec.planner.types.RelDataTypeHolder;
 
 import com.google.common.collect.Lists;
 
-public class RewriteProjectToFlatten extends BasePrelVisitor<Prel, Object, RelConversionException> {
+public class RewriteProjectToFlatten {
 
-  RelDataTypeFactory factory;
-  DrillOperatorTable table;
-
-  public RewriteProjectToFlatten(RelDataTypeFactory factory, DrillOperatorTable table) {
-    super();
-    this.factory = factory;
-    this.table = table;
-  }
-
-  @Override
-  public Prel visitPrel(Prel prel, Object value) throws RelConversionException {
-    List<RelNode> children = Lists.newArrayList();
-    for(Prel child : prel){
-      child = child.accept(this, null);
-      children.add(child);
-    }
-    return (Prel) prel.copy(prel.getTraitSet(), children);
-  }
-
-
-  @Override
-  public Prel visitProject(ProjectPrel node, Object unused) throws RelConversionException {
+  public static RelNode visitProject(RelDataTypeFactory factory, final ProjectPrel node) {
     ProjectPrel project = node;
     List<RexNode> exprList = new ArrayList<>();
     boolean rewrite = false;
@@ -77,7 +56,7 @@ public class RewriteProjectToFlatten extends BasePrelVisitor<Prel, Object, RelCo
         if (functionName.equalsIgnoreCase("flatten") ) {
           rewrite = true;
           if (function.getOperands().size() != 1) {
-            throw new RelConversionException("Flatten expression expects a single input.");
+            throw new RuntimeException("Flatten expression expects a single input.");
           }
           newExpr = function.getOperands().get(0);
           RexBuilder builder = new RexBuilder(factory);
@@ -88,16 +67,16 @@ public class RewriteProjectToFlatten extends BasePrelVisitor<Prel, Object, RelCo
       i++;
       exprList.add(newExpr);
     }
-    if (rewrite == true) {
+
+    if (rewrite) {
       // TODO - figure out what is the right setting for the traits
-      Prel newChild = ((Prel)project.getInput(0)).accept(this, null);
-      ProjectPrel newProject = new ProjectPrel(node.getCluster(), project.getTraitSet(), newChild, exprList, new RelRecordType(relDataTypes));
+      ProjectPrel newProject = new ProjectPrel(node.getCluster(), project.getTraitSet(), project.getInput(0), exprList, new RelRecordType(relDataTypes));
       FlattenPrel flatten = new FlattenPrel(project.getCluster(), project.getTraitSet(), newProject, flatttenExpr);
       return flatten;
     }
 
-    Prel child = ((Prel)project.getInput()).accept(this, null);
-    return (Prel) project.copy(project.getTraitSet(), child, exprList, new RelRecordType(relDataTypes));
+    return node;
   }
+
 
 }

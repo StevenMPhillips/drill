@@ -23,6 +23,8 @@ import java.util.Map;
 
 import org.apache.calcite.linq4j.Ord;
 
+import org.apache.calcite.tools.RelConversionException;
+import org.apache.drill.exec.expr.fn.FunctionImplementationRegistry;
 import org.apache.drill.exec.planner.logical.DrillProjectRel;
 import org.apache.drill.exec.planner.logical.RelOptHelper;
 import org.apache.drill.exec.planner.physical.DrillDistributionTrait.DistributionField;
@@ -42,12 +44,16 @@ import org.apache.calcite.sql.SqlKind;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.apache.drill.exec.planner.physical.visitor.RewriteProjectToFlatten;
+import org.apache.drill.exec.planner.physical.visitor.SplitUpComplexExpressions;
 
 public class ProjectPrule extends Prule {
-  public static final RelOptRule INSTANCE = new ProjectPrule();
+//  public static final RelOptRule INSTANCE = new ProjectPrule();
+  private FunctionImplementationRegistry funcReg;
 
-  private ProjectPrule() {
+  public ProjectPrule(FunctionImplementationRegistry functionImplementationRegistry) {
     super(RelOptHelper.some(DrillProjectRel.class, RelOptHelper.any(RelNode.class)), "ProjectPrule");
+    this.funcReg = functionImplementationRegistry;
   }
 
   @Override
@@ -89,7 +95,13 @@ public class ProjectPrule extends Prule {
       DrillDistributionTrait newDist = convertDist(childDist, distributionMap);
       RelCollation newCollation = convertRelCollation(childCollation, collationMap);
       RelTraitSet newProjectTraits = newTraitSet(Prel.DRILL_PHYSICAL, newDist, newCollation);
-      return new ProjectPrel(project.getCluster(), newProjectTraits, rel, project.getProjects(), project.getRowType());
+      try {
+        return SplitUpComplexExpressions.visitProject(
+                        new ProjectPrel(project.getCluster(), newProjectTraits, rel, project.getProjects(),
+                                project.getRowType()), rel.getCluster().getTypeFactory(), funcReg);
+      } catch (RelConversionException e) {
+        throw new RuntimeException(e);
+      }
     }
 
   }
