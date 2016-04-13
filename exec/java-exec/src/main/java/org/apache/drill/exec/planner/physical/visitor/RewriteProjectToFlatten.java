@@ -100,4 +100,44 @@ public class RewriteProjectToFlatten extends BasePrelVisitor<Prel, Object, RelCo
     return (Prel) project.copy(project.getTraitSet(), child, exprList, new RelRecordType(relDataTypes));
   }
 
+  public static RelNode visitProject(RelDataTypeFactory factory, ProjectPrel node) {
+    ProjectPrel project = node;
+    List<RexNode> exprList = new ArrayList<>();
+    boolean rewrite = false;
+
+    List<RelDataTypeField> relDataTypes = new ArrayList<>();
+    int i = 0;
+    RexNode flatttenExpr = null;
+    for (RexNode rex : project.getChildExps()) {
+      RexNode newExpr = rex;
+      if (rex instanceof RexCall) {
+        RexCall function = (RexCall) rex;
+        String functionName = function.getOperator().getName();
+
+        if (functionName.equalsIgnoreCase("flatten") ) {
+          rewrite = true;
+          if (function.getOperands().size() != 1) {
+            throw new RuntimeException("Flatten expression expects a single input.");
+          }
+          newExpr = function.getOperands().get(0);
+          RexBuilder builder = new RexBuilder(factory);
+          flatttenExpr = builder.makeInputRef( new RelDataTypeDrillImpl(new RelDataTypeHolder(), factory), i);
+        }
+      }
+      relDataTypes.add(project.getRowType().getFieldList().get(i));
+      i++;
+      exprList.add(newExpr);
+    }
+
+    if (rewrite == true) {
+      // TODO - figure out what is the right setting for the traits
+      ProjectPrel newProject = new ProjectPrel(node.getCluster(), project.getTraitSet(), project.getInput(0), exprList, new RelRecordType(relDataTypes));
+      FlattenPrel flatten = new FlattenPrel(project.getCluster(), project.getTraitSet(), newProject, flatttenExpr);
+      return flatten;
+    }
+
+    return null;
+  }
+
+
 }

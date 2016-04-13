@@ -68,6 +68,7 @@ import org.apache.drill.exec.planner.logical.partition.PruneScanRule;
 import org.apache.drill.exec.planner.physical.ConvertCountToDirectScan;
 import org.apache.drill.exec.planner.physical.DirectScanPrule;
 import org.apache.drill.exec.planner.physical.FilterPrule;
+import org.apache.drill.exec.planner.physical.FlattenPrule;
 import org.apache.drill.exec.planner.physical.HashAggPrule;
 import org.apache.drill.exec.planner.physical.HashJoinPrule;
 import org.apache.drill.exec.planner.physical.LimitPrule;
@@ -369,9 +370,9 @@ public enum PlannerPhase {
         ).build());
   }
 
-  static final RuleSet DRILL_PHYSICAL_DISK = RuleSets.ofList(ImmutableSet.of(
-      ProjectPrule.INSTANCE
-    ));
+//  static final RuleSet DRILL_PHYSICAL_DISK = RuleSets.ofList(ImmutableSet.of(
+//      ProjectPrule.INSTANCE
+//    ));
 
   static final RuleSet getPhysicalRules(OptimizerRulesContext optimizerRulesContext) {
     final List<RelOptRule> ruleList = new ArrayList<RelOptRule>();
@@ -381,11 +382,12 @@ public enum PlannerPhase {
     ruleList.add(ConvertCountToDirectScan.AGG_ON_SCAN);
     ruleList.add(SortConvertPrule.INSTANCE);
     ruleList.add(SortPrule.INSTANCE);
-    ruleList.add(ProjectPrule.INSTANCE);
+    ruleList.add(new ProjectPrule(optimizerRulesContext.getFunctionRegistry()));
     ruleList.add(ScanPrule.INSTANCE);
     ruleList.add(ScreenPrule.INSTANCE);
     ruleList.add(ExpandConversionRule.INSTANCE);
     ruleList.add(FilterPrule.INSTANCE);
+    ruleList.add(FlattenPrule.INSTANCE);
     ruleList.add(LimitPrule.INSTANCE);
     ruleList.add(WriterPrule.INSTANCE);
     ruleList.add(WindowPrule.INSTANCE);

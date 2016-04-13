@@ -35,7 +35,9 @@ public class TestExampleQueries extends BaseTestQuery {
 
   @Test
   public void q() throws Exception {
-    test("select mask(x.a.b, 'c') from dfs.tmp.`file.json` x");
+//    test("select mask(x.a.b, 'c') from dfs.tmp.`file.json` x");
+//    test("select flatten(x.a.c) from dfs.tmp.`file.json` x");
+    test("select 1 + sum(n_regionkey + 1) from cp.`tpch/nation.parquet`");
   }
 
   @Test // see DRILL-2328

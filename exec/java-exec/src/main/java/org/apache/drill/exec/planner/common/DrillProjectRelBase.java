@@ -30,11 +30,13 @@ import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexRangeRef;
 import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.drill.common.expression.FieldReference;
 import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.logical.data.NamedExpression;
+import org.apache.drill.exec.expr.fn.DrillFuncHolder;
 import org.apache.drill.exec.planner.StarColumnHelper;
 import org.apache.drill.exec.planner.cost.DrillCostBase;
 import org.apache.drill.exec.planner.cost.DrillCostBase.DrillCostFactory;
@@ -54,6 +56,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 
 import com.google.common.collect.Lists;
+import org.apache.drill.exec.planner.sql.DrillSqlOperator;
 
 /**
  *
@@ -78,6 +81,19 @@ public abstract class DrillProjectRelBase extends Project implements DrillRelNod
     // cost is proportional to the number of rows and number of columns being projected
     double rowCount = nonSimpleFieldCount >0 ? RelMetadataQuery.getRowCount(this) : 0;
     double cpuCost = DrillCostBase.PROJECT_CPU_COST * rowCount * nonSimpleFieldCount;
+
+    for (RexNode node : exps) {
+      if (node instanceof RexCall) {
+        SqlOperator op = ((RexCall) node).getOperator();
+        if (op instanceof DrillSqlOperator) {
+          for (DrillFuncHolder func : ((DrillSqlOperator) op).getFunctions()) {
+            if (func.getCostCategory() > 1000000) {
+              cpuCost = (double) Integer.MAX_VALUE;
+            }
+          }
+        }
+      }
+    }
 
     DrillCostFactory costFactory = (DrillCostFactory)planner.getCostFactory();
     return costFactory.makeCost(rowCount, cpuCost, 0, 0);

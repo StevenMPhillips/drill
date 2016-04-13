@@ -94,7 +94,86 @@ public class SplitUpComplexExpressions extends BasePrelVisitor<Prel, Object, Rel
     }
     List<RexNode> complexExprs = exprSplitter.getComplexExprs();
 
-    if (complexExprs.size() == 1 && findTopComplexFunc(project.getChildExps()).size() == 1) {
+    if (complexExprs.size() == 1 && findTopComplexFunc(funcReg, project.getChildExps()).size() == 1) {
+      return project;
+    }
+
+    ProjectPrel childProject;
+
+    List<RexNode> allExprs = new ArrayList<>();
+    int exprIndex = 0;
+    List<String> fieldNames = originalInput.getRowType().getFieldNames();
+    for (int index = 0; index < lastRexInput; index++) {
+      RexBuilder builder = new RexBuilder(factory);
+      allExprs.add(builder.makeInputRef( new RelDataTypeDrillImpl(new RelDataTypeHolder(), factory), index));
+
+      if(fieldNames.get(index).contains(StarColumnHelper.STAR_COLUMN)) {
+        relDataTypes.add(new RelDataTypeFieldImpl(fieldNames.get(index), allExprs.size(), factory.createSqlType(SqlTypeName.ANY)));
+      } else {
+        relDataTypes.add(new RelDataTypeFieldImpl("EXPR$" + exprIndex, allExprs.size(), factory.createSqlType(SqlTypeName.ANY)));
+        exprIndex++;
+      }
+    }
+    RexNode currRexNode;
+    int index = lastRexInput - 1;
+
+    // if the projection expressions contained complex outputs, split them into their own individual projects
+    if (complexExprs.size() > 0 ) {
+      while (complexExprs.size() > 0) {
+        if ( index >= lastRexInput ) {
+          allExprs.remove(allExprs.size() - 1);
+          RexBuilder builder = new RexBuilder(factory);
+          allExprs.add(builder.makeInputRef( new RelDataTypeDrillImpl(new RelDataTypeHolder(), factory), index));
+        }
+        index++;
+        exprIndex++;
+
+        currRexNode = complexExprs.remove(0);
+        allExprs.add(currRexNode);
+        relDataTypes.add(new RelDataTypeFieldImpl("EXPR$" + exprIndex, allExprs.size(), factory.createSqlType(SqlTypeName.ANY)));
+        childProject = new ProjectPrel(project.getCluster(), project.getTraitSet(), originalInput, ImmutableList.copyOf(allExprs), new RelRecordType(relDataTypes));
+        originalInput = childProject;
+      }
+      // copied from above, find a better way to do this
+      allExprs.remove(allExprs.size() - 1);
+      RexBuilder builder = new RexBuilder(factory);
+      allExprs.add(builder.makeInputRef( new RelDataTypeDrillImpl(new RelDataTypeHolder(), factory), index));
+      relDataTypes.add(new RelDataTypeFieldImpl("EXPR$" + index, allExprs.size(), factory.createSqlType(SqlTypeName.ANY) ));
+    }
+    return (Prel) project.copy(project.getTraitSet(), originalInput, exprList, new RelRecordType(origRelDataTypes));
+  }
+
+  public static Prel visitProject(ProjectPrel project,
+                                  RelDataTypeFactory factory,
+                                  FunctionImplementationRegistry funcReg)
+          throws RelConversionException {
+
+    // Apply the rule to the child
+    RelNode originalInput = project.getInput(0);
+    project = (ProjectPrel) project.copy(project.getTraitSet(), Lists.newArrayList(originalInput));
+
+    List<RexNode> exprList = new ArrayList<>();
+
+    List<RelDataTypeField> relDataTypes = new ArrayList<>();
+    List<RelDataTypeField> origRelDataTypes = new ArrayList<>();
+    int i = 0;
+    final int lastColumnReferenced = PrelUtil.getLastUsedColumnReference(project.getProjects());
+
+    if (lastColumnReferenced == -1) {
+      return project;
+    }
+
+    final int lastRexInput = lastColumnReferenced + 1;
+    RexVisitorComplexExprSplitter exprSplitter = new RexVisitorComplexExprSplitter(factory, funcReg, lastRexInput);
+
+    for (RexNode rex : project.getChildExps()) {
+      origRelDataTypes.add(project.getRowType().getFieldList().get(i));
+      i++;
+      exprList.add(rex.accept(exprSplitter));
+    }
+    List<RexNode> complexExprs = exprSplitter.getComplexExprs();
+
+    if (complexExprs.size() == 1 && findTopComplexFunc(funcReg, project.getChildExps()).size() == 1) {
       return project;
     }
 
@@ -146,7 +225,7 @@ public class SplitUpComplexExpressions extends BasePrelVisitor<Prel, Object, Rel
   /**
    *  Find the list of expressions where Complex type function is at top level.
    */
-  private List<RexNode> findTopComplexFunc(List<RexNode> exprs) {
+  private static List<RexNode> findTopComplexFunc(FunctionImplementationRegistry funcReg, List<RexNode> exprs) {
     final List<RexNode> topComplexFuncs = new ArrayList<>();
 
     for (RexNode exp : exprs) {
