@@ -56,7 +56,7 @@ public class ThreadsIterator implements Iterator<Object> {
   @Override
   public Object next() {
     long id = threadIdIterator.next();
-    ThreadInfo currentThread = threadMXBean.getThreadInfo(id);
+    ThreadInfo currentThread = threadMXBean.getThreadInfo(id, 100);
     final ThreadSummary threadSummary = new ThreadSummary();
 
     final DrillbitEndpoint endpoint = context.getIdentity();
@@ -67,10 +67,25 @@ public class ThreadsIterator implements Iterator<Object> {
     threadSummary.threadId = currentThread.getThreadId();
     threadSummary.inNative = currentThread.isInNative();
     threadSummary.suspended = currentThread.isSuspended();
+    currentThread.getStackTrace();
     threadSummary.cpuTime = threadStatCollector.getCpuTrailingAverage(id, 1);
     threadSummary.userTime = threadStatCollector.getUserTrailingAverage(id, 1);
+    threadSummary.stackTrace = getStackTrace(currentThread);
 
     return threadSummary;
+  }
+
+  private String getStackTrace(ThreadInfo currentThread) {
+    StringBuilder builder = new StringBuilder();
+    StackTraceElement[] stackTrace = currentThread.getStackTrace();
+    for (int i = 0; i < stackTrace.length - 1; i++) {
+      builder.append(stackTrace[i]);
+      builder.append("\n");
+    }
+    if (stackTrace.length > 0) {
+      builder.append(stackTrace[stackTrace.length - 1]);
+    }
+    return builder.toString();
   }
 
   @Override
@@ -79,13 +94,8 @@ public class ThreadsIterator implements Iterator<Object> {
   }
 
   public static class ThreadSummary {
-    //name, priority, state, id, thread-level cpu stats
-
-    // should this be in all distributed system tables?
     public String hostname;
     public long user_port;
-
-    // pulled out of java.lang.management.ThreadInfo
     public String threadName;
     public long threadId;
     public boolean inNative;
@@ -93,5 +103,6 @@ public class ThreadsIterator implements Iterator<Object> {
     public String threadState;
     public Integer cpuTime;
     public Integer userTime;
+    public String stackTrace;
   }
 }

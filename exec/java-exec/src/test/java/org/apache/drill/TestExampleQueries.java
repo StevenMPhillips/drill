@@ -67,7 +67,7 @@ public class TestExampleQueries extends BaseTestQuery {
     };
     testWithListener(QueryType.SQL, "select count(*) from cp.`tpch/lineitem.parquet` c1 join cp.`tpch/lineitem.parquet` c2 on c1.l_tax = c2.l_tax", listener);
     while (latch.getCount() > 0) {
-      test("select * from sys.fragments");
+      test("select * from sys.threads");
       Thread.sleep(1000);
     }
   }

@@ -82,8 +82,15 @@ public enum SystemTable {
 
   THREADS("threads", true, ThreadsIterator.ThreadSummary.class) {
     @Override
-  public Iterator<Object> getIterator(final FragmentContext context) {
+    public Iterator<Object> getIterator(final FragmentContext context) {
       return new ThreadsIterator(context);
+    }
+  },
+
+  QUERIES("queries", true, QueryIterator.QueryInfo.class) {
+    @Override
+    public Iterator<Object> getIterator(final FragmentContext context) {
+      return new QueryIterator(context);
     }
   },
 

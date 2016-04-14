@@ -153,8 +153,9 @@ public class WorkManager implements AutoCloseable {
     for (Foreman foreman : queries.values()) {
       QueryState state = foreman.getState();
       if (state == QueryState.RUNNING ||
-              state == QueryState.STARTING)
-      profiles.add(foreman.getQueryManager().getQueryProfile());
+              state == QueryState.STARTING) {
+        profiles.add(foreman.getQueryManager().getQueryProfile());
+      }
     }
     return profiles;
   }
