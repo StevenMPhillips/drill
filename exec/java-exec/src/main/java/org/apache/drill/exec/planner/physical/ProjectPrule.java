@@ -96,11 +96,12 @@ public class ProjectPrule extends Prule {
       RelCollation newCollation = convertRelCollation(childCollation, collationMap);
       RelTraitSet newProjectTraits = newTraitSet(Prel.DRILL_PHYSICAL, newDist, newCollation);
       try {
-        return RewriteProjectToFlatten.visitProject(rel.getCluster().getTypeFactory(),
+        return
+//        return RewriteProjectToFlatten.visitProject(rel.getCluster().getTypeFactory(),
                 (ProjectPrel) SplitUpComplexExpressions.visitProject(
                         new ProjectPrel(project.getCluster(), newProjectTraits, rel, project.getProjects(), project.getRowType()), rel.getCluster().getTypeFactory(), funcReg
-                )
-        );
+                );
+//        );
       } catch (RelConversionException e) {
         throw new RuntimeException(e);
       }

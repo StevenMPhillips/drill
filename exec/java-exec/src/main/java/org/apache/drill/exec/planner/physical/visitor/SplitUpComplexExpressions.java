@@ -177,7 +177,7 @@ public class SplitUpComplexExpressions extends BasePrelVisitor<Prel, Object, Rel
       return project;
     }
 
-    ProjectPrel childProject;
+    Prel childProject;
 
     List<RexNode> allExprs = new ArrayList<>();
     int exprIndex = 0;
@@ -210,7 +210,7 @@ public class SplitUpComplexExpressions extends BasePrelVisitor<Prel, Object, Rel
         currRexNode = complexExprs.remove(0);
         allExprs.add(currRexNode);
         relDataTypes.add(new RelDataTypeFieldImpl("EXPR$" + exprIndex, allExprs.size(), factory.createSqlType(SqlTypeName.ANY)));
-        childProject = new ProjectPrel(project.getCluster(), project.getTraitSet(), originalInput, ImmutableList.copyOf(allExprs), new RelRecordType(relDataTypes));
+        childProject = (Prel) RewriteProjectToFlatten.visitProject(factory, new ProjectPrel(project.getCluster(), project.getTraitSet(), originalInput, ImmutableList.copyOf(allExprs), new RelRecordType(relDataTypes)));
         originalInput = childProject;
       }
       // copied from above, find a better way to do this

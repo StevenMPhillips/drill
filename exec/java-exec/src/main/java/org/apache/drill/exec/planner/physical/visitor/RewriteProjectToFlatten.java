@@ -88,7 +88,7 @@ public class RewriteProjectToFlatten extends BasePrelVisitor<Prel, Object, RelCo
       i++;
       exprList.add(newExpr);
     }
-    if (rewrite == true) {
+    if (rewrite) {
       // TODO - figure out what is the right setting for the traits
       Prel newChild = ((Prel)project.getInput(0)).accept(this, null);
       ProjectPrel newProject = new ProjectPrel(node.getCluster(), project.getTraitSet(), newChild, exprList, new RelRecordType(relDataTypes));
@@ -100,7 +100,7 @@ public class RewriteProjectToFlatten extends BasePrelVisitor<Prel, Object, RelCo
     return (Prel) project.copy(project.getTraitSet(), child, exprList, new RelRecordType(relDataTypes));
   }
 
-  public static RelNode visitProject(RelDataTypeFactory factory, ProjectPrel node) {
+  public static RelNode visitProject(RelDataTypeFactory factory, final ProjectPrel node) {
     ProjectPrel project = node;
     List<RexNode> exprList = new ArrayList<>();
     boolean rewrite = false;
@@ -136,7 +136,7 @@ public class RewriteProjectToFlatten extends BasePrelVisitor<Prel, Object, RelCo
       return flatten;
     }
 
-    return null;
+    return node;
   }
 
 
