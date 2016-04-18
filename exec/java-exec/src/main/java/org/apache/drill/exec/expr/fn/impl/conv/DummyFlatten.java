@@ -30,7 +30,7 @@ import org.apache.drill.exec.vector.complex.writer.BaseWriter;
  * This and {@link DummyConvertTo} class merely act as a placeholder so that Optiq
  * allows the 'flatten()' function in SQL.
  */
-@FunctionTemplate(name = "flatten", costCategory = FunctionCostCategory.INFINITE, scope = FunctionScope.SIMPLE, nulls = NullHandling.NULL_IF_NULL)
+@FunctionTemplate(name = "flatten", scope = FunctionScope.SIMPLE, nulls = NullHandling.NULL_IF_NULL)
 public class DummyFlatten implements DrillSimpleFunc {
 
   @Output BaseWriter.ComplexWriter out;
