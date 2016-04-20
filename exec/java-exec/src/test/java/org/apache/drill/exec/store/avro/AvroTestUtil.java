@@ -28,9 +28,9 @@ import java.util.Map;
 import java.util.TreeMap;
 
 
-import org.apache.hadoop.io.Text;
 import org.apache.arrow.vector.util.JsonStringArrayList;
 import org.apache.arrow.vector.util.JsonStringHashMap;
+import org.apache.arrow.vector.util.Text;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.SchemaBuilder;
