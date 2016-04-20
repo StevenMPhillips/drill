@@ -279,14 +279,14 @@ public class HiveRecordReader extends AbstractRecordReader {
       for (int i = 0; i < selectedColumnNames.size(); i++) {
         MajorType type = HiveUtilities.getMajorTypeFromHiveTypeInfo(selectedColumnTypes.get(i), options);
         MaterializedField field = MaterializedField.create(selectedColumnNames.get(i), type);
-        Class<? extends ValueVector> vvClass = TypeHelper.getValueVectorClass(type.getMinorType(), type.getMode());
+        Class<? extends ValueVector> vvClass = (Class<? extends ValueVector>) TypeHelper.getValueVectorClass(type.getMinorType(), type.getMode());
         vectors.add(output.addField(field, vvClass));
       }
 
       for (int i = 0; i < selectedPartitionNames.size(); i++) {
         MajorType type = HiveUtilities.getMajorTypeFromHiveTypeInfo(selectedPartitionTypes.get(i), options);
         MaterializedField field = MaterializedField.create(selectedPartitionNames.get(i), type);
-        Class<? extends ValueVector> vvClass = TypeHelper.getValueVectorClass(field.getType().getMinorType(), field.getDataMode());
+        Class<? extends ValueVector> vvClass = (Class<? extends ValueVector>) TypeHelper.getValueVectorClass(field.getType().getMinorType(), field.getDataMode());
         pVectors.add(output.addField(field, vvClass));
       }
     } catch(SchemaChangeException e) {

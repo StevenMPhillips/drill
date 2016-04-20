@@ -147,8 +147,6 @@ public class DefaultSqlHandler extends AbstractSqlHandler {
       textPlan.value = plan;
     }
 
-  protected void log(final String description, final RelNode node, final Logger logger, Stopwatch watch, boolean number) {
-
     if (logger.isDebugEnabled()) {
       logger.debug(String.format("%s:\n%s", description, plan));
     }

@@ -22,6 +22,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
+import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.IntVector;
+import org.apache.arrow.vector.NullableVarCharVector;
 import org.apache.drill.BaseTestQuery;
 import org.apache.drill.exec.record.RecordBatchLoader;
 import org.apache.drill.exec.rpc.user.QueryDataBatch;

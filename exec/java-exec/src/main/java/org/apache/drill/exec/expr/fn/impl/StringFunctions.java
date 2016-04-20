@@ -225,7 +225,7 @@ public class StringFunctions{
 
     @Param VarCharHolder input;
     @Param(constant=true) VarCharHolder pattern;
-    @Inject DrillBuf buffer;
+    @Inject ArrowBuf buffer;
     @Workspace java.util.regex.Matcher matcher;
     @Output BitHolder out;
 
@@ -869,7 +869,7 @@ public class StringFunctions{
   public static class LpadTwoArg implements DrillSimpleFunc {
     @Param  VarCharHolder text;
     @Param  BigIntHolder length;
-    @Inject DrillBuf buffer;
+    @Inject ArrowBuf buffer;
 
     @Output VarCharHolder out;
     @Workspace byte spaceInByte;
@@ -1006,7 +1006,7 @@ public class StringFunctions{
   public static class RpadTwoArg implements DrillSimpleFunc {
     @Param  VarCharHolder text;
     @Param  BigIntHolder length;
-    @Inject DrillBuf buffer;
+    @Inject ArrowBuf buffer;
 
     @Output VarCharHolder out;
     @Workspace byte spaceInByte;

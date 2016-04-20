@@ -17,6 +17,7 @@
  ******************************************************************************/
 package org.apache.drill;
 
+import static org.apache.drill.common.util.MajorTypeHelper.getDrillMajorType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -35,6 +36,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.drill.common.expression.SchemaPath;
+import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.HyperVectorValueIterator;
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.arrow.memory.BufferAllocator;
@@ -393,7 +395,7 @@ public class DrillTestWrapper {
       loader.load(batch.getHeader().getDef(), batch.getData());
 
       final BatchSchema schema = loader.getSchema();
-      final List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = testBuilder.getExpectedSchema();
+      final List<Pair<SchemaPath, MajorType>> expectedSchema = testBuilder.getExpectedSchema();
       if(schema.getFieldCount() != expectedSchema.size()) {
         throw new Exception("Expected and actual numbers of columns do not match.");
       }
@@ -403,14 +405,14 @@ public class DrillTestWrapper {
         final MajorType actualMajorType = schema.getColumn(i).getType();
 
         final String expectedSchemaPath = expectedSchema.get(i).getLeft().getAsUnescapedPath();
-        final TypeProtos.MajorType expectedMajorType = expectedSchema.get(i).getValue();
+        final MajorType expectedMajorType = expectedSchema.get(i).getValue();
 
         if(!actualSchemaPath.equals(expectedSchemaPath)
             || !actualMajorType.equals(expectedMajorType)) {
           throw new Exception(String.format("Schema path or type mismatch for column #%d:\n" +
                   "Expected schema path: %s\nActual   schema path: %s\nExpected type: %s\nActual   type: %s",
-              i, expectedSchemaPath, actualSchemaPath, Types.toString(expectedMajorType),
-              Types.toString(actualMajorType)));
+              i, expectedSchemaPath, actualSchemaPath, Types.toString(getDrillMajorType(expectedMajorType)),
+              Types.toString(getDrillMajorType(actualMajorType))));
         }
       }
 

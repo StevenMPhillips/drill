@@ -18,10 +18,12 @@
 package org.apache.drill;
 
 import com.google.common.collect.Lists;
+import org.apache.arrow.vector.types.Types.MajorType;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos;
+import org.apache.drill.common.types.Types;
 import org.apache.drill.common.util.FileUtils;
 import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.drill.exec.work.foreman.SqlUnsupportedException;
@@ -559,17 +561,14 @@ public class TestUnionAll extends BaseTestQuery{
   public void testUnionAllBothEmptyJson() throws Exception {
     final String rootEmpty = FileUtils.getResourceAsFile("/project/pushdown/empty.json").toURI().toString();
     final String query = String.format(
-        "select key from dfs_test.`%s` " +
-            "union all " +
-            "select key from dfs_test.`%s`",
-        rootEmpty,
-        rootEmpty);
+            "select key from dfs_test.`%s` " +
+                    "union all " +
+                    "select key from dfs_test.`%s`",
+            rootEmpty,
+            rootEmpty);
 
-    final List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
-    final TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
-        .setMinorType(TypeProtos.MinorType.INT)
-        .setMode(TypeProtos.DataMode.OPTIONAL)
-        .build();
+    final List<Pair<SchemaPath, MajorType>> expectedSchema = Lists.newArrayList();
+    final MajorType majorType = Types.optional(MinorType.INT);
     expectedSchema.add(Pair.of(SchemaPath.getSimplePath("key"), majorType));
 
     testBuilder()
@@ -630,11 +629,8 @@ public class TestUnionAll extends BaseTestQuery{
         rootSimple,
         rootSimple);
 
-    final List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
-    final TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
-        .setMinorType(TypeProtos.MinorType.INT)
-        .setMode(TypeProtos.DataMode.OPTIONAL)
-        .build();
+    final List<Pair<SchemaPath, MajorType>> expectedSchema = Lists.newArrayList();
+    final MajorType majorType = Types.optional(MinorType.INT);
     expectedSchema.add(Pair.of(SchemaPath.getSimplePath("key"), majorType));
 
     testBuilder()

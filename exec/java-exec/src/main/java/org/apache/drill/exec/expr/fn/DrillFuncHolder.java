@@ -280,7 +280,7 @@ public abstract class DrillFuncHolder extends AbstractFuncHolder {
 
     if(nullHandling == NullHandling.NULL_IF_NULL) {
       // if any one of the input types is nullable, then return nullable return type
-      for (LogicalExpression e : args) {
+      for (LogicalExpression e : logicalExpressions) {
         if (e.getMajorType().getMode() == DataMode.OPTIONAL) {
           return org.apache.arrow.vector.types.Types.optional(returnValue.type.getMinorType());
         }

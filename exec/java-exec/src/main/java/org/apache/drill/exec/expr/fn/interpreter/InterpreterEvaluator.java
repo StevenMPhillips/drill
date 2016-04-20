@@ -59,7 +59,7 @@ import org.apache.arrow.vector.ValueVector;
 
 import com.google.common.base.Preconditions;
 
-import io.netty.buffer.DrillBuf;
+import io.netty.buffer.ArrowBuf;
 
 public class InterpreterEvaluator {
 

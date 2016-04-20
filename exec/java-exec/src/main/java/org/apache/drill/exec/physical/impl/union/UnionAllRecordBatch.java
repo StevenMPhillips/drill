@@ -29,6 +29,7 @@ import org.apache.drill.common.expression.ErrorCollector;
 import org.apache.drill.common.expression.ErrorCollectorImpl;
 import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.expression.SchemaPath;
+import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.exec.exception.ClassTransformationException;
 import org.apache.arrow.memory.OutOfMemoryException;
 import org.apache.drill.exec.exception.SchemaChangeException;
@@ -57,6 +58,8 @@ import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.ValueVector;
 
 import com.google.common.collect.Lists;
+
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
 
 public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UnionAllRecordBatch.class);
@@ -167,10 +170,10 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
     if(unionAllInput.isBothSideEmpty()) {
       for(int i = 0; i < outputFields.size(); ++i) {
         final String colName = outputFields.get(i).getPath();
-        final MajorType majorType = MajorType.newBuilder()
-            .setMinorType(MinorType.INT)
-            .setMode(DataMode.OPTIONAL)
-            .build();
+        final MajorType majorType = getArrowMajorType(TypeProtos.MajorType.newBuilder()
+                .setMinorType(TypeProtos.MinorType.INT)
+                .setMode(TypeProtos.DataMode.OPTIONAL)
+                .build());
 
         MaterializedField outputField = MaterializedField.create(colName, majorType);
         ValueVector vv = container.addOrGet(outputField, callBack);

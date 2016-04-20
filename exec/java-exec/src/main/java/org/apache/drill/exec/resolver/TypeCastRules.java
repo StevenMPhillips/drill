@@ -27,6 +27,8 @@ import java.util.Set;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.drill.common.expression.FunctionCall;
+import org.apache.drill.common.expression.LogicalExpression;
+import org.apache.drill.common.expression.MajorTypeInLogicalExpression;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.NullHandling;
 import org.apache.drill.exec.expr.fn.DrillFuncHolder;
 import org.apache.arrow.vector.types.Types.DataMode;

@@ -43,7 +43,6 @@ public class DrillSqlOperator extends SqlFunction {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DrillSqlOperator.class);
 
   private static final MajorType NONE = new MajorType(MinorType.LATE, DataMode.OPTIONAL);
-  private final MajorType returnType;
   private final boolean isDeterministic;
   private final List<DrillFuncHolder> functions;
 

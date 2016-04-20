@@ -68,6 +68,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 
+import static org.apache.drill.common.util.MajorTypeHelper.getDrillMinorType;
+
 public class DrillConstExecutor implements RelOptPlanner.Executor {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DrillConstExecutor.class);
 
@@ -134,7 +136,7 @@ public class DrillConstExecutor implements RelOptPlanner.Executor {
       RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
       if (materializedExpr.getMajorType().getMode() == DataMode.OPTIONAL && TypeHelper.isNull(output)) {
-        SqlTypeName sqlTypeName = DRILL_TO_CALCITE_TYPE_MAPPING.get(materializedExpr.getMajorType().getMinorType());
+        SqlTypeName sqlTypeName = TypeInferenceUtils.getCalciteTypeFromDrillType(getDrillMinorType(materializedExpr.getMajorType().getMinorType()));
         if (sqlTypeName == null) {
           String message = String.format("Error reducing constant expression, unsupported type: %s.",
               materializedExpr.getMajorType().getMinorType());

@@ -300,7 +300,7 @@ public class DrillOptiq {
         case "INTERVAL_YEAR_MONTH": castType = Types.required(MinorType.INTERVALYEAR); break;
         case "INTERVAL_DAY_TIME": castType = Types.required(MinorType.INTERVALDAY); break;
         case "BOOLEAN": castType = Types.required(MinorType.BIT); break;
-        case "BINARY": castType = Types.required(MinorType.VARBINARY).toBuilder().setWidth(call.getType().getPrecision()).build(); break;
+        case "BINARY": castType = new MajorType(MinorType.VARBINARY, DataMode.REQUIRED, 0, 0, 0, call.getType().getPrecision(), null); break;
         case "ANY": return arg; // Type will be same as argument.
         default: castType = Types.required(MinorType.valueOf(call.getType().getSqlTypeName().getName()));
       }

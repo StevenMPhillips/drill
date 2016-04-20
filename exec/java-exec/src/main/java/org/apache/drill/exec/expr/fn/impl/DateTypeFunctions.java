@@ -22,6 +22,8 @@ import io.netty.buffer.ArrowBuf;
 
 import javax.inject.Inject;
 
+import org.apache.arrow.vector.holders.BitHolder;
+import org.apache.arrow.vector.holders.NullableVarCharHolder;
 import org.apache.drill.exec.expr.DrillSimpleFunc;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate;
 import org.apache.drill.exec.expr.annotations.FunctionTemplate.NullHandling;

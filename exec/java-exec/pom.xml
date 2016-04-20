@@ -56,7 +56,7 @@
     </dependency>
     <dependency>
       <artifactId>vector</artifactId>
-      <version>0.1-SNAPSHOT</version>
+      <version>0.1-drill</version>
       <groupId>org.apache.arrow</groupId>
     </dependency>
     

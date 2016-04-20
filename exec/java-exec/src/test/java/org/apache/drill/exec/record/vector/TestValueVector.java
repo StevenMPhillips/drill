@@ -70,7 +70,7 @@ import org.junit.Test;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
-import io.netty.buffer.DrillBuf;
+import io.netty.buffer.ArrowBuf;
 
 public class TestValueVector extends ExecTest {
   //private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestValueVector.class);

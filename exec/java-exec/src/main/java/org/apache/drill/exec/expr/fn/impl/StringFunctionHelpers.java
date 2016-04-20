@@ -226,7 +226,7 @@ public class StringFunctionHelpers {
    * @param end
    * @return true iff the string value can be read as a date
    */
-  public static boolean isReadableAsDate(DrillBuf buf, int start, int end){
+  public static boolean isReadableAsDate(ArrowBuf buf, int start, int end){
     // Tried looking for a method that would do this check without relying on
     // an exception in the failure case (for better performance). Joda does
     // not appear to provide such a function, so the try/catch block

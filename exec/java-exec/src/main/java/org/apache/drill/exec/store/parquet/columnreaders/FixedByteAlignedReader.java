@@ -44,7 +44,7 @@ import org.joda.time.DateTimeUtils;
 
 class FixedByteAlignedReader<V extends ValueVector> extends ColumnReader<V> {
 
-  protected DrillBuf bytebuf;
+  protected ArrowBuf bytebuf;
 
 
   FixedByteAlignedReader(ParquetRecordReader parentReader, int allocateSize, ColumnDescriptor descriptor, ColumnChunkMetaData columnChunkMetaData,
