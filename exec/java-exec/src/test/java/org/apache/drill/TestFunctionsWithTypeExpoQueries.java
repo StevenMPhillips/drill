@@ -22,6 +22,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.common.util.FileUtils;
+import org.apache.arrow.vector.types.Types;
+import org.apache.arrow.vector.types.Types.MajorType;
+import org.apache.arrow.vector.types.Types.MinorType;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -33,11 +36,8 @@ public class TestFunctionsWithTypeExpoQueries extends BaseTestQuery {
     final String query = "select concat(r_name, r_name, r_name, 'f') as col \n" +
         "from cp.`tpch/region.parquet` limit 0";
 
-    List<Pair<SchemaPath, TypeProtos.MajorType>> expectedSchema = Lists.newArrayList();
-    TypeProtos.MajorType majorType = TypeProtos.MajorType.newBuilder()
-            .setMinorType(TypeProtos.MinorType.VARCHAR)
-            .setMode(TypeProtos.DataMode.REQUIRED)
-            .build();
+    List<Pair<SchemaPath, MajorType>> expectedSchema = Lists.newArrayList();
+    MajorType majorType = Types.required(MinorType.VARCHAR);
     expectedSchema.add(Pair.of(SchemaPath.getSimplePath("col"), majorType));
 
     testBuilder()

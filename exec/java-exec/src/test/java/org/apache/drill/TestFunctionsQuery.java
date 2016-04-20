@@ -17,6 +17,7 @@
  */
 package org.apache.drill;
 
+import org.apache.arrow.vector.util.DateUtility;
 import org.apache.drill.exec.planner.physical.PlannerSettings;
 import org.joda.time.DateTime;
 import org.junit.AfterClass;

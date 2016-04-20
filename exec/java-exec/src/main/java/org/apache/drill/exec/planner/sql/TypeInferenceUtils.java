@@ -54,6 +54,8 @@ import org.apache.drill.exec.resolver.TypeCastRules;
 
 import java.util.List;
 
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
+
 public class TypeInferenceUtils {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TypeInferenceUtils.class);
 
@@ -722,7 +724,7 @@ public class TypeInferenceUtils {
         majorType = Types.required(minorType);
       }
 
-      args.add(new MajorTypeInLogicalExpression(majorType));
+      args.add(new MajorTypeInLogicalExpression(getArrowMajorType(majorType)));
     }
 
     final String drillFuncName = FunctionCallFactory.replaceOpWithFuncName(opBinding.getOperator().getName());

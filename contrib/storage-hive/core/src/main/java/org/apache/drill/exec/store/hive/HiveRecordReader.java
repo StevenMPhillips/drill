@@ -29,21 +29,21 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import io.netty.buffer.DrillBuf;
+import io.netty.buffer.ArrowBuf;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos.MajorType;
+import org.apache.arrow.vector.types.Types.MajorType;
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.physical.impl.OutputMutator;
-import org.apache.drill.exec.record.MaterializedField;
+import org.apache.arrow.vector.types.MaterializedField;
 import org.apache.drill.exec.server.options.OptionManager;
 import org.apache.drill.exec.store.AbstractRecordReader;
-import org.apache.drill.exec.vector.AllocationHelper;
-import org.apache.drill.exec.vector.ValueVector;
+import org.apache.arrow.vector.AllocationHelper;
+import org.apache.arrow.vector.ValueVector;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.MetaStoreUtils;
@@ -74,7 +74,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 public class HiveRecordReader extends AbstractRecordReader {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HiveRecordReader.class);
 
-  private final DrillBuf managedBuffer;
+  private final ArrowBuf managedBuffer;
 
   protected Table table;
   protected Partition partition;

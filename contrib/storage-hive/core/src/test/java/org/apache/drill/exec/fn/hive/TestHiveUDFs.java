@@ -25,12 +25,12 @@ import java.util.List;
 import org.apache.drill.BaseTestQuery;
 import org.apache.drill.exec.record.RecordBatchLoader;
 import org.apache.drill.exec.rpc.user.QueryDataBatch;
-import org.apache.drill.exec.vector.BigIntVector;
-import org.apache.drill.exec.vector.Float4Vector;
-import org.apache.drill.exec.vector.IntVector;
-import org.apache.drill.exec.vector.NullableFloat8Vector;
-import org.apache.drill.exec.vector.NullableVarCharVector;
-import org.apache.drill.exec.vector.VarCharVector;
+import org.apache.arrow.vector.Float4Vector;
+import org.apache.arrow.vector.NullableFloat8Vector;
+import org.apache.arrow.vector.NullableIntVector;
+import org.apache.arrow.vector.NullableVar16CharVector;
+import org.apache.arrow.vector.Var16CharVector;
+import org.apache.arrow.vector.VarCharVector;
 import org.junit.Test;
 
 import com.google.common.base.Charsets;

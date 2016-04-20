@@ -29,7 +29,7 @@ import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.client.DrillClient;
 import org.apache.drill.exec.client.PrintingResultsListener;
 import org.apache.drill.exec.client.QuerySubmitter.Format;
-import org.apache.drill.exec.exception.OutOfMemoryException;
+import org.apache.arrow.memory.OutOfMemoryException;
 import org.apache.drill.exec.proto.UserBitShared.QueryType;
 import org.apache.drill.exec.rpc.RpcException;
 import org.apache.drill.exec.rpc.user.AwaitableUserResultsListener;
@@ -109,7 +109,7 @@ public class QueryTestUtil {
     DrillConfig config = drillClient.getConfig();
     AwaitableUserResultsListener resultListener =
         new AwaitableUserResultsListener(
-            config.getBoolean(TEST_QUERY_PRINTING_SILENT) ?
+            config.getBoolean(TEST_QUERY_PRINTING_SILENT) && false ?
                 new SilentListener() :
                 new PrintingResultsListener(config, Format.TSV, VectorUtil.DEFAULT_COLUMN_WIDTH)
         );

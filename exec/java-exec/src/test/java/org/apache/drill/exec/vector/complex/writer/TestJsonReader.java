@@ -33,7 +33,8 @@ import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 import com.google.common.base.Joiner;
-
+import org.apache.arrow.vector.IntVector;
+import org.apache.arrow.vector.RepeatedBigIntVector;
 import org.apache.drill.BaseTestQuery;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.util.FileUtils;

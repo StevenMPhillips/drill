@@ -50,9 +50,11 @@ import org.apache.drill.exec.planner.sql.DrillSqlOperator;
 import org.apache.drill.exec.planner.sql.SchemaUtilites;
 import org.apache.drill.exec.planner.sql.parser.SqlCreateTable;
 import org.apache.drill.exec.store.AbstractSchema;
-import org.apache.drill.exec.util.Pointer;
+import org.apache.arrow.memory.util.Pointer;
 import org.apache.drill.exec.work.foreman.ForemanSetupException;
 import org.apache.drill.exec.work.foreman.SqlUnsupportedException;
+
+import static org.apache.drill.common.util.MajorTypeHelper.getArrowMajorType;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;

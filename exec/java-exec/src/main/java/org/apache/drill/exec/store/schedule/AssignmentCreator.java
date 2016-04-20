@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
+import org.apache.drill.exec.server.DrillbitContext;
 
 import com.carrotsearch.hppc.cursors.ObjectLongCursor;
 import com.google.common.base.Stopwatch;
