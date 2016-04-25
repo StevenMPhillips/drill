@@ -62,6 +62,15 @@ public interface PersistentStore<V> extends AutoCloseable {
   boolean putIfAbsent(String key, V value);
 
   /**
+   * Stores the (key, newValue) tuple in the store only if the current value is equal to the expected value
+   * @param key lookup key
+   * @param expected expected current value
+   * @param newValue value to store
+   * @return true if the put was successful
+   */
+  boolean checkAndPut(String key, V expected, V newValue);
+
+  /**
    * Returns an iterator of desired number of entries offsetting by the skip value.
    *
    * @param skip  number of records to skip from beginning

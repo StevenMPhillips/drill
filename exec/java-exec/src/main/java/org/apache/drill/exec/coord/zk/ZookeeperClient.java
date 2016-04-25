@@ -17,6 +17,7 @@
  */
 package org.apache.drill.exec.coord.zk;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -32,6 +33,8 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.drill.common.collections.ImmutableEntry;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException.BadVersionException;
+import org.apache.zookeeper.data.Stat;
 
 /**
  * A namespace aware Zookeeper client.
@@ -194,6 +197,23 @@ public class ZookeeperClient implements AutoCloseable {
 
     } catch (final Exception e) {
       throw new DrillRuntimeException("unable to put ", e);
+    }
+  }
+
+  public boolean checkAndPut(final String path, final byte[] expected, final byte[] newValue) {
+    try {
+      Stat stat = new Stat();
+      byte[] current = curator.getZookeeperClient().getZooKeeper().getData(path, false, stat);
+      if (!Arrays.equals(current, expected)) {
+        return false;
+      }
+      int version = stat.getVersion();
+      curator.getZookeeperClient().getZooKeeper().setData(path, newValue, version);
+      return true;
+    }catch (BadVersionException e) {
+      return false;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 

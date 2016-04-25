@@ -55,6 +55,11 @@ public class NoWriteLocalStore<V> extends BasePersistentStore<V> {
   }
 
   @Override
+  public boolean checkAndPut(final String key, final V expected, final V newValue) {
+    return store.replace(key, expected, newValue);
+  }
+
+  @Override
   public Iterator<Map.Entry<String, V>> getRange(final int skip, final int take) {
     return Iterables.limit(Iterables.skip(store.entrySet(), skip), take).iterator();
   }

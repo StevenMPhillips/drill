@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -158,7 +159,7 @@ public class LocalPersistentStore<V> extends BasePersistentStore<V> {
     }
   }
 
-  public void put(String key, V value) {
+  public synchronized void put(String key, V value) {
     try (OutputStream os = fs.create(makePath(key))) {
       IOUtils.write(config.getSerializer().serialize(value), os);
     } catch (IOException e) {
@@ -166,8 +167,26 @@ public class LocalPersistentStore<V> extends BasePersistentStore<V> {
     }
   }
 
+  public synchronized boolean checkAndPut(String key, V expected, V newValue) {
+    try {
+      byte[] current = config.getSerializer().serialize(get(key));
+      byte[] expectedArray = config.getSerializer().serialize(expected);
+      if (!Arrays.equals(current, expectedArray)) {
+        return false;
+      }
+      try (OutputStream os = fs.create(makePath(key))) {
+        IOUtils.write(config.getSerializer().serialize(newValue), os);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      return true;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   @Override
-  public boolean putIfAbsent(String key, V value) {
+  public synchronized boolean putIfAbsent(String key, V value) {
     try {
       Path p = makePath(key);
       if (fs.exists(p)) {

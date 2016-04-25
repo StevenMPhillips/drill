@@ -29,4 +29,9 @@ public abstract class BasePersistentStore<V> implements PersistentStore<V> {
     return getRange(0, Integer.MAX_VALUE);
   }
 
+  @Override
+  public boolean checkAndPut(String key, V expected, V newValue) {
+    throw new UnsupportedOperationException();
+  }
+
 }

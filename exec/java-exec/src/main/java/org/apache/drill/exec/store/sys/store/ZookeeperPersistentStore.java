@@ -100,6 +100,15 @@ public class ZookeeperPersistentStore<V> extends BasePersistentStore<V> {
     return false;
   }
 
+  public boolean checkAndPut(final String key, final V currentValue, final V newValue) {
+    final InstanceSerializer<V> serializer = config.getSerializer();
+    try {
+      return client.checkAndPut(key, serializer.serialize(currentValue), serializer.serialize(newValue));
+    } catch (IOException e) {
+      throw new DrillRuntimeException(String.format("unable to serialize value of type %s", currentValue.getClass()), e);
+    }
+  }
+
   @Override
   public void delete(final String key) {
     client.delete(key);
