@@ -1279,7 +1279,7 @@
           <dependency>
             <groupId>org.apache.calcite</groupId>
             <artifactId>calcite-core</artifactId>
-            <version>1.4.0-dremio-drill-20160422231705-abaf946</version>
+            <version>1.4.0-dremio-drill-20160425133537-8aa9d06</version>
             <exclusions>
               <exclusion>
                 <groupId>org.jgrapht</groupId>
