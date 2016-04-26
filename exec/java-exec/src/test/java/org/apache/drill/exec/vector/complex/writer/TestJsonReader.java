@@ -17,11 +17,24 @@
  */
 package org.apache.drill.exec.vector.complex.writer;
 
-import static org.apache.drill.TestBuilder.listOf;
-import static org.apache.drill.TestBuilder.mapOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import org.apache.drill.BaseTestQuery;
+import org.apache.drill.common.expression.SchemaPath;
+import org.apache.drill.common.util.FileUtils;
+import org.apache.drill.exec.exception.SchemaChangeException;
+import org.apache.drill.exec.proto.UserBitShared;
+import org.apache.drill.exec.record.RecordBatchLoader;
+import org.apache.drill.exec.record.VectorWrapper;
+import org.apache.drill.exec.rpc.user.QueryDataBatch;
+import org.apache.drill.exec.vector.IntVector;
+import org.apache.drill.exec.vector.RepeatedBigIntVector;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -32,27 +45,11 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
-import com.google.common.base.Joiner;
-
-import org.apache.drill.BaseTestQuery;
-import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.util.FileUtils;
-import org.apache.drill.exec.exception.SchemaChangeException;
-import org.apache.drill.exec.proto.UserBitShared;
-import org.apache.drill.exec.record.RecordBatchLoader;
-import org.apache.drill.exec.record.VectorWrapper;
-import org.apache.drill.exec.rpc.user.QueryDataBatch;
-import org.apache.drill.exec.store.easy.json.JSONRecordReader;
-import org.apache.drill.exec.vector.IntVector;
-import org.apache.drill.exec.vector.RepeatedBigIntVector;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
-
-import org.junit.rules.TemporaryFolder;
+import static org.apache.drill.TestBuilder.listOf;
+import static org.apache.drill.TestBuilder.mapOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestJsonReader extends BaseTestQuery {
 //  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestJsonReader.class);
@@ -622,13 +619,14 @@ public class TestJsonReader extends BaseTestQuery {
 
   @Test
   public void drill_4479() throws Exception {
+    int numRowsPerBatch = 4096;
     try {
       String dfs_temp = getDfsTestTmpSchemaLocation();
       File table_dir = new File(dfs_temp, "drill_4479");
       table_dir.mkdir();
       BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(new File(table_dir, "mostlynulls.json")));
       // Create an entire batch of null values for 3 columns
-      for (int i = 0 ; i < JSONRecordReader.DEFAULT_ROWS_PER_BATCH; i++) {
+      for (int i = 0; i < numRowsPerBatch; i++) {
         os.write("{\"a\": null, \"b\": null, \"c\": null}".getBytes());
       }
       // Add a row with {bigint,  float, string} values

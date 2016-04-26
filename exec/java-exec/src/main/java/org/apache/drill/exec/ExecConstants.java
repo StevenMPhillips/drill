@@ -102,8 +102,10 @@ public interface ExecConstants {
   String RETURN_ERROR_FOR_FAILURE_IN_CANCELLED_FRAGMENTS =
       "drill.exec.debug.return_error_for_failure_in_cancelled_fragments";
 
-
-
+  String OPERATOR_TARGET_BATCH_SIZE = "drill.exec.operator_batch_size";
+  OptionValidator OPERATOR_TARGET_BATCH_SIZE_VALIDATOR = new LongValidator(OPERATOR_TARGET_BATCH_SIZE, 4000);
+  String OPERATOR_TARGET_BATCH_BYTES = "drill.exec.operator_batch_bytes";
+  OptionValidator OPERATOR_TARGET_BATCH_BYTES_VALIDATOR = new LongValidator(OPERATOR_TARGET_BATCH_BYTES, 256*1024);
 
   String CLIENT_SUPPORT_COMPLEX_TYPES = "drill.client.supports-complex-types";
 
@@ -152,12 +154,33 @@ public interface ExecConstants {
   String JSON_READ_NUMBERS_AS_DOUBLE = "store.json.read_numbers_as_double";
   BooleanValidator JSON_READ_NUMBERS_AS_DOUBLE_VALIDATOR = new BooleanValidator(JSON_READ_NUMBERS_AS_DOUBLE, false);
 
+  /* Mongo configurations */
   String MONGO_ALL_TEXT_MODE = "store.mongo.all_text_mode";
   OptionValidator MONGO_READER_ALL_TEXT_MODE_VALIDATOR = new BooleanValidator(MONGO_ALL_TEXT_MODE, false);
   String MONGO_READER_READ_NUMBERS_AS_DOUBLE = "store.mongo.read_numbers_as_double";
   OptionValidator MONGO_READER_READ_NUMBERS_AS_DOUBLE_VALIDATOR = new BooleanValidator(MONGO_READER_READ_NUMBERS_AS_DOUBLE, false);
   String MONGO_BSON_RECORD_READER = "store.mongo.bson.record.reader";
   OptionValidator MONGO_BSON_RECORD_READER_VALIDATOR = new BooleanValidator(MONGO_BSON_RECORD_READER, true);
+
+  /* Mongo Rules */
+  String MONGO_VERSION_3_2 = "store.mongo.enable_version_3.2";
+  OptionValidator MONGO_VERSION_3_2_VALIDATOR = new BooleanValidator(MONGO_VERSION_3_2, true);
+  String MONGO_RULES_AGGREGATE = "store.mongo.enable_aggregate_rule";
+  OptionValidator MONGO_RULES_AGGREGATE_VALIDATOR = new BooleanValidator(MONGO_RULES_AGGREGATE, true);
+  String MONGO_RULES_FILTER = "store.mongo.enable_filter_rule";
+  OptionValidator MONGO_RULES_FILTER_VALIDATOR = new BooleanValidator(MONGO_RULES_FILTER, true);
+  String MONGO_RULES_FLATTEN = "store.mongo.enable_flatten_rule";
+  OptionValidator MONGO_RULES_FLATTEN_VALIDATOR = new BooleanValidator(MONGO_RULES_FLATTEN, true);
+  String MONGO_RULES_LIMIT = "store.mongo.enable_limit_rule";
+  OptionValidator MONGO_RULES_LIMIT_VALIDATOR = new BooleanValidator(MONGO_RULES_LIMIT, true);
+  String MONGO_RULES_SORT = "store.mongo.enable_sort_rule";
+  OptionValidator MONGO_RULES_SORT_VALIDATOR = new BooleanValidator(MONGO_RULES_SORT, false);
+  String MONGO_RULES_PROJECT = "store.mongo.enable_project_rule";
+  OptionValidator MONGO_RULES_PROJECT_VALIDATOR = new BooleanValidator(MONGO_RULES_PROJECT, true);
+  String MONGO_RULES_PROJECT_INTO_SCAN = "store.mongo.enable_project_into_scan_rule";
+  OptionValidator MONGO_RULES_PROJECT_INTO_SCAN_VALIDATOR = new BooleanValidator(MONGO_RULES_PROJECT_INTO_SCAN, true);
+  String MONGO_RULES_TOPN = "store.mongo.enable_topn_rule";
+  OptionValidator MONGO_RULES_TOPN_VALIDATOR = new BooleanValidator(MONGO_RULES_TOPN, false);
 
   BooleanValidator ENABLE_UNION_TYPE = new BooleanValidator("exec.enable_union_type", false);
 

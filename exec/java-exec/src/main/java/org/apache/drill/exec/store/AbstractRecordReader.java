@@ -17,21 +17,22 @@
  */
 package org.apache.drill.exec.store;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import com.google.common.collect.ImmutableList;
 import org.apache.drill.common.expression.PathSegment;
 import org.apache.drill.common.expression.SchemaPath;
+import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.exception.OutOfMemoryException;
+import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.physical.base.GroupScan;
-import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.vector.ValueVector;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractRecordReader implements RecordReader {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AbstractRecordReader.class);
@@ -45,6 +46,38 @@ public abstract class AbstractRecordReader implements RecordReader {
   private Collection<SchemaPath> columns = null;
   private boolean isStarQuery = false;
   private boolean isSkipQuery = false;
+  protected long numRowsPerBatch;
+  protected long numBytesPerBatch;
+
+  public AbstractRecordReader(final FragmentContext fragmentContext, final List<SchemaPath> columns) {
+    if (fragmentContext == null
+            || fragmentContext.getOptions() == null
+            || fragmentContext.getOptions().getOption(ExecConstants.OPERATOR_TARGET_BATCH_SIZE) == null) {
+      this.numRowsPerBatch = ExecConstants.OPERATOR_TARGET_BATCH_SIZE_VALIDATOR.getDefault().num_val;
+    } else {
+      this.numRowsPerBatch = fragmentContext.getOptions().getOption(ExecConstants.OPERATOR_TARGET_BATCH_SIZE).num_val;
+    }
+
+    if (fragmentContext == null
+            || fragmentContext.getOptions() == null
+            || fragmentContext.getOptions().getOption(ExecConstants.OPERATOR_TARGET_BATCH_BYTES) == null) {
+      this.numBytesPerBatch = ExecConstants.OPERATOR_TARGET_BATCH_BYTES_VALIDATOR.getDefault().num_val;
+    } else {
+      this.numBytesPerBatch = fragmentContext.getOptions().getOption(ExecConstants.OPERATOR_TARGET_BATCH_BYTES).num_val;
+    }
+
+    if (columns != null) {
+      setColumns(columns);
+    }
+  }
+
+  public long getNumRowsPerBatch() {
+    return numRowsPerBatch;
+  }
+
+  public long getNumBytesPerBatch() {
+    return numBytesPerBatch;
+  }
 
   @Override
   public String toString() {
@@ -61,7 +94,7 @@ public abstract class AbstractRecordReader implements RecordReader {
    *                  choose different policy of handling skipAll query. By default, it will use * column.
    *                  2) NULL : is NOT allowed. It requires the planner's rule, or GroupScan or ScanBatchCreator to handle NULL.
    */
-  protected final void setColumns(Collection<SchemaPath> projected) {
+  private final void setColumns(Collection<SchemaPath> projected) {
     Preconditions.checkNotNull(projected, COL_NULL_ERROR);
     isSkipQuery = projected.isEmpty();
     Collection<SchemaPath> columnsToRead = projected;

@@ -17,16 +17,6 @@
  */
 package org.apache.drill.exec.store.hbase;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.PathSegment;
@@ -46,7 +36,6 @@ import org.apache.drill.exec.vector.complex.MapVector;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
@@ -57,10 +46,18 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 public class HBaseRecordReader extends AbstractRecordReader implements DrillHBaseConstants {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HBaseRecordReader.class);
-
-  private static final int TARGET_RECORD_COUNT = 4000;
 
   private OutputMutator outputMutator;
 
@@ -79,14 +76,39 @@ public class HBaseRecordReader extends AbstractRecordReader implements DrillHBas
 
   public HBaseRecordReader(Configuration conf, HBaseSubScan.HBaseSubScanSpec subScanSpec,
       List<SchemaPath> projectedColumns, FragmentContext context) {
+    super(context, projectedColumns);
     hbaseConf = conf;
     hbaseTableName = Preconditions.checkNotNull(subScanSpec, "HBase reader needs a sub-scan spec").getTableName();
     hbaseScan = new Scan(subScanSpec.getStartRow(), subScanSpec.getStopRow());
     hbaseScan
         .setFilter(subScanSpec.getScanFilter())
-        .setCaching(TARGET_RECORD_COUNT);
+        .setCaching((int) numRowsPerBatch);
 
-    setColumns(projectedColumns);
+    if (!isStarQuery()) {
+      for (SchemaPath column : projectedColumns) {
+        if (!column.getRootSegment().getPath().equalsIgnoreCase(ROW_KEY)) {
+          NameSegment root = column.getRootSegment();
+          byte[] family = root.getPath().getBytes();
+          PathSegment child = root.getChild();
+          if (child != null && child.isNamed()) {
+            byte[] qualifier = child.getNameSegment().getPath().getBytes();
+            hbaseScan.addColumn(family, qualifier);
+          } else {
+            hbaseScan.addFamily(family);
+          }
+        }
+      }
+    }
+
+    /* if only the row key was requested, add a FirstKeyOnlyFilter to the scan
+     * to fetch only one KV from each row. If a filter is already part of this
+     * scan, add the FirstKeyOnlyFilter as the LAST filter of a MUST_PASS_ALL
+     * FilterList.
+     */
+    if (rowKeyOnly) {
+      hbaseScan.setFilter(
+              HBaseUtils.andFilterAtIndex(hbaseScan.getFilter(), HBaseUtils.LAST_FILTER, new FirstKeyOnlyFilter()));
+    }
   }
 
   @Override
@@ -101,31 +123,12 @@ public class HBaseRecordReader extends AbstractRecordReader implements DrillHBas
         }
         rowKeyOnly = false;
         NameSegment root = column.getRootSegment();
-        byte[] family = root.getPath().getBytes();
         transformed.add(SchemaPath.getSimplePath(root.getPath()));
-        PathSegment child = root.getChild();
-        if (child != null && child.isNamed()) {
-          byte[] qualifier = child.getNameSegment().getPath().getBytes();
-          hbaseScan.addColumn(family, qualifier);
-        } else {
-          hbaseScan.addFamily(family);
-        }
-      }
-      /* if only the row key was requested, add a FirstKeyOnlyFilter to the scan
-       * to fetch only one KV from each row. If a filter is already part of this
-       * scan, add the FirstKeyOnlyFilter as the LAST filter of a MUST_PASS_ALL
-       * FilterList.
-       */
-      if (rowKeyOnly) {
-        hbaseScan.setFilter(
-            HBaseUtils.andFilterAtIndex(hbaseScan.getFilter(), HBaseUtils.LAST_FILTER, new FirstKeyOnlyFilter()));
       }
     } else {
       rowKeyOnly = false;
       transformed.add(ROW_KEY_PATH);
     }
-
-
     return transformed;
   }
 
@@ -190,7 +193,7 @@ public class HBaseRecordReader extends AbstractRecordReader implements DrillHBas
 
     int rowCount = 0;
     done:
-    for (; rowCount < TARGET_RECORD_COUNT; rowCount++) {
+    for (; rowCount < numRowsPerBatch; rowCount++) {
       Result result = null;
       final OperatorStats operatorStats = operatorContext == null ? null : operatorContext.getStats();
       try {

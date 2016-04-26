@@ -17,11 +17,6 @@
  */
 package org.apache.drill.exec.store.easy.json;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-
-import com.google.common.collect.Lists;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.expression.SchemaPath;
@@ -29,13 +24,11 @@ import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.exception.OutOfMemoryException;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.ops.OperatorContext;
-import org.apache.drill.exec.physical.base.GroupScan;
 import org.apache.drill.exec.physical.impl.OutputMutator;
 import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.dfs.DrillFileSystem;
 import org.apache.drill.exec.store.easy.json.JsonProcessor.ReadState;
 import org.apache.drill.exec.store.easy.json.reader.CountingJsonReader;
-import org.apache.drill.exec.vector.BaseValueVector;
 import org.apache.drill.exec.vector.complex.fn.JsonReader;
 import org.apache.drill.exec.vector.complex.impl.VectorContainerWriter;
 import org.apache.hadoop.fs.Path;
@@ -45,10 +38,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+
 public class JSONRecordReader extends AbstractRecordReader {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(JSONRecordReader.class);
-
-  public static final long DEFAULT_ROWS_PER_BATCH = BaseValueVector.INITIAL_VALUE_ALLOCATION;
 
   private VectorContainerWriter writer;
 
@@ -91,9 +86,12 @@ public class JSONRecordReader extends AbstractRecordReader {
     this(fragmentContext, null, embeddedContent, fileSystem, columns);
   }
 
-  private JSONRecordReader(final FragmentContext fragmentContext, final String inputPath,
-      final JsonNode embeddedContent, final DrillFileSystem fileSystem,
-      final List<SchemaPath> columns) {
+  private JSONRecordReader(final FragmentContext fragmentContext,
+                           final String inputPath,
+                           final JsonNode embeddedContent,
+                           final DrillFileSystem fileSystem,
+                           final List<SchemaPath> columns) {
+    super(fragmentContext, columns);
 
     Preconditions.checkArgument(
         (inputPath == null && embeddedContent != null) ||
@@ -114,7 +112,6 @@ public class JSONRecordReader extends AbstractRecordReader {
     this.enableAllTextMode = embeddedContent == null && fragmentContext.getOptions().getOption(ExecConstants.JSON_READER_ALL_TEXT_MODE_VALIDATOR);
     this.readNumbersAsDouble = embeddedContent == null && fragmentContext.getOptions().getOption(ExecConstants.JSON_READ_NUMBERS_AS_DOUBLE_VALIDATOR);
     this.unionEnabled = embeddedContent == null && fragmentContext.getOptions().getOption(ExecConstants.ENABLE_UNION_TYPE);
-    setColumns(columns);
   }
 
   @Override
@@ -194,7 +191,7 @@ public class JSONRecordReader extends AbstractRecordReader {
     ReadState write = null;
 //    Stopwatch p = new Stopwatch().start();
     try{
-      outside: while(recordCount < DEFAULT_ROWS_PER_BATCH) {
+      outside: while(recordCount < numRowsPerBatch) {
         writer.setPosition(recordCount);
         write = jsonReader.write(writer);
 

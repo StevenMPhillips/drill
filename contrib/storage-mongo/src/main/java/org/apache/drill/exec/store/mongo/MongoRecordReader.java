@@ -17,14 +17,6 @@
  */
 package org.apache.drill.exec.store.mongo;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
@@ -34,14 +26,8 @@ import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.physical.impl.OutputMutator;
 import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.bson.BsonRecordReader;
-import org.apache.drill.exec.vector.BaseValueVector;
 import org.apache.drill.exec.vector.complex.fn.JsonReader;
 import org.apache.drill.exec.vector.complex.impl.VectorContainerWriter;
-import org.bson.BsonDocument;
-import org.bson.BsonDocumentReader;
-import org.bson.Document;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
@@ -52,6 +38,20 @@ import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+
+import org.bson.BsonDocument;
+import org.bson.BsonDocumentReader;
+import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class MongoRecordReader extends AbstractRecordReader {
   private static final Logger logger = LoggerFactory.getLogger(MongoRecordReader.class);
@@ -64,7 +64,7 @@ public class MongoRecordReader extends AbstractRecordReader {
   private VectorContainerWriter writer;
 
   private Document filters;
-  private final Document fields;
+  private Document fields;
 
   private final FragmentContext fragmentContext;
   private OperatorContext operatorContext;
@@ -79,10 +79,7 @@ public class MongoRecordReader extends AbstractRecordReader {
   public MongoRecordReader(MongoSubScan.MongoSubScanSpec subScanSpec, List<SchemaPath> projectedColumns,
       FragmentContext context, MongoStoragePlugin plugin) {
 
-    fields = new Document();
-    // exclude _id field, if not mentioned by user.
-    fields.put(DrillMongoConstants.ID, Integer.valueOf(0));
-    setColumns(projectedColumns);
+    super(context, projectedColumns);
     fragmentContext = context;
     this.plugin = plugin;
     filters = new Document();
@@ -99,6 +96,9 @@ public class MongoRecordReader extends AbstractRecordReader {
 
   @Override
   protected Collection<SchemaPath> transformColumns(Collection<SchemaPath> projectedColumns) {
+    this.fields = new Document();
+    // exclude _id field, if not mentioned by user.
+    this.fields.put(DrillMongoConstants.ID, Integer.valueOf(0));
     Set<SchemaPath> transformed = Sets.newLinkedHashSet();
     if (!isStarQuery()) {
       for (SchemaPath column : projectedColumns) {
@@ -179,7 +179,7 @@ public class MongoRecordReader extends AbstractRecordReader {
     Stopwatch watch = Stopwatch.createStarted();
 
     try {
-      while (docCount < BaseValueVector.INITIAL_VALUE_ALLOCATION && cursor.hasNext()) {
+      while (docCount < numRowsPerBatch && cursor.hasNext()) {
         writer.setPosition(docCount);
         if (isBsonRecordReader) {
           BsonDocument bsonDocument = cursor.next();

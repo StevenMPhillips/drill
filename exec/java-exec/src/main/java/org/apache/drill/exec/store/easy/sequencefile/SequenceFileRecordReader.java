@@ -17,47 +17,46 @@
  */
 package org.apache.drill.exec.store.easy.sequencefile;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
-import java.security.PrivilegedExceptionAction;
-
-import com.google.common.base.Stopwatch;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos;
+import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.exception.SchemaChangeException;
+import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.physical.impl.OutputMutator;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.store.AbstractRecordReader;
-import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.exec.store.dfs.DrillFileSystem;
 import org.apache.drill.exec.util.ImpersonationUtil;
 import org.apache.drill.exec.vector.NullableVarBinaryVector;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.SequenceFileAsBinaryInputFormat;
 import org.apache.hadoop.security.UserGroupInformation;
+
+import com.google.common.base.Stopwatch;
+
+import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 public class SequenceFileRecordReader extends AbstractRecordReader {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SequenceFileRecordReader.class);
 
-  private static final int PER_BATCH_RECORD_COUNT = 4096;
-  private static final int PER_BATCH_BYTES = 256*1024;
-
   private static final MajorType KEY_TYPE = Types.optional(TypeProtos.MinorType.VARBINARY);
   private static final MajorType VALUE_TYPE = Types.optional(TypeProtos.MinorType.VARBINARY);
 
-  private final String keySchema = "binary_key";
-  private final String valueSchema = "binary_value";
+  private static final String keySchema = "binary_key";
+  private static final String valueSchema = "binary_value";
 
   private NullableVarBinaryVector keyVector;
   private NullableVarBinaryVector valueVector;
@@ -69,18 +68,23 @@ public class SequenceFileRecordReader extends AbstractRecordReader {
   private final String queryUserName;
   private final String opUserName;
 
-  public SequenceFileRecordReader(final FileSplit split,
+  public SequenceFileRecordReader(final FragmentContext context,
+                                  final FileSplit split,
                                   final DrillFileSystem dfs,
                                   final String queryUserName,
                                   final String opUserName) {
-    final List<SchemaPath> columns = new ArrayList<>();
-    columns.add(SchemaPath.getSimplePath(keySchema));
-    columns.add(SchemaPath.getSimplePath(valueSchema));
-    setColumns(columns);
+    super(context, getStaticColumns());
     this.dfs = dfs;
     this.split = split;
     this.queryUserName = queryUserName;
     this.opUserName = opUserName;
+  }
+
+  private static List<SchemaPath> getStaticColumns() {
+    final List<SchemaPath> columns = new ArrayList<>();
+    columns.add(SchemaPath.getSimplePath(keySchema));
+    columns.add(SchemaPath.getSimplePath(valueSchema));
+    return columns;
   }
 
   @Override
@@ -136,7 +140,7 @@ public class SequenceFileRecordReader extends AbstractRecordReader {
     int recordCount = 0;
     int batchSize = 0;
     try {
-      while (recordCount < PER_BATCH_RECORD_COUNT && batchSize < PER_BATCH_BYTES && reader.next(key, value)) {
+      while (recordCount < numRowsPerBatch && batchSize < numBytesPerBatch && reader.next(key, value)) {
         keyVector.getMutator().setSafe(recordCount, key.getBytes(), 0, key.getLength());
         valueVector.getMutator().setSafe(recordCount, value.getBytes(), 0, value.getLength());
         batchSize += (key.getLength() + value.getLength());

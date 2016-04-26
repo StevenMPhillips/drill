@@ -17,8 +17,6 @@
  */
 package org.apache.drill.exec.record;
 
-import java.util.Iterator;
-
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.expression.SchemaPath;
@@ -33,6 +31,8 @@ import org.apache.drill.exec.record.selection.SelectionVector2;
 import org.apache.drill.exec.record.selection.SelectionVector4;
 import org.apache.drill.exec.server.options.OptionValue;
 
+import java.util.Iterator;
+
 public abstract class AbstractRecordBatch<T extends PhysicalOperator> implements CloseableRecordBatch {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(new Object() {}.getClass().getEnclosingClass());
 
@@ -42,6 +42,11 @@ public abstract class AbstractRecordBatch<T extends PhysicalOperator> implements
   protected final OperatorContext oContext;
   protected final OperatorStats stats;
   protected final boolean unionTypeEnabled;
+
+
+  // Number records and bytes in the outgoing batch
+  protected long numRecordsPerBatch;
+  protected long numBytesPerBatch;
 
   protected BatchState state;
 
@@ -71,6 +76,24 @@ public abstract class AbstractRecordBatch<T extends PhysicalOperator> implements
     } else {
       unionTypeEnabled = false;
     }
+    if (context != null && context.getOptions() != null && context.getOptions().getOption(ExecConstants.OPERATOR_TARGET_BATCH_SIZE) != null) {
+      numRecordsPerBatch = context.getOptions().getOption(ExecConstants.OPERATOR_TARGET_BATCH_SIZE).num_val;
+    } else {
+      numRecordsPerBatch = ExecConstants.OPERATOR_TARGET_BATCH_SIZE_VALIDATOR.getDefault().num_val;
+    }
+    if (context != null && context.getOptions() != null && context.getOptions().getOption(ExecConstants.OPERATOR_TARGET_BATCH_BYTES) != null) {
+      numBytesPerBatch = context.getOptions().getOption(ExecConstants.OPERATOR_TARGET_BATCH_BYTES).num_val;
+    } else {
+      numBytesPerBatch = ExecConstants.OPERATOR_TARGET_BATCH_BYTES_VALIDATOR.getDefault().num_val;
+    }
+  }
+
+  public long getNumRecordsPerBatch() {
+    return numRecordsPerBatch;
+  }
+
+  public long getNumBytesPerBatch() {
+    return numBytesPerBatch;
   }
 
   protected static enum BatchState {

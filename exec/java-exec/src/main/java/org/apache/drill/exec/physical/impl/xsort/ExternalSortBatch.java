@@ -17,13 +17,6 @@
  */
 package org.apache.drill.exec.physical.impl.xsort;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.calcite.rel.RelFieldCollation.Direction;
 import org.apache.drill.common.AutoCloseables;
 import org.apache.drill.common.config.DrillConfig;
@@ -80,6 +73,13 @@ import com.google.common.collect.Lists;
 import com.sun.codemodel.JConditional;
 import com.sun.codemodel.JExpr;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ExternalSortBatch.class);
   private static final ControlsInjector injector = ControlsInjectorFactory.getInjector(ExternalSortBatch.class);
@@ -114,7 +114,6 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
   private int spillCount = 0;
   private int batchesSinceLastSpill = 0;
   private boolean first = true;
-  private int targetRecordCount;
   private final String fileName;
   private int firstSpillBatchCount = 0;
   private int peakNumBatches = -1;
@@ -269,7 +268,7 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
         return (getSelectionVector4().next()) ? IterOutcome.OK : IterOutcome.NONE;
       } else {
         Stopwatch w = Stopwatch.createStarted();
-        int count = copier.next(targetRecordCount);
+        int count = copier.next((int) numRecordsPerBatch);
         if (count > 0) {
           long t = w.elapsed(TimeUnit.MICROSECONDS);
           logger.debug("Took {} us to merge {} records", t, count);
@@ -482,8 +481,8 @@ public class ExternalSortBatch extends AbstractRecordBatch<ExternalSort> {
             estimatedRecordSize += 50;
           }
         }
-        targetRecordCount = Math.min(MAX_BATCH_SIZE, Math.max(1, COPIER_BATCH_MEM_LIMIT / estimatedRecordSize));
-        int count = copier.next(targetRecordCount);
+        numRecordsPerBatch = (int) Math.min(numRecordsPerBatch, Math.max(1, COPIER_BATCH_MEM_LIMIT / estimatedRecordSize));
+        int count = copier.next((int)numRecordsPerBatch);
         container.buildSchema(SelectionVectorMode.NONE);
         container.setRecordCount(count);
       }

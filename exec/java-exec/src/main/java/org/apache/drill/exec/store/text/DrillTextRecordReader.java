@@ -17,15 +17,6 @@
  */
 package org.apache.drill.exec.store.text;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-
-import javax.annotation.Nullable;
-
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.FieldReference;
@@ -49,7 +40,14 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.TextInputFormat;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import javax.annotation.Nullable;
 
 public class DrillTextRecordReader extends AbstractRecordReader {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DrillTextRecordReader.class);
@@ -70,9 +68,9 @@ public class DrillTextRecordReader extends AbstractRecordReader {
 
   public DrillTextRecordReader(FileSplit split, Configuration fsConf, FragmentContext context,
       char delimiter, List<SchemaPath> columns) {
+    super(context, columns);
     this.delimiter = (byte) delimiter;
     this.split = split;
-    setColumns(columns);
 
     if (!isStarQuery()) {
       String pathStr;
@@ -148,7 +146,7 @@ public class DrillTextRecordReader extends AbstractRecordReader {
     try {
       int recordCount = 0;
       final RepeatedVarCharVector.Mutator mutator = vector.getMutator();
-      while (recordCount < Character.MAX_VALUE && batchSize < 200*1000 && reader.next(key, value)) {
+      while (recordCount < numRowsPerBatch && batchSize < numBytesPerBatch && reader.next(key, value)) {
         int start;
         int end = -1;
 

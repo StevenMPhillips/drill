@@ -17,21 +17,11 @@
  */
 package org.apache.drill.exec.store.easy.text.compliant;
 
-import com.google.common.collect.Maps;
-import com.univocity.parsers.common.TextParsingException;
-import io.netty.buffer.DrillBuf;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Nullable;
-
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.exception.SchemaChangeException;
+import org.apache.drill.exec.expr.TypeHelper;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.ops.OperatorContext;
 import org.apache.drill.exec.physical.impl.OutputMutator;
@@ -44,13 +34,21 @@ import org.apache.hadoop.mapred.FileSplit;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import org.apache.drill.exec.expr.TypeHelper;
+import com.google.common.collect.Maps;
+import com.univocity.parsers.common.TextParsingException;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+import javax.annotation.Nullable;
+
+import io.netty.buffer.DrillBuf;
 
 // New text reader, complies with the RFC 4180 standard for text/csv files
 public class CompliantTextRecordReader extends AbstractRecordReader {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CompliantTextRecordReader.class);
 
-  private static final int MAX_RECORDS_PER_BATCH = 8096;
   static final int READ_BUFFER = 1024*1024;
   private static final int WHITE_SPACE_BUFFER = 64*1024;
 
@@ -69,10 +67,10 @@ public class CompliantTextRecordReader extends AbstractRecordReader {
   private OperatorContext oContext;
 
   public CompliantTextRecordReader(FileSplit split, DrillFileSystem dfs, FragmentContext context, TextParsingSettings settings, List<SchemaPath> columns) {
+    super(context, columns);
     this.split = split;
     this.settings = settings;
     this.dfs = dfs;
-    setColumns(columns);
   }
 
   // checks to see if we are querying all columns(star) or individual columns
@@ -193,7 +191,7 @@ public class CompliantTextRecordReader extends AbstractRecordReader {
     int cnt = 0;
 
     try{
-      while(cnt < MAX_RECORDS_PER_BATCH && reader.parseNext()){
+      while(cnt < numRowsPerBatch && reader.parseNext()){
         cnt++;
       }
       reader.finishBatch();

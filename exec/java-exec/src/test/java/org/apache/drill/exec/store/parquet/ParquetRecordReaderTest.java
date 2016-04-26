@@ -17,21 +17,6 @@
  */
 package org.apache.drill.exec.store.parquet;
 
-import static org.apache.drill.exec.store.parquet.TestFileGenerator.populateFieldInfoMap;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import io.netty.buffer.DrillBuf;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import mockit.Injectable;
-
 import org.apache.drill.BaseTestQuery;
 import org.apache.drill.common.config.DrillConfig;
 import org.apache.drill.common.expression.ExpressionPosition;
@@ -72,14 +57,30 @@ import org.apache.parquet.hadoop.Footer;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import io.netty.buffer.DrillBuf;
+import mockit.Injectable;
+
+import static org.apache.drill.exec.store.parquet.TestFileGenerator.populateFieldInfoMap;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Ignore
 public class ParquetRecordReaderTest extends BaseTestQuery {
@@ -637,7 +638,7 @@ public class ParquetRecordReaderTest extends BaseTestQuery {
     final FileSystem fs = new CachedSingleFileSystem(fileName);
     final BufferAllocator allocator = RootAllocatorFactory.newRoot(c);
     for(int i = 0; i < 25; i++) {
-      final ParquetRecordReader rr = new ParquetRecordReader(context, 256000, fileName, 0, fs,
+      final ParquetRecordReader rr = new ParquetRecordReader(context, fileName, 0, fs,
           CodecFactory.createDirectCodecFactory(dfsConfig, new ParquetDirectByteBufferAllocator(allocator), 0),
           f.getParquetMetadata(), columns);
       final TestOutputMutator mutator = new TestOutputMutator(allocator);

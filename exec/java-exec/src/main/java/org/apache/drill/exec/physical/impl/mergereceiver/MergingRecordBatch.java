@@ -17,12 +17,6 @@
  */
 package org.apache.drill.exec.physical.impl.mergereceiver;
 
-import java.io.IOException;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.PriorityQueue;
-
 import org.apache.calcite.rel.RelFieldCollation.Direction;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.expression.ErrorCollector;
@@ -80,6 +74,11 @@ import com.google.common.collect.Lists;
 import com.sun.codemodel.JConditional;
 import com.sun.codemodel.JExpr;
 
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.PriorityQueue;
 
 import io.netty.buffer.ByteBuf;
 
@@ -89,8 +88,6 @@ import io.netty.buffer.ByteBuf;
 public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> implements RecordBatch {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MergingRecordBatch.class);
   private static final ControlsInjector injector = ControlsInjectorFactory.getInjector(MergingRecordBatch.class);
-
-  private static final int OUTGOING_BATCH_SIZE = 32 * 1024;
 
   private RecordBatchLoader[] batchLoaders;
   private final RawFragmentBatchProvider[] fragProviders;
@@ -610,7 +607,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
     for (final VectorWrapper w : outgoingContainer) {
       final ValueVector v = w.getValueVector();
       if (v instanceof FixedWidthVector) {
-        AllocationHelper.allocate(v, OUTGOING_BATCH_SIZE, 1);
+        AllocationHelper.allocate(v, (int) numRecordsPerBatch, 1);
       } else {
         v.allocateNewSafe();
       }
@@ -709,7 +706,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
     final int inIndex = (node.batchId << 16) + node.valueIndex;
     merger.doCopy(inIndex, outgoingPosition);
     outgoingPosition++;
-    if (outgoingPosition == OUTGOING_BATCH_SIZE) {
+    if (outgoingPosition == numRecordsPerBatch) {
       return false;
     }
     return true;

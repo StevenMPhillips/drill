@@ -71,7 +71,7 @@ public class SequenceFileFormatPlugin extends EasyFormatPlugin<SequenceFileForma
                                       String userName) throws ExecutionSetupException {
     final Path path = dfs.makeQualified(new Path(fileWork.getPath()));
     final FileSplit split = new FileSplit(path, fileWork.getStart(), fileWork.getLength(), new String[]{""});
-    return new SequenceFileRecordReader(split, dfs, context.getQueryUserName(), userName);
+    return new SequenceFileRecordReader(context, split, dfs, context.getQueryUserName(), userName);
   }
 
   @Override

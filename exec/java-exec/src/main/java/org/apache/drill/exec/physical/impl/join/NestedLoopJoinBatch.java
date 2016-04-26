@@ -17,9 +17,6 @@
  */
 package org.apache.drill.exec.physical.impl.join;
 
-import java.io.IOException;
-import java.util.LinkedList;
-
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.types.TypeProtos;
 import org.apache.drill.exec.compile.sig.GeneratorMapping;
@@ -46,14 +43,14 @@ import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JVar;
 
+import java.io.IOException;
+import java.util.LinkedList;
+
 /*
  * RecordBatch implementation for the nested loop join operator
  */
 public class NestedLoopJoinBatch extends AbstractRecordBatch<NestedLoopJoinPOP> {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(NestedLoopJoinBatch.class);
-
-  // Maximum number records in the outgoing batch
-  protected static final int MAX_BATCH_SIZE = 4096;
 
   // Input indexes to correctly update the stats
   protected static final int LEFT_INPUT = 0;
@@ -280,7 +277,7 @@ public class NestedLoopJoinBatch extends AbstractRecordBatch<NestedLoopJoinPOP> 
    */
   private void allocateVectors() {
     for (final VectorWrapper<?> vw : container) {
-      AllocationHelper.allocateNew(vw.getValueVector(), MAX_BATCH_SIZE);
+      AllocationHelper.allocateNew(vw.getValueVector(), (int) numRecordsPerBatch);
     }
   }
 

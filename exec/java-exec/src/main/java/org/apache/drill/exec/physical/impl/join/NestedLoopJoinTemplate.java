@@ -24,9 +24,9 @@ import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.record.VectorWrapper;
 
-import javax.inject.Named;
 import java.util.LinkedList;
 import java.util.List;
+import javax.inject.Named;
 
 /*
  * Template class that combined with the runtime generated source implements the NestedLoopJoin interface. This
@@ -114,7 +114,7 @@ public abstract class NestedLoopJoinTemplate implements NestedLoopJoin {
             outputIndex++;
 
             // TODO: Optimization; We can eliminate this check and compute the limits before the loop
-            if (outputIndex >= NestedLoopJoinBatch.MAX_BATCH_SIZE) {
+            if (outputIndex >= outgoing.getNumRecordsPerBatch()) {
               localNextLeftRecordToProcess++;
 
               // no more space left in the batch, stop processing
@@ -146,7 +146,7 @@ public abstract class NestedLoopJoinTemplate implements NestedLoopJoin {
     int outputIndex = 0;
     while (leftRecordCount != 0) {
       outputIndex = populateOutgoingBatch(outputIndex);
-      if (outputIndex >= NestedLoopJoinBatch.MAX_BATCH_SIZE) {
+      if (outputIndex >= outgoing.getNumRecordsPerBatch()) {
         break;
       }
       // reset state and get next left batch

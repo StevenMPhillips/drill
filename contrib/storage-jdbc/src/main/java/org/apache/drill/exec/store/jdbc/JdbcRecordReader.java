@@ -17,21 +17,6 @@
  */
 package org.apache.drill.exec.store.jdbc;
 
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Calendar;
-import java.util.TimeZone;
-
-import javax.sql.DataSource;
-
 import org.apache.drill.common.AutoCloseables;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.exceptions.UserException;
@@ -61,6 +46,20 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.TimeZone;
+import javax.sql.DataSource;
+
 @SuppressWarnings("unchecked")
 class JdbcRecordReader extends AbstractRecordReader {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory
@@ -80,6 +79,7 @@ class JdbcRecordReader extends AbstractRecordReader {
   private OperatorContext operatorContext;
 
   public JdbcRecordReader(FragmentContext fragmentContext, DataSource source, String sql, String storagePluginName) {
+    super(fragmentContext, null);
     this.fragmentContext = fragmentContext;
     this.source = source;
     this.sql = sql;
@@ -232,8 +232,8 @@ class JdbcRecordReader extends AbstractRecordReader {
     int counter = 0;
     Boolean b = true;
     try {
-      while (counter < 4095 && b == true) { // loop at 4095 since nullables use one more than record count and we
-                                            // allocate on powers of two.
+      while (counter < numRowsPerBatch && b == true) { // loop at 4095 since nullables use one more than record count and we
+                                                       // allocate on powers of two.
         b = resultSet.next();
         if(b == false) {
             break;

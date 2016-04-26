@@ -112,11 +112,10 @@ public class HiveRecordReader extends AbstractRecordReader {
   private final UserGroupInformation proxyUgi;
   private SkipRecordsInspector skipRecordsInspector;
 
-  protected static final int TARGET_RECORD_COUNT = 4000;
-
   public HiveRecordReader(Table table, Partition partition, InputSplit inputSplit, List<SchemaPath> projectedColumns,
                           FragmentContext context, final HiveConf hiveConf,
                           UserGroupInformation proxyUgi) throws ExecutionSetupException {
+    super(context, projectedColumns);
     this.table = table;
     this.partition = partition;
     this.inputSplit = inputSplit;
@@ -125,7 +124,6 @@ public class HiveRecordReader extends AbstractRecordReader {
     this.fragmentContext = context;
     this.proxyUgi = proxyUgi;
     this.managedBuffer = fragmentContext.getManagedBuffer().reallocIfNeeded(256);
-    setColumns(projectedColumns);
   }
 
   private void init() throws ExecutionSetupException {
@@ -307,7 +305,7 @@ public class HiveRecordReader extends AbstractRecordReader {
   @Override
   public int next() {
     for (ValueVector vv : vectors) {
-      AllocationHelper.allocateNew(vv, TARGET_RECORD_COUNT);
+      AllocationHelper.allocateNew(vv, (int) numRowsPerBatch);
     }
     if (empty) {
       setValueCountAndPopulatePartitionVectors(0);
@@ -318,7 +316,7 @@ public class HiveRecordReader extends AbstractRecordReader {
       skipRecordsInspector.reset();
       int recordCount = 0;
       Object value;
-      while (recordCount < TARGET_RECORD_COUNT && reader.next(key, value = skipRecordsInspector.getNextValue())) {
+      while (recordCount < numRowsPerBatch && reader.next(key, value = skipRecordsInspector.getNextValue())) {
         if (skipRecordsInspector.doSkipHeader(recordCount++)) {
           continue;
         }

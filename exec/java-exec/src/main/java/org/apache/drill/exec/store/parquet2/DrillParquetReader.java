@@ -17,15 +17,6 @@
  */
 package org.apache.drill.exec.store.parquet2;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
@@ -51,14 +42,14 @@ import org.apache.drill.exec.vector.complex.impl.VectorContainerWriter;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.hadoop.CodecFactory;
-import org.apache.parquet.hadoop.metadata.ColumnPath;
-import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.hadoop.ColumnChunkIncReadStore;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
+import org.apache.parquet.hadoop.metadata.ColumnPath;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.ColumnIOFactory;
 import org.apache.parquet.io.MessageColumnIO;
+import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
@@ -67,12 +58,19 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 public class DrillParquetReader extends AbstractRecordReader {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DrillParquetReader.class);
 
   // same as the DEFAULT_RECORDS_TO_READ_IF_NOT_FIXED_WIDTH in ParquetRecordReader
-
-  private static final char DEFAULT_RECORDS_TO_READ = 32*1024;
 
   private ParquetMetadata footer;
   private MessageType schema;
@@ -107,10 +105,10 @@ public class DrillParquetReader extends AbstractRecordReader {
 
   public DrillParquetReader(FragmentContext fragmentContext, ParquetMetadata footer, RowGroupReadEntry entry,
       List<SchemaPath> columns, DrillFileSystem fileSystem) {
+    super(fragmentContext, columns);
     this.footer = footer;
     this.fileSystem = fileSystem;
     this.entry = entry;
-    setColumns(columns);
     this.fragmentContext = fragmentContext;
     fillLevelCheckFrequency = this.fragmentContext.getOptions().getOption(ExecConstants.PARQUET_VECTOR_FILL_CHECK_THRESHOLD).num_val.intValue();
     fillLevelCheckThreshold = this.fragmentContext.getOptions().getOption(ExecConstants.PARQUET_VECTOR_FILL_THRESHOLD).num_val.intValue();
@@ -301,7 +299,7 @@ public class DrillParquetReader extends AbstractRecordReader {
         return 0;
       }
       long recordsToRead = 0;
-      recordsToRead = Math.min(DEFAULT_RECORDS_TO_READ, footer.getBlocks().get(entry.getRowGroupIndex()).getRowCount() - mockRecordsRead);
+      recordsToRead = Math.min(numRowsPerBatch, footer.getBlocks().get(entry.getRowGroupIndex()).getRowCount() - mockRecordsRead);
       for (ValueVector vv : nullFilledVectors ) {
         vv.getMutator().setValueCount( (int) recordsToRead);
       }
@@ -309,7 +307,7 @@ public class DrillParquetReader extends AbstractRecordReader {
       return (int) recordsToRead;
     }
 
-    while (count < 4000 && totalRead < recordCount) {
+    while (count < numRowsPerBatch && totalRead < recordCount) {
       recordMaterializer.setPosition(count);
       recordReader.read();
       count++;

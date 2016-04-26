@@ -17,14 +17,6 @@
  */
 package org.apache.drill.exec.store.parquet.columnreaders;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import com.google.common.collect.ImmutableList;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
@@ -57,15 +49,20 @@ import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.PrimitiveType;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ParquetRecordReader extends AbstractRecordReader {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ParquetRecordReader.class);
 
   // this value has been inflated to read in multiple value vectors at once, and then break them up into smaller vectors
-  private static final int NUMBER_OF_VECTORS = 1;
-  private static final long DEFAULT_BATCH_LENGTH = 256 * 1024 * NUMBER_OF_VECTORS; // 256kb
-  private static final long DEFAULT_BATCH_LENGTH_IN_BITS = DEFAULT_BATCH_LENGTH * 8; // 256kb
   private static final char DEFAULT_RECORDS_TO_READ_IF_NOT_FIXED_WIDTH = 32*1024;
 
   // When no column is required by the downstrea operator, ask SCAN to return a DEFAULT column. If such column does not exist,
@@ -82,14 +79,12 @@ public class ParquetRecordReader extends AbstractRecordReader {
 
   private int bitWidthAllFixedFields;
   private boolean allFieldsFixedLength;
-  private int recordsPerBatch;
   private OperatorContext operatorContext;
 //  private long totalRecords;
 //  private long rowGroupOffset;
 
   private List<ColumnReader<?>> columnStatuses;
   private FileSystem fileSystem;
-  private long batchSize;
   Path hadoopPath;
   private VarLenBinaryReader varLengthReader;
   private ParquetMetadata footer;
@@ -112,34 +107,21 @@ public class ParquetRecordReader extends AbstractRecordReader {
 
   public ParquetReaderStats parquetReaderStats = new ParquetReaderStats();
 
-  public ParquetRecordReader(FragmentContext fragmentContext,
-      String path,
-      int rowGroupIndex,
-      FileSystem fs,
-      CodecFactory codecFactory,
-      ParquetMetadata footer,
-      List<SchemaPath> columns) throws ExecutionSetupException {
-    this(fragmentContext, DEFAULT_BATCH_LENGTH_IN_BITS, path, rowGroupIndex, fs, codecFactory, footer,
-        columns);
-  }
-
   public ParquetRecordReader(
       FragmentContext fragmentContext,
-      long batchSize,
       String path,
       int rowGroupIndex,
       FileSystem fs,
       CodecFactory codecFactory,
       ParquetMetadata footer,
       List<SchemaPath> columns) throws ExecutionSetupException {
+    super(fragmentContext, columns);
     this.hadoopPath = new Path(path);
     this.fileSystem = fs;
     this.codecFactory = codecFactory;
     this.rowGroupIndex = rowGroupIndex;
-    this.batchSize = batchSize;
     this.footer = footer;
     this.fragmentContext = fragmentContext;
-    setColumns(columns);
   }
 
   public CodecFactory getCodecFactory() {
@@ -162,8 +144,8 @@ public class ParquetRecordReader extends AbstractRecordReader {
     return bitWidthAllFixedFields;
   }
 
-  public long getBatchSize() {
-    return batchSize;
+  public long getBatchSize() { // in bits
+    return numBytesPerBatch * 8;
   }
 
   /**
@@ -268,11 +250,11 @@ public class ParquetRecordReader extends AbstractRecordReader {
 //    rowGroupOffset = footer.getBlocks().get(rowGroupIndex).getColumns().get(0).getFirstDataPageOffset();
 
     if (columnsToScan != 0  && allFieldsFixedLength) {
-      recordsPerBatch = (int) Math.min(Math.min(batchSize / bitWidthAllFixedFields,
+      numRowsPerBatch = (int) Math.min(Math.min(numBytesPerBatch / bitWidthAllFixedFields,
           footer.getBlocks().get(0).getColumns().get(0).getValueCount()), 65535);
     }
     else {
-      recordsPerBatch = DEFAULT_RECORDS_TO_READ_IF_NOT_FIXED_WIDTH;
+      numRowsPerBatch = DEFAULT_RECORDS_TO_READ_IF_NOT_FIXED_WIDTH;
     }
 
     try {
@@ -310,14 +292,14 @@ public class ParquetRecordReader extends AbstractRecordReader {
           if (column.getMaxRepetitionLevel() > 0) {
             final RepeatedValueVector repeatedVector = RepeatedValueVector.class.cast(vector);
             ColumnReader<?> dataReader = ColumnReaderFactory.createFixedColumnReader(this, fieldFixedLength,
-                column, columnChunkMetaData, recordsPerBatch,
+                column, columnChunkMetaData, (int) numRowsPerBatch,
                 repeatedVector.getDataVector(), schemaElement);
             varLengthColumns.add(new FixedWidthRepeatedReader(this, dataReader,
                 getTypeLengthInBits(column.getType()), -1, column, columnChunkMetaData, false, repeatedVector, schemaElement));
           }
           else {
             columnStatuses.add(ColumnReaderFactory.createFixedColumnReader(this, fieldFixedLength,
-                column, columnChunkMetaData, recordsPerBatch, vector,
+                column, columnChunkMetaData, (int) numRowsPerBatch, vector,
                 schemaElement));
           }
         } else {
@@ -356,7 +338,7 @@ public class ParquetRecordReader extends AbstractRecordReader {
   public void allocate(Map<String, ValueVector> vectorMap) throws OutOfMemoryException {
     try {
       for (final ValueVector v : vectorMap.values()) {
-        AllocationHelper.allocate(v, recordsPerBatch, 50, 10);
+        AllocationHelper.allocate(v, (int) numRowsPerBatch, 50, 10);
       }
     } catch (NullPointerException e) {
       throw new OutOfMemoryException();
@@ -426,7 +408,7 @@ public class ParquetRecordReader extends AbstractRecordReader {
       }
 
       if (allFieldsFixedLength) {
-        recordsToRead = Math.min(recordsPerBatch, firstColumnStatus.columnChunkMetaData.getValueCount() - firstColumnStatus.totalValuesRead);
+        recordsToRead = Math.min(numRowsPerBatch, firstColumnStatus.columnChunkMetaData.getValueCount() - firstColumnStatus.totalValuesRead);
       } else {
         recordsToRead = DEFAULT_RECORDS_TO_READ_IF_NOT_FIXED_WIDTH;
 

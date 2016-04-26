@@ -17,10 +17,6 @@
  */
 package org.apache.drill.exec.store.kudu;
 
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.expression.SchemaPath;
@@ -52,6 +48,10 @@ import org.apache.drill.exec.vector.TimeStampVector;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.VarBinaryVector;
 import org.apache.drill.exec.vector.VarCharVector;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
 import org.kududb.ColumnSchema;
 import org.kududb.Schema;
 import org.kududb.Type;
@@ -63,13 +63,12 @@ import org.kududb.client.RowResult;
 import org.kududb.client.RowResultIterator;
 import org.kududb.client.shaded.com.google.common.collect.ImmutableMap;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Map;
 
 public class KuduRecordReader extends AbstractRecordReader {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(KuduRecordReader.class);
-
-  private static final int TARGET_RECORD_COUNT = 4000;
 
   private final KuduClient client;
   private final KuduSubScanSpec scanSpec;
@@ -89,7 +88,7 @@ public class KuduRecordReader extends AbstractRecordReader {
 
   public KuduRecordReader(KuduClient client, KuduSubScan.KuduSubScanSpec subScanSpec,
       List<SchemaPath> projectedColumns, FragmentContext context) {
-    setColumns(projectedColumns);
+    super(context, projectedColumns);
     this.client = client;
     scanSpec = subScanSpec;
     logger.debug("Scan spec: {}", subScanSpec);
@@ -158,7 +157,7 @@ public class KuduRecordReader extends AbstractRecordReader {
           context.getStats().stopWait();
         }
       }
-      for (; rowCount < TARGET_RECORD_COUNT && iterator.hasNext(); rowCount++) {
+      for (; rowCount < numRowsPerBatch && iterator.hasNext(); rowCount++) {
         addRowResult(iterator.next(), rowCount);
       }
     } catch (Exception ex) {

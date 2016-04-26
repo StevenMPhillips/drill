@@ -17,9 +17,6 @@
  */
 package org.apache.drill.exec.planner.sql.handlers;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
@@ -53,6 +50,10 @@ import org.apache.drill.exec.planner.sql.TypeInferenceUtils;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.direct.DirectGroupScan;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 
 import java.io.IOException;
 import java.util.List;
@@ -215,6 +216,7 @@ public class FindLimit0Visitor extends RelShuttleImpl {
 
     public RelDataTypeReader(List<String> columnNames, List<SqlTypeName> columnTypes,
         List<TypeProtos.DataMode> dataModes) {
+      super(null, null);
       Preconditions.checkArgument(columnNames.size() == columnTypes.size() &&
           columnTypes.size() == dataModes.size());
       this.columnNames = columnNames;

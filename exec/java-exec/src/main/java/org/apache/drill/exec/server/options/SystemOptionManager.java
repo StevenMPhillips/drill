@@ -17,19 +17,10 @@
  */
 package org.apache.drill.exec.server.options;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.drill.common.config.LogicalPlanPersistence;
-import org.apache.drill.common.map.CaseInsensitiveMap;
 import org.apache.drill.common.exceptions.UserException;
+import org.apache.drill.common.map.CaseInsensitiveMap;
 import org.apache.drill.exec.ExecConstants;
 import org.apache.drill.exec.compile.ClassTransformer;
 import org.apache.drill.exec.compile.QueryClassLoader;
@@ -39,6 +30,16 @@ import org.apache.drill.exec.store.sys.PersistentStore;
 import org.apache.drill.exec.store.sys.PersistentStoreConfig;
 import org.apache.drill.exec.store.sys.PersistentStoreProvider;
 import org.apache.drill.exec.util.AssertionUtil;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -101,9 +102,6 @@ public class SystemOptionManager extends BaseOptionManager implements AutoClosea
       ExecConstants.JSON_WRITER_UGLIFY,
       ExecConstants.JSON_READ_NUMBERS_AS_DOUBLE_VALIDATOR,
       ExecConstants.FILESYSTEM_PARTITION_COLUMN_LABEL_VALIDATOR,
-      ExecConstants.MONGO_READER_ALL_TEXT_MODE_VALIDATOR,
-      ExecConstants.MONGO_READER_READ_NUMBERS_AS_DOUBLE_VALIDATOR,
-      ExecConstants.MONGO_BSON_RECORD_READER_VALIDATOR,
       ExecConstants.HIVE_OPTIMIZE_SCAN_WITH_NATIVE_READERS_VALIDATOR,
       ExecConstants.SLICE_TARGET_OPTION,
       ExecConstants.AFFINITY_FACTOR,
@@ -134,7 +132,22 @@ public class SystemOptionManager extends BaseOptionManager implements AutoClosea
       ExecConstants.ENABLE_VERBOSE_ERRORS,
       ExecConstants.ENABLE_WINDOW_FUNCTIONS_VALIDATOR,
       ClassTransformer.SCALAR_REPLACEMENT_VALIDATOR,
-      ExecConstants.ENABLE_NEW_TEXT_READER
+      ExecConstants.ENABLE_NEW_TEXT_READER,
+      ExecConstants.OPERATOR_TARGET_BATCH_SIZE_VALIDATOR,
+      ExecConstants.OPERATOR_TARGET_BATCH_BYTES_VALIDATOR,
+      /* Mongo related options */
+      ExecConstants.MONGO_READER_ALL_TEXT_MODE_VALIDATOR,
+      ExecConstants.MONGO_READER_READ_NUMBERS_AS_DOUBLE_VALIDATOR,
+      ExecConstants.MONGO_BSON_RECORD_READER_VALIDATOR,
+      ExecConstants.MONGO_VERSION_3_2_VALIDATOR,
+      ExecConstants.MONGO_RULES_AGGREGATE_VALIDATOR,
+      ExecConstants.MONGO_RULES_FILTER_VALIDATOR,
+      ExecConstants.MONGO_RULES_FLATTEN_VALIDATOR,
+      ExecConstants.MONGO_RULES_LIMIT_VALIDATOR,
+      ExecConstants.MONGO_RULES_SORT_VALIDATOR,
+      ExecConstants.MONGO_RULES_PROJECT_VALIDATOR,
+      ExecConstants.MONGO_RULES_PROJECT_INTO_SCAN_VALIDATOR,
+      ExecConstants.MONGO_RULES_TOPN_VALIDATOR
     };
     final Map<String, OptionValidator> tmp = new HashMap<>();
     for (final OptionValidator validator : validators) {

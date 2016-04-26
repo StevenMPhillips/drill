@@ -17,11 +17,7 @@
  */
 package org.apache.drill.exec.physical.impl.join;
 
-import java.io.IOException;
-import java.util.List;
-
-import javax.inject.Named;
-
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.drill.exec.exception.ClassTransformationException;
 import org.apache.drill.exec.exception.SchemaChangeException;
 import org.apache.drill.exec.ops.FragmentContext;
@@ -31,7 +27,10 @@ import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.RecordBatch.IterOutcome;
 import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.record.VectorWrapper;
-import org.apache.calcite.rel.core.JoinRelType;
+
+import java.io.IOException;
+import java.util.List;
+import javax.inject.Named;
 
 public abstract class HashJoinProbeTemplate implements HashJoinProbe {
 
@@ -47,7 +46,7 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
 
   private HashJoinBatch outgoingJoinBatch = null;
 
-  private static final int TARGET_RECORDS_PER_BATCH = 4000;
+  private long targetRecordsPerBatch;
 
   /* Helper class
    * Maintains linked list of build side records with the same key
@@ -93,12 +92,13 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
     this.hashTable = hashTable;
     this.hjHelper = hjHelper;
     this.outgoingJoinBatch = outgoing;
+    this.targetRecordsPerBatch = outgoingJoinBatch.getNumRecordsPerBatch();
 
     doSetup(context, buildBatch, probeBatch, outgoing);
   }
 
   public void executeProjectRightPhase() {
-    while (outputRecords < TARGET_RECORDS_PER_BATCH && recordsProcessed < recordsToProcess) {
+    while (outputRecords < targetRecordsPerBatch && recordsProcessed < recordsToProcess) {
       projectBuildRecord(unmatchedBuildIndexes.get(recordsProcessed), outputRecords);
       recordsProcessed++;
       outputRecords++;
@@ -106,7 +106,7 @@ public abstract class HashJoinProbeTemplate implements HashJoinProbe {
   }
 
   public void executeProbePhase() throws SchemaChangeException {
-    while (outputRecords < TARGET_RECORDS_PER_BATCH && probeState != ProbeState.DONE && probeState != ProbeState.PROJECT_RIGHT) {
+    while (outputRecords < targetRecordsPerBatch && probeState != ProbeState.DONE && probeState != ProbeState.PROJECT_RIGHT) {
 
       // Check if we have processed all records in this batch we need to invoke next
       if (recordsProcessed == recordsToProcess) {

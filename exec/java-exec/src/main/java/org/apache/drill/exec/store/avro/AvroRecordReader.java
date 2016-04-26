@@ -17,15 +17,6 @@
  */
 package org.apache.drill.exec.store.avro;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.security.PrivilegedExceptionAction;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
 import org.apache.avro.file.DataFileReader;
@@ -37,7 +28,6 @@ import org.apache.avro.mapred.FsInput;
 import org.apache.avro.util.Utf8;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
-import org.apache.drill.common.expression.PathSegment;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.ops.OperatorContext;
@@ -54,6 +44,15 @@ import org.apache.hadoop.security.UserGroupInformation;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.security.PrivilegedExceptionAction;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 import io.netty.buffer.DrillBuf;
 
@@ -79,9 +78,6 @@ public class AvroRecordReader extends AbstractRecordReader {
   private final String opUserName;
   private final String queryUserName;
 
-  private static final int DEFAULT_BATCH_SIZE = 4096;
-
-
   public AvroRecordReader(final FragmentContext fragmentContext,
                           final String inputPath,
                           final long start,
@@ -89,6 +85,7 @@ public class AvroRecordReader extends AbstractRecordReader {
                           final FileSystem fileSystem,
                           final List<SchemaPath> projectedColumns,
                           final String userName) {
+    super(fragmentContext, projectedColumns);
     hadoop = new Path(inputPath);
     this.start = start;
     this.end = start + length;
@@ -96,7 +93,6 @@ public class AvroRecordReader extends AbstractRecordReader {
     this.fs = fileSystem;
     this.opUserName = userName;
     this.queryUserName = fragmentContext.getQueryUserName();
-    setColumns(projectedColumns);
     this.fieldSelection = FieldSelection.getFieldSelection(projectedColumns);
   }
 
@@ -145,7 +141,7 @@ public class AvroRecordReader extends AbstractRecordReader {
 
     try {
       for (GenericContainer container = null;
-           recordCount < DEFAULT_BATCH_SIZE && reader.hasNext() && !reader.pastSync(end);
+           recordCount < numRowsPerBatch && reader.hasNext() && !reader.pastSync(end);
            recordCount++) {
         writer.setPosition(recordCount);
         container = reader.next(container);

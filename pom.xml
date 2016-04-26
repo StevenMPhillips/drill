@@ -124,7 +124,17 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-    </repository>    
+    </repository>
+
+    <repository>
+      <id>dremio-internal</id>
+      <name>Dremio-internal</name>
+      <url>http://h007.d.drem.io:8081/nexus/content/repositories/releases</url>
+      <layout>default</layout>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
 
     <repository>
       <id>mapr-drill-thirdparty</id>
