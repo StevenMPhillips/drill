@@ -86,9 +86,11 @@ public class Drillbit implements AutoCloseable {
     final boolean allowPortHunting = serviceSet != null;
     context = new BootStrapContext(config, classpathScan);
     manager = new WorkManager(context);
+    engine = new ServiceEngine(manager.getControlMessageHandler(), manager.getUserWorker(), context,
+        manager.getWorkBus(), manager.getBee(), allowPortHunting);
 
     webServer = new WebServer(config, context.getMetrics(), manager);
-    boolean isDistributedMode = false;
+
     if (serviceSet != null) {
       coord = serviceSet.getCoordinator();
       if(config.hasPath(ExecConstants.OVERRIDE_LOCAL_SYSTEM_STORE) && config.getBoolean(ExecConstants.OVERRIDE_LOCAL_SYSTEM_STORE)){
@@ -99,12 +101,7 @@ public class Drillbit implements AutoCloseable {
     } else {
       coord = new ZKClusterCoordinator(config);
       storeProvider = new PersistentStoreRegistry(this.coord, config).newPStoreProvider();
-      isDistributedMode = true;
     }
-
-    engine = new ServiceEngine(manager.getControlMessageHandler(), manager.getUserWorker(), context,
-        manager.getWorkBus(), manager.getBee(), allowPortHunting, isDistributedMode);
-
     logger.info("Construction completed ({} ms).", w.elapsed(TimeUnit.MILLISECONDS));
   }
 
