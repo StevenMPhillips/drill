@@ -176,6 +176,10 @@ public class MaterializedField {
     return type.getMode();
   }
 
+  public void clearChildren() {
+    children.clear();
+  }
+
   public MaterializedField getOtherNullableVersion(){
     MajorType mt = type;
     DataMode newDataMode = null;

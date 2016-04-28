@@ -29,6 +29,7 @@ import org.apache.drill.exec.expr.BasicTypeHelper;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.proto.UserBitShared;
 import org.apache.drill.exec.record.MaterializedField;
+import org.apache.drill.exec.util.CallBack;
 import org.apache.drill.exec.vector.AddOrGetResult;
 import org.apache.drill.exec.vector.BaseValueVector;
 import org.apache.drill.exec.vector.UInt4Vector;
@@ -44,6 +45,7 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
   public final static ValueVector DEFAULT_DATA_VECTOR = ZeroVector.INSTANCE;
   public final static String OFFSETS_VECTOR_NAME = "$offsets$";
   public final static String DATA_VECTOR_NAME = "$data$";
+  protected final CallBack callBack;
 
   public final static MaterializedField OFFSETS_FIELD =
       MaterializedField.create(OFFSETS_VECTOR_NAME, Types.required(TypeProtos.MinorType.UINT4));
@@ -52,13 +54,18 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
   protected ValueVector vector;
 
   protected BaseRepeatedValueVector(MaterializedField field, BufferAllocator allocator) {
-    this(field, allocator, DEFAULT_DATA_VECTOR);
+    this(field, allocator, DEFAULT_DATA_VECTOR, null);
   }
 
-  protected BaseRepeatedValueVector(MaterializedField field, BufferAllocator allocator, ValueVector vector) {
+  protected BaseRepeatedValueVector(MaterializedField field, BufferAllocator allocator, CallBack callBack) {
+    this(field, allocator, DEFAULT_DATA_VECTOR, callBack);
+  }
+
+  protected BaseRepeatedValueVector(MaterializedField field, BufferAllocator allocator, ValueVector vector, CallBack callBack) {
     super(field, allocator);
     this.offsets = new UInt4Vector(OFFSETS_FIELD, allocator);
     this.vector = Preconditions.checkNotNull(vector, "data vector cannot be null");
+    this.callBack = callBack;
   }
 
   @Override
@@ -187,9 +194,13 @@ public abstract class BaseRepeatedValueVector extends BaseValueVector implements
     boolean created = false;
     if (vector == DEFAULT_DATA_VECTOR && descriptor.getType().getMinorType() != TypeProtos.MinorType.LATE) {
       final MaterializedField field = descriptor.withName(DATA_VECTOR_NAME).getField();
-      vector = BasicTypeHelper.getNewVector(field, allocator);
+      if (callBack != null) {
+        callBack.doWork();
+      }
+      vector = BasicTypeHelper.getNewVector(field, allocator, callBack);
       // returned vector must have the same field
       assert field.equals(vector.getField());
+      getField().clearChildren();
       getField().addChild(field);
       created = true;
     }

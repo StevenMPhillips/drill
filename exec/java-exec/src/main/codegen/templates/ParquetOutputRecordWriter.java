@@ -21,6 +21,7 @@ import org.apache.parquet.io.api.Binary;
 
 import java.lang.Override;
 import java.lang.RuntimeException;
+import java.lang.UnsupportedOperationException;
 import java.util.Arrays;
 
 <@pp.dropOutputFile />
@@ -76,6 +77,22 @@ public abstract class ParquetOutputRecordWriter extends AbstractRecordWriter imp
   public void setUp(MessageType schema, RecordConsumer consumer) {
     this.schema = schema;
     this.consumer = consumer;
+  }
+
+  @Override
+  public FieldConverter getNewListConverter(int fieldId, String fieldName, FieldReader reader) {
+    MinorType type = reader.reader().getType().getMinorType();
+    switch (type) {
+    <#list vv.types as type>
+      <#list type.minor as minor>
+    case ${minor.class?upper_case}:
+      return getNewRepeated${minor.class}Converter(fieldId, fieldName, reader);
+    </#list></#list>
+    case MAP:
+      return getNewRepeatedMapConverter(fieldId, fieldName, reader);
+    default:
+      throw new UnsupportedOperationException("Unsupported type: List of List");
+    }
   }
 
 <#list vv.types as type>

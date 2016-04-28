@@ -65,6 +65,11 @@ public abstract class AbstractRecordWriter implements RecordWriter {
   }
 
   @Override
+  public FieldConverter getNewListConverter(int fieldId, String fieldName, FieldReader reader) {
+    throw new UnsupportedOperationException("Doesn't support writing List");
+  }
+
+  @Override
   public FieldConverter getNewRepeatedListConverter(int fieldId, String fieldName, FieldReader reader) {
     throw new UnsupportedOperationException("Doesn't support writing RepeatedList");
   }

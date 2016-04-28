@@ -18,10 +18,14 @@
  ******************************************************************************/
 package org.apache.drill.exec.vector.complex;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.ObjectArrays;
 import io.netty.buffer.DrillBuf;
 import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.common.types.Types;
+import org.apache.drill.exec.expr.BasicTypeHelper;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.exception.OutOfMemoryException;
 import org.apache.drill.exec.proto.UserBitShared;
@@ -41,6 +45,7 @@ import org.apache.drill.exec.vector.complex.impl.UnionListWriter;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 import org.apache.drill.exec.vector.complex.writer.FieldWriter;
 
+import java.util.Iterator;
 import java.util.List;
 
 public class ListVector extends BaseRepeatedValueVector {
@@ -54,13 +59,24 @@ public class ListVector extends BaseRepeatedValueVector {
   private CallBack callBack;
 
   public ListVector(MaterializedField field, BufferAllocator allocator, CallBack callBack) {
-    super(field, allocator);
+    super(field, allocator, getVector(field, allocator), callBack);
     this.bits = new UInt1Vector(MaterializedField.create("$bits$", Types.required(MinorType.UINT1)), allocator);
     offsets = getOffsetVector();
     this.field.addChild(getDataVector().getField());
     this.writer = new UnionListWriter(this);
     this.reader = new UnionListReader(this);
     this.callBack = callBack;
+  }
+
+  private static ValueVector getVector(MaterializedField field, BufferAllocator allocator) {
+    if (field.getChildren().size() == 0) {
+      return DEFAULT_DATA_VECTOR;
+    }
+    MaterializedField child = Lists.newArrayList(field.getChildren().iterator()).get(field.getChildren().size() - 1);
+    if (child.getType().getMinorType() == MinorType.LATE) {
+      return DEFAULT_DATA_VECTOR;
+    }
+    return BasicTypeHelper.getNewVector(child, allocator);
   }
 
   public UnionListWriter getWriter() {
@@ -87,7 +103,7 @@ public class ListVector extends BaseRepeatedValueVector {
   }
 
   public void copyFrom(int inIndex, int outIndex, ListVector from) {
-    FieldReader in = from.getReader();
+    FieldReader in = new UnionListReader(from);
     in.setPosition(inIndex);
     FieldWriter out = getWriter();
     out.setPosition(outIndex);
@@ -113,19 +129,30 @@ public class ListVector extends BaseRepeatedValueVector {
 
     ListVector to;
 
+    TransferPair vectorTp;
+    TransferPair bitsTp;
+    TransferPair offsetsTp;
+
     public TransferImpl(MaterializedField field, BufferAllocator allocator) {
-      to = new ListVector(field, allocator, null);
-      to.addOrGetVector(new VectorDescriptor(vector.getField().getType()));
+      this(new ListVector(field, allocator, null));
     }
 
     public TransferImpl(ListVector to) {
       this.to = to;
       to.addOrGetVector(new VectorDescriptor(vector.getField().getType()));
+      offsetsTp = offsets.makeTransferPair(to.offsets);
+      bitsTp = bits.makeTransferPair(to.bits);
+      if (to.getDataVector() instanceof ZeroVector) {
+        to.addOrGetVector(new VectorDescriptor(vector.getField().getType()));
+      }
+      vectorTp = getDataVector().makeTransferPair(to.getDataVector());
     }
 
     @Override
     public void transfer() {
-      transferTo(to);
+      vectorTp.transfer();
+      offsetsTp.transfer();
+      bitsTp.transfer();
     }
 
     @Override
@@ -316,5 +343,10 @@ public class ListVector extends BaseRepeatedValueVector {
       vector.getMutator().setValueCount(childValueCount);
       bits.getMutator().setValueCount(valueCount);
     }
+  }
+
+  @Override
+  public Iterator<ValueVector> iterator() {
+    return ImmutableList.of(vector).iterator();
   }
 }

@@ -56,6 +56,7 @@ import org.apache.drill.exec.record.RecordBatch;
 import org.apache.drill.exec.record.TypedFieldId;
 import org.apache.drill.exec.record.VectorContainer;
 import org.apache.drill.exec.record.VectorWrapper;
+import org.apache.drill.exec.vector.SchemaChangeCallBack;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.AbstractContainerVector;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -109,6 +110,8 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
 
   // Schema of the build side
   private BatchSchema rightSchema = null;
+
+  private SchemaChangeCallBack callBack = new SchemaChangeCallBack();
 
 
   // Generator mapping for the build side
@@ -250,6 +253,9 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
             v.getValueVector().getMutator().setValueCount(outputRecords);
           }
 
+          if (callBack.getSchemaChangedAndReset()) {
+            return IterOutcome.OK_NEW_SCHEMA;
+          }
           return IterOutcome.OK;
         }
       } else {
@@ -428,7 +434,7 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
         // make sure to project field with children for children to show up in the schema
         final MaterializedField projected = field.withType(outputType);
         // Add the vector to our output container
-        container.addOrGet(projected);
+        container.addOrGet(projected, callBack);
 
         final JVar inVV = g.declareVectorValueSetupAndMember("buildBatch", new TypedFieldId(field.getType(), true, fieldId));
         final JVar outVV = g.declareVectorValueSetupAndMember("outgoing", new TypedFieldId(outputType, false, fieldId));
@@ -462,7 +468,7 @@ public class HashJoinBatch extends AbstractRecordBatch<HashJoinPOP> {
           outputType = inputType;
         }
 
-        final ValueVector v = container.addOrGet(MaterializedField.create(vv.getField().getPath(), outputType));
+        final ValueVector v = container.addOrGet(MaterializedField.create(vv.getField().getPath(), outputType), callBack);
         if (v instanceof AbstractContainerVector) {
           vv.getValueVector().makeTransferPair(v);
           v.clear();

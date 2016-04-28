@@ -1,5 +1,4 @@
-/*******************************************************************************
-
+package templates; /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,8 +14,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
-package org.apache.drill.exec.vector.complex.impl;
+ */
 
 import org.apache.drill.common.types.TypeProtos.MajorType;
 import org.apache.drill.common.types.TypeProtos.MinorType;
@@ -25,17 +23,32 @@ import org.apache.drill.exec.expr.holders.UnionHolder;
 import org.apache.drill.exec.vector.UInt4Vector;
 import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.ListVector;
+import org.apache.drill.exec.vector.complex.impl.ComplexCopier;
+import org.apache.drill.exec.vector.complex.impl.NullReader;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
-import org.apache.drill.exec.vector.complex.writer.BaseWriter;
 import org.apache.drill.exec.vector.complex.writer.BaseWriter.ListWriter;
-import org.apache.drill.exec.vector.complex.writer.BaseWriter.MapWriter;
 import org.apache.drill.exec.vector.complex.writer.FieldWriter;
 
+
+<@pp.dropOutputFile />
+<@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/impl/UnionListReader.java" />
+
+
+<#include "/@includes/license.ftl" />
+
+package org.apache.drill.exec.vector.complex.impl;
+
+import java.util.Iterator;
+
+<#include "/@includes/vv_imports.ftl" />
+
+@SuppressWarnings("unused")
 public class UnionListReader extends AbstractFieldReader {
 
   private ListVector vector;
   private ValueVector data;
   private UInt4Vector offsets;
+  private int size = 0;
 
   public UnionListReader(ListVector vector) {
     this.vector = vector;
@@ -62,6 +75,7 @@ public class UnionListReader extends AbstractFieldReader {
     super.setPosition(index);
     currentOffset = offsets.getAccessor().get(index) - 1;
     maxOffset = offsets.getAccessor().get(index + 1);
+    size = maxOffset - currentOffset - 1;
   }
 
   @Override
@@ -94,7 +108,38 @@ public class UnionListReader extends AbstractFieldReader {
     }
   }
 
+  @Override
+  public Iterator<String> iterator() {
+    return data.getReader().iterator();
+  }
+
+  public FieldReader reader(String name){
+    return data.getReader().reader(name);
+  }
+
+  <#list vv.types as type><#list type.minor as minor><#assign name = minor.class?cap_first />
+  <#assign boxedType = (minor.boxedType!type.boxedType) />
+
+  public void read(int arrayIndex, ${name}Holder holder){
+    data.getReader().setPosition(offsets.getAccessor().get(idx()) + arrayIndex);
+    data.getReader().read(holder);
+  }
+
+  public void read(int arrayIndex, Nullable${name}Holder holder){
+    data.getReader().setPosition(offsets.getAccessor().get(idx()) + arrayIndex);
+    data.getReader().read(holder);
+  }
+  </#list></#list>
+
+  @Override
+  public int size() {
+    return size;
+  }
+
   public void copyAsValue(ListWriter writer) {
     ComplexCopier.copy(this, (FieldWriter) writer);
   }
 }
+
+
+

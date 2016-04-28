@@ -132,7 +132,13 @@ public class EventBasedRecordWriter {
         }
 
       case LIST:
-        return recordWriter.getNewRepeatedListConverter(fieldId, fieldName, reader);
+        switch (reader.getType().getMode()) {
+        case REQUIRED:
+        case OPTIONAL:
+          return recordWriter.getNewListConverter(fieldId, fieldName, reader);
+        case REPEATED:
+          return recordWriter.getNewRepeatedListConverter(fieldId, fieldName, reader);
+        }
 
         <#list vv.types as type>
         <#list type.minor as minor>

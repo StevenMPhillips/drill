@@ -21,10 +21,12 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Preconditions;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.types.TypeProtos.DataMode;
@@ -44,6 +46,7 @@ import org.apache.drill.exec.store.EventBasedRecordWriter;
 import org.apache.drill.exec.store.EventBasedRecordWriter.FieldConverter;
 import org.apache.drill.exec.store.ParquetOutputRecordWriter;
 import org.apache.drill.exec.vector.BitVector;
+import org.apache.drill.exec.vector.ValueVector;
 import org.apache.drill.exec.vector.complex.reader.FieldReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -98,6 +101,7 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
 
   private RecordConsumer consumer;
   private BatchSchema batchSchema;
+  private VectorAccessible batch;
 
   private Configuration conf;
   private String location;
@@ -169,6 +173,7 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
         flush();
       }
       this.batchSchema = batch.getSchema();
+      this.batch = batch;
       newSchema();
     }
     TypedFieldId fieldId = batch.getValueVectorId(SchemaPath.getSimplePath(WriterPrel.PARTITION_COMPARATOR_FIELD));
@@ -180,11 +185,11 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
 
   private void newSchema() throws IOException {
     List<Type> types = Lists.newArrayList();
-    for (MaterializedField field : batchSchema) {
-      if (field.getPath().equalsIgnoreCase(WriterPrel.PARTITION_COMPARATOR_FIELD)) {
+    for (VectorWrapper w : batch) {
+      if (w.getField().getPath().equalsIgnoreCase(WriterPrel.PARTITION_COMPARATOR_FIELD)) {
         continue;
       }
-      types.add(getType(field));
+      types.add(getType(w.getValueVector()));
     }
     schema = new MessageType("root", types);
 
@@ -211,18 +216,36 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
     return new PrimitiveType(repetition, primitiveTypeName, length, name, originalType, decimalMetadata, null);
   }
 
-  private Type getType(MaterializedField field) {
+  private Type getType(ValueVector vector) {
+    MaterializedField field = vector.getField();
     MinorType minorType = field.getType().getMinorType();
     DataMode dataMode = field.getType().getMode();
     switch(minorType) {
       case MAP:
         List<Type> types = Lists.newArrayList();
-        for (MaterializedField childField : field.getChildren()) {
-          types.add(getType(childField));
+        for (ValueVector childVector : vector) {
+          types.add(getType(childVector));
         }
         return new GroupType(dataMode == DataMode.REPEATED ? Repetition.REPEATED : Repetition.OPTIONAL, field.getLastName(), types);
       case LIST:
-        throw new UnsupportedOperationException("Unsupported type " + minorType);
+//        Preconditions.checkState(field.getChildren().size() == 1);
+        MaterializedField child = Lists.newArrayList(field.getChildren().iterator()).get(field.getChildren().size() - 1);
+        Type childType = getType(vector.iterator().next());
+        if (childType.isPrimitive()) {
+          PrimitiveType childPrimitiveType = childType.asPrimitiveType();
+          return new PrimitiveType(Repetition.REPEATED,
+                  childPrimitiveType.getPrimitiveTypeName(),
+                  childPrimitiveType.getTypeLength(),
+                  field.getLastName(),
+                  childPrimitiveType.getOriginalType(),
+                  childPrimitiveType.getDecimalMetadata(),
+                  null);
+        } else {
+          GroupType childGroupType = childType.asGroupType();
+          return new GroupType(Repetition.REPEATED,
+                  field.getLastName(),
+                  childGroupType.getFields());
+        }
       default:
         return getPrimitiveType(field);
     }
@@ -345,6 +368,27 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
         consumer.endGroup();
       }
       consumer.endField(fieldName, fieldId);
+    }
+  }
+
+  public class ListConverter extends FieldConverter {
+
+    FieldConverter child;
+
+    public ListConverter(int fieldId, String fieldName, FieldReader reader) {
+      super(fieldId, fieldName, reader);
+      child = EventBasedRecordWriter.getConverter(ParquetRecordWriter.this, fieldId, fieldName, reader.reader());
+    }
+
+    @Override
+    public void writeField() throws IOException {
+      if (reader.size() == 0) {
+        return;
+      }
+
+      while(reader.next()) {
+        child.writeField();
+      }
     }
   }
 

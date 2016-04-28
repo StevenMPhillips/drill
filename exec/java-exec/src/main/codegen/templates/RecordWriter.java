@@ -64,6 +64,7 @@ public interface RecordWriter {
   public FieldConverter getNewMapConverter(int fieldId, String fieldName, FieldReader reader);
   public FieldConverter getNewUnionConverter(int fieldId, String fieldName, FieldReader reader);
   public FieldConverter getNewRepeatedMapConverter(int fieldId, String fieldName, FieldReader reader);
+  public FieldConverter getNewListConverter(int fieldId, String fieldName, FieldReader reader);
   public FieldConverter getNewRepeatedListConverter(int fieldId, String fieldName, FieldReader reader);
 
 <#list vv.types as type>

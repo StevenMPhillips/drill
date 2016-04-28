@@ -111,6 +111,7 @@ public class TestParquetWriter extends BaseTestQuery {
 
     fs = FileSystem.get(conf);
     test(String.format("alter session set `%s` = true", PlannerSettings.ENABLE_DECIMAL_DATA_TYPE_KEY));
+    test(String.format("set `%s` = true", ExecConstants.ENABLE_UNION_TYPE.getOptionName()));
   }
 
   @AfterClass
