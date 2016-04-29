@@ -17,6 +17,7 @@
  */
 package org.apache.drill.common.exceptions;
 
+import org.apache.drill.exec.proto.UserBitShared;
 import org.apache.drill.exec.proto.UserBitShared.DrillPBError;
 
 /**
@@ -35,6 +36,26 @@ public class UserRemoteException extends UserException {
   @Override
   public String getMessage() {
     return error.getMessage(); // we don't want super class to generate the error message
+  }
+
+  @Override
+  public String getMessage(boolean includeErrorIdAndIdentity) {
+    return error.getMessage(); // we don't want super class to generate the error message
+  }
+
+  public String getVerboseMessage() {
+    return getVerboseMessage(true);
+  }
+
+  public String getVerboseMessage(boolean includeErrorIdAndIdentity) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(error.getMessage());
+    sb.append("\n");
+    for (UserBitShared.StackTraceElementWrapper stackLine : error.getException().getStackTraceList()) {
+      sb.append(stackLine.getClassName());
+      sb.append("(" + stackLine.getFileName() + ":" + stackLine.getLineNumber() + ")\n");
+    }
+    return sb.toString();
   }
 
   @Override
