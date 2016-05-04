@@ -47,6 +47,7 @@ import org.apache.drill.exec.planner.logical.DrillRel;
 import org.apache.drill.exec.planner.logical.DrillTable;
 import org.apache.drill.exec.planner.logical.DrillTranslatableTable;
 import org.apache.drill.exec.planner.sql.TypeInferenceUtils;
+import org.apache.drill.exec.planner.types.RelDataTypeDrillImpl;
 import org.apache.drill.exec.record.MaterializedField;
 import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.direct.DirectGroupScan;
@@ -126,6 +127,9 @@ public class FindLimit0Visitor extends RelShuttleImpl {
       return false;
     }
 
+    if (!(rel.getRowType() instanceof RelDataTypeDrillImpl)) {
+      return true;
+    }
     final FindHardDistributionScans hdVisitor = new FindHardDistributionScans();
     rel.accept(hdVisitor);
     // Can't optimize limit 0 if the query contains a table which has hard distribution requirement.
