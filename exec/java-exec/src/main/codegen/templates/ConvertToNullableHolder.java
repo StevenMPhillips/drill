@@ -33,9 +33,9 @@ import org.apache.drill.exec.expr.holders.*;
 import org.apache.drill.exec.record.RecordBatch;
 
 <#if minor.class.startsWith("Decimal")>
-@FunctionTemplate(name = "convertToNullable${minor.class?upper_case}", scope = FunctionTemplate.FunctionScope.DECIMAL_MAX_SCALE, nulls = FunctionTemplate.NullHandling.INTERNAL)
+@FunctionTemplate(names = {"convertToNullable${minor.class?upper_case}", "convertToNullable"}, scope = FunctionTemplate.FunctionScope.DECIMAL_MAX_SCALE, nulls = FunctionTemplate.NullHandling.INTERNAL)
 <#else>
-@FunctionTemplate(name = "convertToNullable${minor.class?upper_case}", scope = FunctionTemplate.FunctionScope.SIMPLE, nulls = FunctionTemplate.NullHandling.INTERNAL)
+@FunctionTemplate(names = {"convertToNullable${minor.class?upper_case}", "convertToNullable"}, scope = FunctionTemplate.FunctionScope.SIMPLE, nulls = FunctionTemplate.NullHandling.INTERNAL)
 </#if>
 public class ${className} implements DrillSimpleFunc {
 

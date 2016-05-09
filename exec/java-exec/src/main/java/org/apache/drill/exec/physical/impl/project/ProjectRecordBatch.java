@@ -35,6 +35,7 @@ import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.expression.ValueExpressions;
 import org.apache.drill.common.expression.fn.CastFunctions;
 import org.apache.drill.common.logical.data.NamedExpression;
+import org.apache.drill.common.types.TypeProtos.DataMode;
 import org.apache.drill.common.types.TypeProtos.MinorType;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.exception.ClassTransformationException;
@@ -474,7 +475,14 @@ public class ProjectRecordBatch extends AbstractSingleRecordBatch<Project> {
         final FunctionCall castCall = new FunctionCall(castFuncName, castArgs, ExpressionPosition.UNKNOWN);
         exprs.add(new NamedExpression(castCall, new FieldReference(field.getPath())));
       } else {
-        exprs.add(new NamedExpression(SchemaPath.getSimplePath(field.getPath()), new FieldReference(field.getPath())));
+        if (field.getType().getMode() == DataMode.REQUIRED) {
+          List<LogicalExpression> e = Lists.newArrayList();
+          e.add(SchemaPath.getSimplePath(field.getPath()));
+          final FunctionCall convert = new FunctionCall("convertToNullable", e, ExpressionPosition.UNKNOWN);
+          exprs.add(new NamedExpression(convert, new FieldReference(field.getPath())));
+        } else {
+          exprs.add(new NamedExpression(SchemaPath.getSimplePath(field.getPath()), new FieldReference(field.getPath())));
+        }
       }
     }
     return exprs;
